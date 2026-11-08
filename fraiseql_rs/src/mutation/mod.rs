@@ -9,7 +9,7 @@ mod postgres_composite;
 mod response_builder;
 mod types;
 
-pub use entity_filter::filter_entity_fields;
+pub use entity_filter::{filter_entity_fields, project_selection, project_selection_with};
 pub use entity_processor::{
     ProcessedEntity, add_typename_to_entity, process_cascade, process_entity,
     process_entity_with_typename,
@@ -63,19 +63,7 @@ pub fn build_mutation_response(
     error_type_fields: Option<Vec<String>>,
     entity_selections: Option<&str>,
 ) -> Result<Vec<u8>, String> {
-    // Step 1: Try parsing as PostgreSQL 8-field mutation_response FIRST
-    let result = match postgres_composite::PostgresMutationResponse::from_json(mutation_json) {
-        Ok(pg_response) => {
-            // SUCCESS: Valid 8-field composite type
-            // CASCADE from Position 7 will be placed at success wrapper level
-            pg_response.to_mutation_result(entity_type)
-        },
-        Err(_parse_error) => {
-            // FALLBACK: Try simple format (backward compatibility)
-            // This handles users with simple entity responses
-            MutationResult::from_json(mutation_json, entity_type)?
-        },
-    };
+    let result = parse_result(mutation_json, entity_type)?;
 
     // Step 2: Build GraphQL response using response_builder
     let graphql_response = response_builder::build_graphql_response(
@@ -96,9 +84,214 @@ pub fn build_mutation_response(
     serde_json::to_vec(&graphql_response).map_err(|e| format!("Failed to serialize: {}", e))
 }
 
+/// The format of the selection document `build_mutation_response_selected` reads.
+///
+/// Exported to Python as `MUTATION_SELECTION_FORMAT`: the Python side checks it
+/// before calling, and the PyO3 entry point rejects any other document, so a Python
+/// package and an extension from different versions fail loudly instead of
+/// filtering responses by a format the other side doesn't write.
+pub const SELECTION_FORMAT: i64 = 2;
+
+/// Parse a mutation result: the 8-field mutation_response first, then the simple
+/// format (an entity alone).
+fn parse_result(mutation_json: &str, entity_type: Option<&str>) -> Result<MutationResult, String> {
+    match postgres_composite::PostgresMutationResponse::from_json(mutation_json) {
+        // CASCADE from position 7 is placed at the success wrapper level
+        Ok(pg_response) => Ok(pg_response.to_mutation_result(entity_type)),
+        Err(_parse_error) => MutationResult::from_json(mutation_json, entity_type),
+    }
+}
+
+/// Parse a selection document and check its format.
+///
+/// The document is `{"format": 2, "success": Selection | null, "error": Selection | null}`;
+/// see `project_selection` for a Selection, and `null` means unfiltered.
+pub fn parse_selection_document(document: Option<&str>) -> Result<Value, String> {
+    let mismatch = |found: &str| {
+        format!(
+            "build_mutation_response needs a selection document of format {SELECTION_FORMAT}, \
+             got {found}. The fraiseql Python package and its Rust extension are from \
+             different versions: reinstall fraiseql, or rebuild the extension."
+        )
+    };
+    let Some(document) = document else {
+        return Err(mismatch("none"));
+    };
+    let parsed: Value = serde_json::from_str(document)
+        .map_err(|e| format!("Invalid selection document JSON: {e}"))?;
+    match parsed.get("format").and_then(Value::as_i64) {
+        Some(SELECTION_FORMAT) => Ok(parsed),
+        Some(other) => Err(mismatch(&format!("format {other}"))),
+        None => Err(mismatch("a document without a format")),
+    }
+}
+
+/// The type a mutation result answers with: `success_type` for a success status
+/// (or an entity alone, the simple format), `error_type` otherwise. It is the
+/// `__typename` of `build_mutation_response_selected`'s object, also when the
+/// query doesn't select it.
+pub fn response_type_name<'a>(
+    mutation_json: &str,
+    success_type: &'a str,
+    error_type: &'a str,
+    entity_type: Option<&str>,
+) -> Result<&'a str, String> {
+    let result = parse_result(mutation_json, entity_type)?;
+    Ok(if result.status.is_success() {
+        success_type
+    } else {
+        error_type
+    })
+}
+
+/// Build a GraphQL mutation response holding only what the query selected.
+///
+/// The success or error object is built in full (as `build_graphql_response` builds
+/// it without field lists), then projected onto the document's `success` or `error`
+/// selection (`project_selection`): selected fields only, under their response keys,
+/// lists filtered element by element. The response is keyed by `field_name`, which
+/// the caller sets to the field's response key.
+#[allow(clippy::too_many_arguments)]
+pub fn build_mutation_response_selected(
+    mutation_json: &str,
+    field_name: &str,
+    success_type: &str,
+    error_type: &str,
+    entity_field_name: Option<&str>,
+    entity_type: Option<&str>,
+    cascade_selections: Option<&str>,
+    auto_camel_case: bool,
+    document: &Value,
+) -> Result<Vec<u8>, String> {
+    let result = parse_result(mutation_json, entity_type)?;
+    let full = if result.status.is_success() {
+        response_builder::build_success_response(
+            &result,
+            success_type,
+            entity_field_name,
+            auto_camel_case,
+            None,
+            cascade_selections,
+            None,
+        )?
+    } else {
+        response_builder::build_error_response_with_code(
+            &result,
+            error_type,
+            auto_camel_case,
+            None,
+            cascade_selections,
+            None,
+        )?
+    };
+    let selection = &document[if result.status.is_success() {
+        "success"
+    } else {
+        "error"
+    }];
+    // "typename": "selected": the response goes to the client as is, so it holds
+    // __typename only where the query selects it
+    let typename_where_selected =
+        document.get("typename").and_then(Value::as_str) == Some("selected");
+    let projected = if selection.is_null() {
+        full
+    } else {
+        project_selection_with(full, selection, typename_where_selected)
+    };
+    serde_json::to_vec(&serde_json::json!({ "data": { field_name: projected } }))
+        .map_err(|e| format!("Failed to serialize: {}", e))
+}
+
 #[cfg(test)]
 mod integration_tests {
     use super::*;
+
+    #[test]
+    fn test_selection_document_needs_format_2() {
+        assert!(parse_selection_document(Some(r#"{"format": 2, "success": null}"#)).is_ok());
+        for document in [
+            None,
+            Some(r#"{"fields": ["id"]}"#),
+            Some(r#"{"format": 3}"#),
+        ] {
+            let error = parse_selection_document(document).unwrap_err();
+            assert!(error.contains("selection document of format 2"), "{error}");
+        }
+    }
+
+    #[test]
+    fn test_selected_response_is_keyed_and_projected() {
+        let result = r#"{"status": "success", "message": "ok", "entity_id": "1",
+            "entity_type": "User", "entity": {"id": "1", "first_name": "A"},
+            "updated_fields": null, "cascade": null, "metadata": null}"#;
+        let document = serde_json::json!({"format": 2, "error": null, "success": {"fields": [
+            {"name": "user", "alias": "u", "selections": {"fields": [
+                {"name": "firstName", "alias": "firstName"}]}}]}});
+
+        let bytes = build_mutation_response_selected(
+            result,
+            "m",
+            "CreateUserSuccess",
+            "CreateUserError",
+            Some("user"),
+            None,
+            None,
+            true,
+            &document,
+        )
+        .unwrap();
+
+        let response: Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(
+            response,
+            serde_json::json!({"data": {"m": {"__typename": "CreateUserSuccess",
+                "u": {"__typename": "User", "firstName": "A"}}}})
+        );
+    }
+
+    #[test]
+    fn test_typename_where_selected_holds_the_selected_fields_only() {
+        let result = r#"{"status": "success", "message": "ok", "entity_id": "1",
+            "entity_type": "User", "entity": {"id": "1", "first_name": "A"},
+            "updated_fields": null, "cascade": null, "metadata": null}"#;
+        let document = serde_json::json!({"format": 2, "typename": "selected", "error": null,
+            "success": {"__type": "CreateUserSuccess", "fields": [
+                {"name": "user", "alias": "u", "selections": {"fields": [
+                    {"name": "__typename", "alias": "kind"},
+                    {"name": "firstName", "alias": "firstName"}]}},
+                {"name": "message", "alias": "message"}]}});
+
+        let bytes = build_mutation_response_selected(
+            result,
+            "m",
+            "CreateUserSuccess",
+            "CreateUserError",
+            Some("user"),
+            None,
+            None,
+            true,
+            &document,
+        )
+        .unwrap();
+
+        let response: Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(
+            response,
+            serde_json::json!({"data": {"m": {"u": {"kind": "User", "firstName": "A"},
+                "message": "ok"}}})
+        );
+        assert_eq!(
+            response_type_name(result, "CreateUserSuccess", "CreateUserError", None),
+            Ok("CreateUserSuccess")
+        );
+        let failed = r#"{"status": "failed:validation", "message": "no", "entity_id": null,
+            "entity_type": null, "entity": null, "updated_fields": null, "cascade": null,
+            "metadata": null}"#;
+        assert_eq!(
+            response_type_name(failed, "CreateUserSuccess", "CreateUserError", None),
+            Ok("CreateUserError")
+        );
+    }
 
     #[test]
     fn test_end_to_end_simple() {
@@ -140,7 +333,7 @@ mod integration_tests {
             "CreateUserError",
             Some("user"),
             Some("User"),
-            None,
+            Some(r#"{"fields": ["updated"]}"#),
             true,
             None,
             None,
@@ -270,21 +463,23 @@ impl MutationStatus {
             MutationStatus::Noop(_) => 422, // Validation/business rule
             MutationStatus::Error(reason) => {
                 let reason_lower = reason.to_lowercase();
+                // "failed:<reason>", what the trinity helpers return
+                // (failed:validation, failed:not_found, failed:duplicate), is read
+                // like "<reason>:"; any other "failed:" status is a server error
+                let (category, failed) = match reason_lower.strip_prefix("failed:") {
+                    Some(rest) => (rest.split(':').next().unwrap_or(""), true),
+                    None => (reason_lower.split(':').next().unwrap_or(""), false),
+                };
                 // Map error reasons to HTTP-like codes
-                if reason_lower.starts_with("not_found:") {
-                    404
-                } else if reason_lower.starts_with("validation:") {
-                    422
-                } else if reason_lower.starts_with("unauthorized:") {
-                    401
-                } else if reason_lower.starts_with("forbidden:") {
-                    403
-                } else if reason_lower.starts_with("conflict:") {
-                    409
-                } else if reason_lower.starts_with("timeout:") {
-                    408
-                } else {
-                    500
+                match category {
+                    "not_found" => 404,
+                    "validation" => 422,
+                    "unauthorized" => 401,
+                    "forbidden" => 403,
+                    "conflict" => 409,
+                    "duplicate" if failed => 409,
+                    "timeout" => 408,
+                    _ => 500,
                 }
             },
         }
@@ -310,15 +505,21 @@ pub struct MutationResult {
     pub is_simple_format: bool,
 }
 
-/// Valid mutation status prefixes/values for format detection
+/// Valid mutation status prefixes/values for format detection: the success keywords
+/// of the status taxonomy (including "new", which mutation_created() returns) and the
+/// prefixes MutationStatus::from_str classifies
 const VALID_STATUS_PREFIXES: &[&str] = &[
     // Success keywords (no colon)
     "success",
+    "new",
     "created",
     "updated",
     "deleted",
+    "completed",
+    "ok",
     // Error prefixes
     "failed:",
+    "validation:",
     "unauthorized:",
     "forbidden:",
     "not_found:",

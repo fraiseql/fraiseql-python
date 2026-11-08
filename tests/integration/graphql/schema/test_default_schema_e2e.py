@@ -68,7 +68,6 @@ class TestDefaultSchemaE2E:
         config = FraiseQLConfig(
             database_url="postgresql://test@localhost/test",
             default_mutation_schema="custom_app",
-            default_query_schema="custom_queries",
         )
 
         # Set config in registry BEFORE creating mutations

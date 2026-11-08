@@ -12,6 +12,7 @@ Supports:
 import inspect
 import logging
 import types
+from collections.abc import Mapping
 from enum import Enum
 from types import UnionType
 from typing import (
@@ -47,11 +48,13 @@ from graphql import (
 from psycopg.sql import SQL, Composed
 
 from fraiseql.config.schema_config import SchemaConfig
+from fraiseql.core.field_resolvers import FIELD_RESOLVER, PYTHON_TYPE, WITH_ARGUMENTS
 from fraiseql.core.translate_query import translate_query
 from fraiseql.mutations.decorators import FraiseUnion
 from fraiseql.sql.where_generator import DynamicType
 from fraiseql.types.scalars.graphql_utils import convert_scalar_to_graphql
 from fraiseql.types.scalars.json import JSONScalar, parse_json_value
+from fraiseql.types.scalars.vector import is_float_vector_type
 from fraiseql.utils.annotations import (
     get_non_optional_type,
     is_optional_type,
@@ -66,6 +69,23 @@ DICT_ARG_LENGTH = 2
 T = TypeVar("T", bound=type)
 
 logger = logging.getLogger(__name__)
+
+
+def _schema_fields(typ: type) -> dict[str, Any]:
+    """The collected fields of a FraiseQL type that belong in the GraphQL schema.
+
+    A field whose Python name starts with ``_`` is private, as the where and orderBy
+    input generators already treat it: it stays a constructor argument and an
+    attribute, but isn't exposed (it would have been a field like ``Email`` for
+    ``_email``, readable without the checks of a resolver guarding ``email``). An
+    explicit ``fraise_field(graphql_name=...)`` exposes it under that name.
+    """
+    fields = getattr(typ, "__gql_fields__", {})
+    return {
+        name: field
+        for name, field in fields.items()
+        if not name.startswith("_") or getattr(field, "graphql_name", None)
+    }
 
 
 def _clean_docstring(docstring: str | None) -> str | None:
@@ -215,7 +235,7 @@ def convert_type_to_graphql_input(
                 return cached_type
 
         # Use the already collected fields from the decorator
-        fields = getattr(typ, "__gql_fields__", {})
+        fields = _schema_fields(typ)
         type_hints = getattr(typ, "__gql_type_hints__", {})
 
         # Create a thunk (lazy function) for fields to handle circular references
@@ -269,6 +289,10 @@ def convert_type_to_graphql_input(
         )
         _graphql_type_cache[cache_key] = gql_type
         return gql_type
+
+    # VectorField / HalfVectorField read and write as list[float]
+    if is_float_vector_type(typ):
+        typ = list[float]
 
     # Handle list types like list[str]
     origin = get_origin(typ)
@@ -414,6 +438,10 @@ def convert_type_to_graphql_output(
         msg = "Use a FraiseUnion wrapper for result unions, not plain Union"
         raise TypeError(msg)
 
+    # VectorField / HalfVectorField read and write as list[float]
+    if is_float_vector_type(typ):
+        typ = list[float]
+
     # Handle list types
     if get_origin(typ) is list:
         (inner_type,) = get_args(typ)
@@ -482,7 +510,7 @@ def convert_type_to_graphql_output(
             definition = typ.__fraiseql_definition__
             if definition.kind in {"type", "success", "failure", "output"}:
                 # Use the already collected fields from the decorator
-                fields = getattr(typ, "__gql_fields__", {})
+                fields = _schema_fields(typ)
                 type_hints = getattr(typ, "__gql_type_hints__", {})
 
                 # Get interfaces this type implements
@@ -600,6 +628,9 @@ def convert_type_to_graphql_output(
                                         wrap_resolver_with_enum_serialization(enhanced_resolver),
                                         name,
                                     ),
+                                    # db.find answers with typed objects when a
+                                    # query filters it (core.field_resolvers)
+                                    extensions={FIELD_RESOLVER: WITH_ARGUMENTS},
                                 )
                                 continue  # Skip other resolver creation
 
@@ -644,6 +675,9 @@ def convert_type_to_graphql_output(
                                         wrap_resolver_with_enum_serialization(smart_resolver),
                                         name,
                                     ),
+                                    # it may read its own view: db.find answers
+                                    # with typed objects (core.field_resolvers)
+                                    extensions={FIELD_RESOLVER: True},
                                 )
                                 continue  # Skip the regular resolver creation
 
@@ -882,6 +916,9 @@ def convert_type_to_graphql_output(
                                     type_=cast("GraphQLOutputType", gql_return_type),
                                     resolve=_gate(wrapped_resolver, attr_name),
                                     description=description,
+                                    # db.find answers with typed objects when
+                                    # a query selects it (core.field_resolvers)
+                                    extensions={FIELD_RESOLVER: True},
                                 )
 
                             except Exception as e:
@@ -902,12 +939,13 @@ def convert_type_to_graphql_output(
                     interfaces=interfaces or None,
                     is_type_of=is_type_of,
                     description=_clean_docstring(typ.__doc__),
+                    extensions={PYTHON_TYPE: typ},
                 )
                 _graphql_type_cache[key] = gql_type
                 return gql_type
             if definition.kind == "interface":
                 # Handle interface types
-                fields = getattr(typ, "__gql_fields__", {})
+                fields = _schema_fields(typ)
                 type_hints = getattr(typ, "__gql_type_hints__", {})
 
                 # Create a thunk (lazy function) for fields to handle recursive references
@@ -1005,10 +1043,14 @@ def _create_connection_type(node_type: type) -> GraphQLObjectType:
                 description="List of edges in this connection",
             ),
             "pageInfo": GraphQLField(
-                GraphQLNonNull(page_info_type), description="Information about pagination"
+                GraphQLNonNull(page_info_type),
+                description="Information about pagination",
+                resolve=_python_name_resolver("page_info"),
             ),
             "totalCount": GraphQLField(
-                GraphQLInt, description="Total number of items (if includeTotal was enabled)"
+                GraphQLInt,
+                description="Total number of items (if includeTotal was enabled)",
+                resolve=_python_name_resolver("total_count"),
             ),
         },
         description=f"A connection to a list of {node_name} items.",
@@ -1052,6 +1094,25 @@ def _create_edge_type(node_type: type, edge_name: str, registry: Any) -> GraphQL
     return edge_type
 
 
+def _python_name_resolver(python_name: str) -> Callable[..., Any]:
+    """Resolve a camelCase Connection/PageInfo field from its snake_case source.
+
+    ``create_connection`` builds objects with ``page_info``/``has_next_page``
+    attributes, and a resolver may return the same as a dict; the default
+    resolver would look for ``pageInfo`` and find nothing. A camelCase dict key
+    is read too.
+    """
+    graphql_name = snake_to_camel(python_name)
+
+    def resolve(obj: Any, info: Any) -> Any:
+        if isinstance(obj, Mapping):
+            return obj[python_name] if python_name in obj else obj.get(graphql_name)
+        value = getattr(obj, python_name, None)
+        return getattr(obj, graphql_name, None) if value is None else value
+
+    return resolve
+
+
 # Module-level cache for PageInfo type (singleton)
 _PAGE_INFO_TYPE = None
 
@@ -1084,16 +1145,22 @@ def _get_or_create_page_info_type(registry: Any) -> GraphQLObjectType:
             "hasNextPage": GraphQLField(
                 GraphQLNonNull(GraphQLBoolean),
                 description="Whether more items exist after this page",
+                resolve=_python_name_resolver("has_next_page"),
             ),
             "hasPreviousPage": GraphQLField(
                 GraphQLNonNull(GraphQLBoolean),
                 description="Whether more items exist before this page",
+                resolve=_python_name_resolver("has_previous_page"),
             ),
             "startCursor": GraphQLField(
-                GraphQLString, description="Cursor for the first item in this page"
+                GraphQLString,
+                description="Cursor for the first item in this page",
+                resolve=_python_name_resolver("start_cursor"),
             ),
             "endCursor": GraphQLField(
-                GraphQLString, description="Cursor for the last item in this page"
+                GraphQLString,
+                description="Cursor for the last item in this page",
+                resolve=_python_name_resolver("end_cursor"),
             ),
         },
         description="Information about pagination in a connection.",

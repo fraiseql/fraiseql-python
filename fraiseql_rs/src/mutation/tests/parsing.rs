@@ -130,11 +130,23 @@ fn test_format_detection_simple_vs_full() {
 // ============================================================================
 
 #[test]
-fn test_parse_missing_status_fails() {
-    // Empty JSON should fail
+fn test_parse_empty_object_is_simple_format() {
+    // An object without a status is an entity in the simple format, even when empty
     let json = r#"{}"#;
-    let result = MutationResult::from_json(json, None);
-    assert!(result.is_err());
+    let result = MutationResult::from_json(json, None).unwrap();
+    assert!(result.is_simple_format);
+    assert_eq!(result.entity, Some(serde_json::json!({})));
+}
+
+#[test]
+fn test_status_taxonomy_keywords_are_full_format() {
+    // "new" is what mutation_created() returns; "validation:" is an error prefix
+    for status in ["new", "completed", "ok", "validation:invalid_email"] {
+        let json = format!(r#"{{"status": "{status}", "message": "m", "entity": {{"id": "1"}}}}"#);
+        let result = MutationResult::from_json(&json, None).unwrap();
+        assert!(!result.is_simple_format, "{status}");
+        assert_eq!(result.message, "m", "{status}");
+    }
 }
 
 #[test]

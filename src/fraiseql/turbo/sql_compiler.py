@@ -207,14 +207,13 @@ class QueryStructureAnalyzer:
         # Analyze selections
         selections = self._extract_selections(root_selection.selection_set)
 
-        # Extract filters from arguments
-        filters = self._extract_filters(root_selection.arguments)
+        # Extract filters from arguments (graphql-core 3.3 leaves none as None)
+        arguments = root_selection.arguments or ()
+        filters = self._extract_filters(arguments)
 
         # Check for pagination and ordering
-        has_pagination = any(
-            arg.name.value in ["limit", "offset"] for arg in root_selection.arguments
-        )
-        has_ordering = any(arg.name.value == "orderBy" for arg in root_selection.arguments)
+        has_pagination = any(arg.name.value in ["limit", "offset"] for arg in arguments)
+        has_ordering = any(arg.name.value == "orderBy" for arg in arguments)
 
         # Calculate depth
         max_depth = self._calculate_depth(root_selection.selection_set)
@@ -418,9 +417,7 @@ class ResolverAnalyzer(ast.NodeVisitor):
             return None
 
         # First argument should be view name
-        if isinstance(node.args[0], ast.Str):
-            view_name = node.args[0].s
-        elif isinstance(node.args[0], ast.Constant):
+        if isinstance(node.args[0], ast.Constant):
             view_name = node.args[0].value
         else:
             return None

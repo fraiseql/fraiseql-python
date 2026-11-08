@@ -272,7 +272,9 @@ if __name__ == "__main__":
     print("-" * 80)
     for profile_name in ["low", "high"]:
         p_config = get_config_for_profile(profile_name)
-        print(f"{profile_name.upper():6} profile: "
-              f"{p_config.concurrent_requests:3} concurrent, "
-              f"{p_config.timeout_seconds:.1f}s timeout")
+        print(
+            f"{profile_name.upper():6} profile: "
+            f"{p_config.concurrent_requests:3} concurrent, "
+            f"{p_config.timeout_seconds:.1f}s timeout"
+        )
     print("=" * 80)

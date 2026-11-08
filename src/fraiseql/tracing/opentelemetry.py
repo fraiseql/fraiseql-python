@@ -8,37 +8,56 @@ import logging
 from contextlib import contextmanager
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
-from functools import wraps
 from typing import Any, Awaitable, Callable, Generator, Optional
 
 from fastapi import FastAPI, Request, Response
+
+from fraiseql.tracing.redaction import redact_variables
+from fraiseql.utils.annotations import wraps
 
 logger = logging.getLogger(__name__)
 
 try:
     from opentelemetry import context as otel_context  # type: ignore[import-untyped]
     from opentelemetry import trace  # type: ignore[import-untyped]
-    from opentelemetry.exporter.jaeger.thrift import JaegerExporter  # type: ignore[import-untyped]
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # type: ignore[import-not-found,import-untyped]
-        OTLPSpanExporter,
+    from opentelemetry.propagate import extract, inject  # type: ignore[import-untyped]
+    from opentelemetry.sdk.resources import Resource  # type: ignore[import-untyped]
+    from opentelemetry.sdk.trace import TracerProvider  # type: ignore[import-untyped]
+    from opentelemetry.sdk.trace.export import (  # type: ignore[import-untyped]
+        BatchSpanProcessor,
+        ConsoleSpanExporter,
     )
+    from opentelemetry.sdk.trace.sampling import TraceIdRatioBased  # type: ignore[import-untyped]
+    from opentelemetry.semconv.trace import SpanAttributes  # type: ignore[import-untyped]
+    from opentelemetry.trace import Status, StatusCode  # type: ignore[import-untyped]
 
+    # The exporters and the psycopg instrumentation are optional: each one missing
+    # only disables itself (the Jaeger exporter isn't in the tracing extra, and its
+    # last release doesn't import with the current SDK)
+    try:
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (  # type: ignore[import-not-found,import-untyped]
+            OTLPSpanExporter,
+        )
+    except ImportError:
+        OTLPSpanExporter = None  # type: ignore[assignment]
+    try:
+        from opentelemetry.exporter.jaeger.thrift import (  # type: ignore[import-not-found,import-untyped]
+            JaegerExporter,
+        )
+    except ImportError:
+        JaegerExporter = None  # type: ignore[assignment]
     try:
         from opentelemetry.exporter.zipkin.json import (  # type: ignore[import-not-found]
             ZipkinExporter,  # type: ignore[import-untyped]
         )
     except ImportError:
         ZipkinExporter = None  # type: ignore[assignment]
-    from opentelemetry.instrumentation.psycopg import (  # type: ignore[import-not-found,import-untyped]
-        PsycopgInstrumentor,
-    )
-    from opentelemetry.propagate import extract, inject  # type: ignore[import-untyped]
-    from opentelemetry.sdk.resources import Resource  # type: ignore[import-untyped]
-    from opentelemetry.sdk.trace import TracerProvider  # type: ignore[import-untyped]
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor  # type: ignore[import-untyped]
-    from opentelemetry.sdk.trace.sampling import TraceIdRatioBased  # type: ignore[import-untyped]
-    from opentelemetry.semconv.trace import SpanAttributes  # type: ignore[import-untyped]
-    from opentelemetry.trace import Status, StatusCode  # type: ignore[import-untyped]
+    try:
+        from opentelemetry.instrumentation.psycopg import (  # type: ignore[import-not-found,import-untyped]
+            PsycopgInstrumentor,
+        )
+    except ImportError:
+        PsycopgInstrumentor = None  # type: ignore[assignment]
 
     OPENTELEMETRY_AVAILABLE = True
 except ImportError:
@@ -62,6 +81,7 @@ except ImportError:
     Resource = None  # type: ignore[assignment]
     TracerProvider = None  # type: ignore[assignment]
     BatchSpanProcessor = None  # type: ignore[assignment]
+    ConsoleSpanExporter = None  # type: ignore[assignment]
     TraceIdRatioBased = None  # type: ignore[assignment]
 
     class SpanAttributes:  # type: ignore[misc]
@@ -113,7 +133,7 @@ class TracingConfig:
 
     # Export configuration
     export_endpoint: str | None = None
-    export_format: str = "otlp"  # otlp, jaeger, zipkin
+    export_format: str = "otlp"  # otlp, console, zipkin (jaeger: deprecated, use otlp)
     export_timeout_ms: int = 30000
 
     # Context propagation
@@ -139,8 +159,8 @@ class TracingConfig:
             msg = "sample_rate must be between 0.0 and 1.0"
             raise ValueError(msg)
 
-        if self.export_format not in ("otlp", "jaeger", "zipkin"):
-            msg = "export_format must be one of: otlp, jaeger, zipkin"
+        if self.export_format not in ("otlp", "console", "jaeger", "zipkin"):
+            msg = "export_format must be one of: otlp, console, jaeger, zipkin"
             raise ValueError(msg)
 
 
@@ -190,8 +210,11 @@ class FraiseQLTracer:
         if not provider:
             return trace.get_tracer(__name__) if trace else None  # type: ignore[return-value]
 
-        # Add span processor with appropriate exporter
-        if self.config.export_endpoint and BatchSpanProcessor:
+        # Add span processor with appropriate exporter (console needs no endpoint;
+        # jaeger is checked even without one, to fail with a clear error)
+        if BatchSpanProcessor and (
+            self.config.export_endpoint or self.config.export_format in ("console", "jaeger")
+        ):
             exporter = self._create_exporter()
             if exporter:
                 processor = BatchSpanProcessor(exporter)
@@ -206,16 +229,36 @@ class FraiseQLTracer:
         )
 
     def _create_exporter(self) -> Any | None:
-        """Create appropriate span exporter based on configuration."""
+        """Create appropriate span exporter based on configuration.
+
+        Raises:
+            ImportError: If the exporter of ``export_format`` isn't installed
+        """
         if not OPENTELEMETRY_AVAILABLE:
             return None
 
-        if self.config.export_format == "otlp" and OTLPSpanExporter:
+        export_format = self.config.export_format
+        if export_format == "console":
+            return ConsoleSpanExporter()
+        if export_format == "otlp":
+            if OTLPSpanExporter is None:
+                msg = (
+                    "The OTLP exporter isn't installed: "
+                    'pip install "fraiseql[tracing]" (or opentelemetry-exporter-otlp)'
+                )
+                raise ImportError(msg)
             return OTLPSpanExporter(
                 endpoint=self.config.export_endpoint,
-                timeout=self.config.export_timeout_ms,
+                timeout=self.config.export_timeout_ms / 1000,  # seconds
             )
-        if self.config.export_format == "jaeger" and JaegerExporter:
+        if export_format == "jaeger":
+            if JaegerExporter is None:
+                msg = (
+                    'export_format="jaeger" needs opentelemetry-exporter-jaeger, which '
+                    "OpenTelemetry deprecated and which doesn't install with the current "
+                    'SDK. Use export_format="otlp": Jaeger accepts OTLP (port 4317).'
+                )
+                raise ImportError(msg)
             # Parse endpoint for Jaeger
             if self.config.export_endpoint and ":" in self.config.export_endpoint:
                 host, port = self.config.export_endpoint.split(":")
@@ -224,16 +267,14 @@ class FraiseQLTracer:
                     agent_port=int(port),
                 )
             return JaegerExporter(agent_host_name=self.config.export_endpoint)
-        if self.config.export_format == "zipkin":
-            if ZipkinExporter:
-                return ZipkinExporter(endpoint=self.config.export_endpoint)
-            logger.warning(
-                "Zipkin exporter requested but not available. "
-                "Install opentelemetry-exporter-zipkin<1.20.0 for protobuf<4.0 compatibility. "
-                "Falling back to console exporter."
-            )
-            return None
-        # Return None for console exporter
+        if export_format == "zipkin":
+            if ZipkinExporter is None:
+                msg = (
+                    'export_format="zipkin" needs the Zipkin exporter: '
+                    "pip install opentelemetry-exporter-zipkin-json"
+                )
+                raise ImportError(msg)
+            return ZipkinExporter(endpoint=self.config.export_endpoint)
         return None
 
     @contextmanager
@@ -257,7 +298,7 @@ class FraiseQLTracer:
 
             if variables:
                 # Add variables as span events (to avoid sensitive data in attributes)
-                span.add_event("graphql.variables", {"variables": str(variables)})
+                span.add_event("graphql.variables", {"variables": str(redact_variables(variables))})
 
             # Add custom attributes from config
             for key, value in self.config.attributes.items():
@@ -294,7 +335,7 @@ class FraiseQLTracer:
             span.set_attribute("graphql.document", query)
 
             if variables:
-                span.add_event("graphql.variables", {"variables": str(variables)})
+                span.add_event("graphql.variables", {"variables": str(redact_variables(variables))})
 
             # Add custom attributes
             for key, value in self.config.attributes.items():
@@ -398,14 +439,13 @@ class TracingMiddleware(BaseHTTPMiddleware):
         if not self.tracer.tracer:
             return await call_next(request)
 
-        # Extract trace context from headers
+        # Extract trace context from headers (the parent of this request's span)
         ctx = self.tracer.extract_context(dict(request.headers))
-        if ctx:
-            otel_context.attach(ctx)
 
         # Start span
         with self.tracer.tracer.start_as_current_span(
             f"{request.method} {request.url.path}",
+            context=ctx or None,
             kind=trace.SpanKind.SERVER,
         ) as span:
             # Add HTTP attributes

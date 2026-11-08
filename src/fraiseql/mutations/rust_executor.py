@@ -8,9 +8,58 @@ import logging
 from typing import Any, Type
 
 from fraiseql.core.rust_pipeline import RustResponseBytes
-from fraiseql.utils.casing import dict_keys_to_snake_case
+from fraiseql.utils.casing import dict_keys_to_snake_case, to_camel_case
 
 logger = logging.getLogger(__name__)
+
+# Statuses the Rust pipeline answers with the error type (MutationStatus::from_str)
+_ERROR_STATUS_PREFIXES = (
+    "failed:",
+    "validation:",
+    "unauthorized:",
+    "forbidden:",
+    "not_found:",
+    "conflict:",
+    "timeout:",
+    "noop:",
+)
+
+# SQL functions _warn_if_untyped_entity has warned about, once each per process
+_warned_untyped_entity: set[str] = set()
+
+
+def _warn_if_untyped_entity(function_name: str, result: dict[str, Any]) -> None:
+    """Warn once per SQL function about a success entity that gets no __typename.
+
+    Called when the caller had no entity type to pass (the entity field is an interface
+    or union, or unknown). Rust then names the entity after the result's entity_type, or
+    keeps a __typename from its data; with neither, the entity has no __typename.
+    """
+    if function_name in _warned_untyped_entity:
+        return
+    if "status" in result:
+        status = str(result["status"]).lower()
+        if status.startswith(_ERROR_STATUS_PREFIXES) or result.get("entity_type"):
+            return
+        entity = result.get("entity")
+    else:
+        entity = result  # Simple format: the result is the entity
+    if not isinstance(entity, dict) or "__typename" in entity:
+        return
+    _warned_untyped_entity.add(function_name)
+    logger.warning(
+        "SQL function %s returned an entity without entity_type; __typename left out",
+        function_name,
+    )
+
+
+# The format of the selection document sent to build_mutation_response
+# (see mutation_decorator._response_selections). The extension exports the
+# format it reads as MUTATION_SELECTION_FORMAT.
+SELECTION_FORMAT = 2
+
+# What build_mutation_response returns when there is no GraphQL selection to apply.
+UNFILTERED_SELECTIONS = json.dumps({"format": SELECTION_FORMAT, "success": None, "error": None})
 
 
 def _get_fraiseql_rs():
@@ -26,6 +75,45 @@ def _get_fraiseql_rs():
         ) from e
 
 
+def _checked_fraiseql_rs() -> Any:
+    """The Rust extension, once it is known to read this package's selection format.
+
+    The extension ships with the package. One from another version (a stale build in
+    a development checkout) would read the selection document differently and return
+    the wrong fields without an error, so it is refused.
+    """
+    fraiseql_rs = _get_fraiseql_rs()
+    found = getattr(fraiseql_rs, "MUTATION_SELECTION_FORMAT", None)
+    if found != SELECTION_FORMAT:
+        raise RuntimeError(
+            f"The fraiseql Rust extension reads mutation selection format {found}, and this "
+            f"fraiseql sends format {SELECTION_FORMAT}: they are from different versions. "
+            "Reinstall fraiseql, or rebuild the extension (uv run maturin develop)."
+        )
+    return fraiseql_rs
+
+
+def _entity_response_keys(
+    selections: str, entity_field_name: str, auto_camel_case: bool
+) -> set[str]:
+    """The response keys the entity field was selected under (its aliases)."""
+    name = to_camel_case(entity_field_name) if auto_camel_case else entity_field_name
+    try:
+        success = json.loads(selections).get("success")
+    except (json.JSONDecodeError, AttributeError):
+        success = None
+    if not isinstance(success, dict):
+        return {name}
+    fields = list(success.get("fields") or [])
+    for on_type in (success.get("__on") or {}).values():
+        fields.extend(on_type or [])
+    return {
+        field.get("alias") or name
+        for field in fields
+        if isinstance(field, dict) and field.get("name") == name
+    } or {name}
+
+
 async def execute_mutation_rust(
     conn: Any,
     function_name: str,
@@ -39,9 +127,8 @@ async def execute_mutation_rust(
     cascade_selections: str | None = None,
     config: Any | None = None,
     success_type_class: Type | None = None,
-    success_type_fields: list[str] | None = None,
-    error_type_fields: list[str] | None = None,
-    entity_selections: str | None = None,
+    selections: str | None = None,
+    entity_nullable: bool = False,
 ) -> RustResponseBytes:
     """Execute mutation via Rust-first pipeline.
 
@@ -56,21 +143,27 @@ async def execute_mutation_rust(
         success_type: GraphQL success type name
         error_type: GraphQL error type name
         entity_field_name: Field name for entity (e.g., "user")
-        entity_type: Entity type for __typename (e.g., "User") - REQUIRED for simple format
+        entity_type: Entity type for __typename (e.g., "User") when the result's
+            entity_type is NULL; None for an entity field typed as an interface or union
         context_args: Optional context arguments
         cascade_selections: Optional cascade selections JSON
         config: Optional FraiseQLConfig instance. If None, uses global config.
         success_type_class: Python Success type class for entity flattening.
             If provided, will flatten entity JSONB fields to match Success type schema.
-        success_type_fields: List of field names expected in Success type for validation.
-        error_type_fields: List of field names expected in Error type for field selection.
-        entity_selections: Optional entity field selections JSON (GitHub issue #525).
-            Specifies which fields to include in nested entity objects.
+        selections: The selection document (JSON) from
+            mutation_decorator._response_selections: what the query selected on the
+            success and error types, under its response keys. None returns the
+            response unfiltered, for callers without a GraphQL selection.
+        entity_nullable: Whether the success type's entity field is nullable
+            (``note: Note | None``); a success without an entity is then null there,
+            not an error.
 
     Returns:
         RustResponseBytes ready for HTTP response
     """
-    fraiseql_rs = _get_fraiseql_rs()
+    fraiseql_rs = _checked_fraiseql_rs()
+    if selections is None:
+        selections = UNFILTERED_SELECTIONS
 
     # Get config if not provided
     if config is None:
@@ -95,13 +188,14 @@ async def execute_mutation_rust(
     input_json = json.dumps(input_data, separators=(",", ":"))
 
     # Build SQL query using psycopg placeholders (%s)
-    # Wrap with row_to_json() to handle composite type returns as JSON
+    # Wrap with row_to_json() to handle composite type returns as JSON, read as text so
+    # numbers keep their digits on the way to Rust (json.loads makes a numeric a float)
     if context_args:
         placeholders = ", ".join(["%s"] * len(context_args))
-        query = f"SELECT row_to_json({function_name}({placeholders}, %s::jsonb))"
+        query = f"SELECT row_to_json({function_name}({placeholders}, %s::jsonb))::text"
         params = (*context_args, input_json)
     else:
-        query = f"SELECT row_to_json({function_name}(%s::jsonb))"
+        query = f"SELECT row_to_json({function_name}(%s::jsonb))::text"
         params = (input_json,)
 
     # Execute query
@@ -132,14 +226,25 @@ async def execute_mutation_rust(
             entity_type,
             None,  # cascade_selections
             auto_camel_case,  # Pass config flag
-            success_type_fields,  # Success type field list
-            error_type_fields,  # Error type field list
-            None,  # entity_selections (not needed for error case)
+            None,  # success_type_fields: replaced by the selection document
+            None,  # error_type_fields: replaced by the selection document
+            selections,
         )
         return RustResponseBytes(response_bytes)
 
     # Get mutation result
     mutation_result = row[0]
+
+    # JSON text is parsed only to inspect it; Rust gets the text itself, unless it's
+    # converted from the legacy format below
+    raw_json: str | None = None
+    if isinstance(mutation_result, str):
+        try:
+            parsed = json.loads(mutation_result)
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, dict):
+            raw_json, mutation_result = mutation_result, parsed
 
     # Handle different result types from psycopg
     if isinstance(mutation_result, dict):
@@ -149,6 +254,7 @@ async def execute_mutation_rust(
             # mutation_response format from row_to_json - pass through as-is
             pass
         elif "object_data" in mutation_result:
+            raw_json = None
             # Legacy composite type format - convert to mutation_response
             mutation_result = {
                 "entity_id": str(mutation_result.get("id")) if mutation_result.get("id") else None,
@@ -165,7 +271,9 @@ async def execute_mutation_rust(
                 "cascade": None,
             }
 
-        mutation_json = json.dumps(mutation_result, separators=(",", ":"), default=str)
+        if entity_type is None:
+            _warn_if_untyped_entity(function_name, mutation_result)
+        mutation_json = raw_json or json.dumps(mutation_result, separators=(",", ":"), default=str)
     elif isinstance(mutation_result, tuple):
         # psycopg returned a tuple from composite type
         # mutation_response order:
@@ -196,6 +304,8 @@ async def execute_mutation_rust(
             # Extract entity_type from metadata if present
             if composite_dict["metadata"] and isinstance(composite_dict["metadata"], dict):
                 composite_dict["entity_type"] = composite_dict["metadata"].get("entity")
+        if entity_type is None:
+            _warn_if_untyped_entity(function_name, composite_dict)
         mutation_json = json.dumps(composite_dict, separators=(",", ":"), default=str)
     elif isinstance(mutation_result, str):
         # Already a JSON string
@@ -214,9 +324,9 @@ async def execute_mutation_rust(
         entity_type,
         cascade_selections,
         auto_camel_case,  # Pass config flag
-        success_type_fields,  # Pass field list for schema validation
-        error_type_fields,  # Pass error type field list for auto-injection
-        entity_selections,  # Pass entity field selections (GitHub issue #525)
+        None,  # success_type_fields: replaced by the selection document
+        None,  # error_type_fields: replaced by the selection document
+        selections,
     )
 
     # Validate Rust response structure
@@ -228,24 +338,29 @@ async def execute_mutation_rust(
 
         if mutation_result and isinstance(mutation_result, dict):
             typename = mutation_result.get("__typename")
+            if typename is None:
+                # Not selected (HTTP mode writes the selected fields only): the type
+                # Rust built the response for
+                typename = fraiseql_rs.mutation_response_type(
+                    mutation_json, success_type, error_type, entity_type
+                )
 
-            # Success type: entity must be non-null
-            if typename == success_type:
-                entity_field = entity_field_name or "entity"
-                if entity_field in mutation_result and mutation_result[entity_field] is None:
+            # Success type: a non-null entity field must not be null, under any alias
+            if typename == success_type and not entity_nullable:
+                entity_keys = _entity_response_keys(
+                    selections, entity_field_name or "entity", auto_camel_case
+                )
+                if any(
+                    key in mutation_result and mutation_result[key] is None for key in entity_keys
+                ):
                     raise ValueError(
                         f"Success type '{typename}' returned null entity. "
                         f"This indicates a logic error in the mutation or Rust pipeline. "
                         f"Validation failures should return Error type, not Success type."
                     )
 
-            # Error type: code field must be present
-            elif typename == error_type:
-                if "code" not in mutation_result:
-                    raise ValueError(
-                        f"Error type '{typename}' missing required 'code' field. "
-                        f"Ensure Rust pipeline includes code field."
-                    )
+            # Error type: code, when selected under its own name, is an int
+            elif typename == error_type and "code" in mutation_result:
                 if not isinstance(mutation_result["code"], int):
                     raise ValueError(
                         f"Error type '{typename}' has invalid 'code' type: {type(mutation_result['code'])}. "  # noqa: E501

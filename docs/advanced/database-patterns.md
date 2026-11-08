@@ -125,7 +125,7 @@ CREATE INDEX idx_tv_order_status
   "id": "d613dfba-3440-4c90-bb7b-877175621e08",
   "status": "shipped",
   "total": 299.99,
-  "createdAt": "2025-10-09T10:30:00Z",
+  "created_at": "2025-10-09T10:30:00Z",
   "user": {
     "id": "a1b2c3d4-...",
     "email": "customer@example.com",
@@ -134,14 +134,14 @@ CREATE INDEX idx_tv_order_status
   "items": [
     {
       "id": "item-1",
-      "productName": "Widget Pro",
+      "product_name": "Widget Pro",
       "quantity": 2,
       "price": 149.99
     }
   ],
   "shipping": {
     "address": "123 Main St",
-    "trackingNumber": "1Z999AA10123456784"
+    "tracking_number": "1Z999AA10123456784"
   }
 }
 ```
@@ -187,7 +187,7 @@ SELECT
         'id', o.id,
         'status', o.status,
         'total', o.total,
-        'createdAt', o.created_at,
+        'created_at', o.created_at,
         'user', (
             SELECT jsonb_build_object(
                 'id', u.id,
@@ -201,7 +201,7 @@ SELECT
             (
                 SELECT jsonb_agg(jsonb_build_object(
                     'id', i.id,
-                    'productName', i.product_name,
+                    'product_name', i.product_name,
                     'quantity', i.quantity,
                     'price', i.price
                 ) ORDER BY i.created_at)
@@ -267,7 +267,7 @@ BEGIN
                 'id', o.id,
                 'status', o.status,
                 'total', o.total,
-                'createdAt', o.created_at,
+                'created_at', o.created_at,
                 'user', jsonb_build_object(
                     'id', COALESCE(NEW.id, OLD.id),
                     'email', COALESCE(NEW.email, OLD.email),
@@ -277,7 +277,7 @@ BEGIN
                     (
                         SELECT jsonb_agg(jsonb_build_object(
                             'id', i.id,
-                            'productName', i.product_name,
+                            'product_name', i.product_name,
                             'quantity', i.quantity,
                             'price', i.price
                         ) ORDER BY i.created_at)
@@ -303,7 +303,7 @@ BEGIN
             'id', o.id,
             'status', o.status,
             'total', o.total,
-            'createdAt', o.created_at,
+            'created_at', o.created_at,
             'user', (
                 SELECT jsonb_build_object(
                     'id', u.id,
@@ -317,7 +317,7 @@ BEGIN
                 (
                     SELECT jsonb_agg(jsonb_build_object(
                         'id', i.id,
-                        'productName', i.product_name,
+                        'product_name', i.product_name,
                         'quantity', i.quantity,
                         'price', i.price
                     ) ORDER BY i.created_at)
@@ -432,7 +432,7 @@ CREATE TABLE tv_order_bad (
 -- Query: Slow (sequential scan)
 SELECT data FROM tv_order_bad
 WHERE data->>'status' = 'shipped'
-ORDER BY (data->>'createdAt')::timestamptz DESC;
+ORDER BY (data->>'created_at')::timestamptz DESC;
 ```
 
 #### 2. JSONB `data` Column Structure
@@ -441,7 +441,7 @@ ORDER BY (data->>'createdAt')::timestamptz DESC;
 
 - Complete GraphQL response (all nested data)
 - Include `__typename` for GraphQL unions/interfaces
-- Use camelCase field names (GraphQL convention)
+- Use snake_case keys (the Python field names); `where` and `orderBy` look them up by that name, and the GraphQL response is camelCased on output
 - Pre-compute expensive aggregations
 
 **Example Structure**:
@@ -451,11 +451,11 @@ ORDER BY (data->>'createdAt')::timestamptz DESC;
   "__typename": "Order",          // ✅ Required for GraphQL
   "id": "...",                     // ✅ Always include
   "status": "shipped",             // ✅ Duplicate of real column (for consistency)
-  "createdAt": "2025-10-09...",    // ✅ ISO 8601 format
+  "created_at": "2025-10-09...",   // ✅ ISO 8601 format
   "user": { ... },                 // ✅ Complete nested object
   "items": [ ... ],                // ✅ Complete nested array
-  "itemCount": 3,                  // ✅ Pre-computed aggregation
-  "totalAmount": 299.99            // ✅ Pre-computed sum
+  "item_count": 3,                 // ✅ Pre-computed aggregation
+  "total_amount": 299.99           // ✅ Pre-computed sum
 }
 ```
 
@@ -554,9 +554,7 @@ FraiseQL mutations follow a consistent 5-step pattern that ensures data integrit
 CREATE OR REPLACE FUNCTION update_order(
     p_tenant_id UUID,
     p_user_id UUID,
-    p_order_id UUID,
-    p_status TEXT,
-    p_notes TEXT DEFAULT NULL
+    input JSONB  -- {id, status, notes}
 )
 RETURNS TABLE(
     id UUID,
@@ -566,6 +564,7 @@ RETURNS TABLE(
     object_data JSONB,
     extra_metadata JSONB
 ) AS $$
+#variable_conflict use_column  -- the RETURNS TABLE columns (id, status) are also variables
 DECLARE
     v_old_order RECORD;
     v_updated_fields TEXT[] := '{}';
@@ -576,12 +575,12 @@ BEGIN
     -- =====================================================================
 
     -- Validate status transition
-    IF p_status NOT IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled') THEN
-        RAISE EXCEPTION 'Invalid status: %. Must be one of: pending, confirmed, shipped, delivered, cancelled', p_status;
+    IF input->>'status' NOT IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled') THEN
+        RAISE EXCEPTION 'Invalid status: %. Must be one of: pending, confirmed, shipped, delivered, cancelled', input->>'status';
     END IF;
 
     -- Additional business rules
-    IF p_status = 'shipped' AND p_notes IS NULL THEN
+    IF input->>'status' = 'shipped' AND input->>'notes' IS NULL THEN
         RAISE EXCEPTION 'Tracking notes required when shipping order';
     END IF;
 
@@ -592,11 +591,11 @@ BEGIN
     -- Check if order exists and belongs to tenant
     SELECT * INTO v_old_order
     FROM tb_order
-    WHERE id = p_order_id
+    WHERE id = (input->>'id')::uuid
       AND tenant_id = p_tenant_id;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'Order % not found for tenant %', p_order_id, p_tenant_id;
+        RAISE EXCEPTION 'Order % not found for tenant %', (input->>'id')::uuid, p_tenant_id;
     END IF;
 
     -- Validate state transitions
@@ -609,11 +608,11 @@ BEGIN
     -- =====================================================================
 
     -- Track which fields changed
-    IF v_old_order.status != p_status THEN
+    IF v_old_order.status != input->>'status' THEN
         v_updated_fields := array_append(v_updated_fields, 'status');
     END IF;
 
-    IF COALESCE(v_old_order.notes, '') != COALESCE(p_notes, '') THEN
+    IF COALESCE(v_old_order.notes, '') != COALESCE(input->>'notes', '') THEN
         v_updated_fields := array_append(v_updated_fields, 'notes');
     END IF;
 
@@ -627,18 +626,18 @@ BEGIN
     -- Perform the update
     UPDATE tb_order
     SET
-        status = p_status,
-        notes = p_notes,
+        status = input->>'status',
+        notes = input->>'notes',
         updated_at = NOW(),
         updated_by = p_user_id
-    WHERE id = p_order_id;
+    WHERE id = (input->>'id')::uuid;
 
     -- =====================================================================
     -- STEP 4: REFRESH tv_ TABLE
     -- =====================================================================
 
     -- Explicitly refresh the denormalized projection
-    PERFORM refresh_tv_order(p_order_id);
+    PERFORM refresh_tv_order((input->>'id')::uuid);
 
     -- =====================================================================
     -- STEP 5: RETURN RESULT (with audit logging)
@@ -649,29 +648,29 @@ BEGIN
         (tenant_id, user_id, object_type, object_id,
          modification_type, change_status, object_data, extra_metadata)
     VALUES
-        (p_tenant_id, p_user_id, 'order', p_order_id,
+        (p_tenant_id, p_user_id, 'order', (input->>'id')::uuid,
          'UPDATE', v_change_status,
          jsonb_build_object(
              'before', row_to_json(v_old_order),
-             'after', (SELECT row_to_json(tb_order) FROM tb_order WHERE id = p_order_id),
+             'after', (SELECT row_to_json(tb_order) FROM tb_order WHERE id = (input->>'id')::uuid),
              'op', 'u'
          ),
          jsonb_build_object(
              'updated_fields', v_updated_fields,
              'input_params', jsonb_build_object(
-                 'status', p_status,
-                 'notes', p_notes
+                 'status', input->>'status',
+                 'notes', input->>'notes'
              )
          ));
 
     -- Return structured result
     RETURN QUERY
     SELECT
-        p_order_id as id,
+        (input->>'id')::uuid as id,
         v_change_status as status,
         v_updated_fields as updated_fields,
         format('Order updated: %s', array_to_string(v_updated_fields, ', ')) as message,
-        (SELECT data FROM tv_order WHERE id = p_order_id) as object_data,
+        (SELECT data FROM tv_order WHERE id = (input->>'id')::uuid) as object_data,
         jsonb_build_object('updated_fields', v_updated_fields) as extra_metadata;
 
 END;
@@ -685,7 +684,6 @@ $$ LANGUAGE plpgsql;
 ```python
 from fraiseql.types import ID
 import fraiseql
-from fraiseql.db import execute_mutation
 
 @fraiseql.mutation
 async def update_order(
@@ -699,22 +697,13 @@ async def update_order(
     tenant_id = info.context["tenant_id"]
     user_id = info.context["user_id"]
 
-    # Call SQL function (5-step pattern executed)
-    result = await db.execute_mutation(
-        """
-        SELECT * FROM update_order(
-            p_tenant_id := $1,
-            p_user_id := $2,
-            p_order_id := $3,
-            p_status := $4,
-            p_notes := $5
-        )
-        """,
-        tenant_id,
-        user_id,
-        id,
-        status,
-        notes
+    # Call SQL function (5-step pattern executed): runs
+    # SELECT * FROM update_order(tenant_id, user_id, '{"id": ..., ...}'::jsonb)
+    # and returns the row it returns as a dict
+    result = await db.execute_function_with_context(
+        "update_order",
+        [tenant_id, user_id],
+        {"id": str(id), "status": status, "notes": notes},
     )
 
     return MutationLogResult(
@@ -736,8 +725,7 @@ async def update_order(
 CREATE OR REPLACE FUNCTION create_order(
     p_tenant_id UUID,
     p_user_id UUID,
-    p_customer_id UUID,
-    p_items JSONB  -- Array of {product_id, quantity, price}
+    input JSONB  -- {customer_id, items: [{product_id, quantity, price}]}
 )
 RETURNS TABLE(
     id UUID,
@@ -745,17 +733,18 @@ RETURNS TABLE(
     message TEXT,
     object_data JSONB
 ) AS $$
+#variable_conflict use_column  -- the RETURNS TABLE columns (id, status) are also variables
 DECLARE
     v_order_id UUID;
     v_item JSONB;
 BEGIN
     -- STEP 1: VALIDATION
-    IF jsonb_array_length(p_items) = 0 THEN
+    IF jsonb_array_length(input->'items') = 0 THEN
         RAISE EXCEPTION 'Order must contain at least one item';
     END IF;
 
     -- Validate all products exist
-    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+    FOR v_item IN SELECT * FROM jsonb_array_elements(input->'items')
     LOOP
         IF NOT EXISTS (SELECT 1 FROM tb_product WHERE id = (v_item->>'product_id')::UUID) THEN
             RAISE EXCEPTION 'Product % not found', v_item->>'product_id';
@@ -763,8 +752,8 @@ BEGIN
     END LOOP;
 
     -- STEP 2: EXISTENCE CHECK
-    IF NOT EXISTS (SELECT 1 FROM tb_user WHERE id = p_customer_id AND tenant_id = p_tenant_id) THEN
-        RAISE EXCEPTION 'Customer % not found', p_customer_id;
+    IF NOT EXISTS (SELECT 1 FROM tb_user WHERE id = (input->>'customer_id')::uuid AND tenant_id = p_tenant_id) THEN
+        RAISE EXCEPTION 'Customer % not found', (input->>'customer_id')::uuid;
     END IF;
 
     -- STEP 3: BUSINESS LOGIC
@@ -772,10 +761,10 @@ BEGIN
 
     -- Insert into tb_order
     INSERT INTO tb_order (id, tenant_id, user_id, status, created_by)
-    VALUES (v_order_id, p_tenant_id, p_customer_id, 'pending', p_user_id);
+    VALUES (v_order_id, p_tenant_id, (input->>'customer_id')::uuid, 'pending', p_user_id);
 
     -- Insert items
-    FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
+    FOR v_item IN SELECT * FROM jsonb_array_elements(input->'items')
     LOOP
         INSERT INTO tb_order_item (id, order_id, product_id, quantity, price)
         VALUES (
@@ -830,13 +819,14 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION delete_order(
     p_tenant_id UUID,
     p_user_id UUID,
-    p_order_id UUID
+    input JSONB  -- {id}
 )
 RETURNS TABLE(
     id UUID,
     status TEXT,
     message TEXT
 ) AS $$
+#variable_conflict use_column  -- the RETURNS TABLE columns (id, status) are also variables
 DECLARE
     v_old_order RECORD;
 BEGIN
@@ -846,18 +836,18 @@ BEGIN
     -- STEP 2: EXISTENCE CHECK
     SELECT * INTO v_old_order
     FROM tb_order
-    WHERE id = p_order_id
+    WHERE id = (input->>'id')::uuid
       AND tenant_id = p_tenant_id;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'Order % not found', p_order_id;
+        RAISE EXCEPTION 'Order % not found', (input->>'id')::uuid;
     END IF;
 
     -- Check if already deleted
     IF v_old_order.deleted_at IS NOT NULL THEN
         RETURN QUERY
         SELECT
-            p_order_id as id,
+            (input->>'id')::uuid as id,
             'noop:already_deleted'::TEXT as status,
             'Order already deleted' as message;
         RETURN;
@@ -868,17 +858,17 @@ BEGIN
     SET
         deleted_at = NOW(),
         deleted_by = p_user_id
-    WHERE id = p_order_id;
+    WHERE id = (input->>'id')::uuid;
 
     -- STEP 4: REFRESH tv_ (or remove from tv_)
-    DELETE FROM tv_order WHERE id = p_order_id;
+    DELETE FROM tv_order WHERE id = (input->>'id')::uuid;
 
     -- STEP 5: RETURN RESULT
     INSERT INTO core.tb_entity_change_log
         (tenant_id, user_id, object_type, object_id,
          modification_type, change_status, object_data)
     VALUES
-        (p_tenant_id, p_user_id, 'order', p_order_id,
+        (p_tenant_id, p_user_id, 'order', (input->>'id')::uuid,
          'DELETE', 'deleted',
          jsonb_build_object(
              'before', row_to_json(v_old_order),
@@ -887,7 +877,7 @@ BEGIN
 
     RETURN QUERY
     SELECT
-        p_order_id as id,
+        (input->>'id')::uuid as id,
         'deleted'::TEXT as status,
         'Order deleted successfully' as message;
 
@@ -993,15 +983,15 @@ CREATE OR REPLACE FUNCTION update_order(...)
 RETURNS TABLE(...) AS $$
 BEGIN
     -- Validation errors
-    IF p_status NOT IN (...) THEN
+    IF input->>'status' NOT IN (...) THEN
         RAISE EXCEPTION 'validation:invalid_status'
-            USING DETAIL = format('Invalid status: %s', p_status);
+            USING DETAIL = format('Invalid status: %s', input->>'status');
     END IF;
 
     -- Not found errors
     IF NOT FOUND THEN
         RAISE EXCEPTION 'not_found:order'
-            USING DETAIL = format('Order %s not found', p_order_id);
+            USING DETAIL = format('Order %s not found', input->>'id');
     END IF;
 
     -- Business rule violations
@@ -1017,7 +1007,7 @@ EXCEPTION
             (tenant_id, object_type, object_id,
              modification_type, change_status, object_data)
         VALUES
-            (p_tenant_id, 'order', p_order_id,
+            (p_tenant_id, 'order', (input->>'id')::uuid,
              'UPDATE', format('failed:%s', SQLERRM),
              jsonb_build_object('error', SQLERRM));
         RAISE;
@@ -1068,12 +1058,12 @@ SELECT
     'id', u.id,
     'email', u.email,
     'name', u.name,
-    'createdAt', u.created_at,
+    'created_at', u.created_at,
     'posts', (
       SELECT jsonb_agg(jsonb_build_object(
         'id', p.id,
         'title', p.title,
-        'createdAt', p.created_at
+        'created_at', p.created_at
       ) ORDER BY p.created_at DESC)
       FROM posts p
       WHERE p.user_id = u.id
@@ -1118,7 +1108,7 @@ SELECT
     'sku', p.sku,
     'name', p.name,
     'price', p.price,
-    'categoryId', p.category_id
+    'category_id', p.category_id
   ) as data
 FROM products p
 WHERE p.deleted_at IS NULL;
@@ -1151,7 +1141,7 @@ SELECT
     'items', (
       SELECT jsonb_agg(jsonb_build_object(
         'id', i.id,
-        'productName', i.product_name,
+        'product_name', i.product_name,
         'quantity', i.quantity,
         'price', i.price
       ) ORDER BY i.created_at)
@@ -1163,7 +1153,7 @@ SELECT
         'address', s.address,
         'city', s.city,
         'status', s.status,
-        'trackingNumber', s.tracking_number
+        'tracking_number', s.tracking_number
       )
       FROM tb_shipment s
       WHERE s.order_id = o.id
@@ -1187,7 +1177,7 @@ SELECT
     'id', p.id,
     'title', p.title,
     'content', p.content,
-    'approvedComments', (
+    'approved_comments', (
       SELECT jsonb_agg(jsonb_build_object(
         'id', c.id,
         'text', c.text,
@@ -1197,7 +1187,7 @@ SELECT
       WHERE c.post_id = p.id
         AND c.status = 'approved'  -- Conditional filter
     ),
-    'pendingCommentCount', (
+    'pending_comment_count', (
       SELECT COUNT(*)
       FROM comments c
       WHERE c.post_id = p.id
@@ -1340,7 +1330,7 @@ SELECT
     'id', p.id,
     'name', p.name,
     'description', p.description,
-    'createdAt', p.created_at
+    'created_at', p.created_at
   ) as data
 FROM projects p;
 
@@ -1452,7 +1442,7 @@ SELECT
   jsonb_build_object(
     'id', u.id,
     'name', u.name,
-    'latestPost', p.data
+    'latest_post', p.data
   ) as data
 FROM users u
 LEFT JOIN LATERAL (
@@ -1487,9 +1477,9 @@ CREATE VIEW tv_latest_order_per_user AS
 SELECT DISTINCT ON (user_id)
   user_id,
   jsonb_build_object(
-    'orderId', id,
+    'order_id', id,
     'total', total,
-    'createdAt', created_at
+    'created_at', created_at
   ) as data
 FROM tb_order
 ORDER BY user_id, created_at DESC;
@@ -1637,7 +1627,7 @@ SELECT
     'id', n.id,
     'type', n.type,
     'read', n.read_at IS NOT NULL,
-    'createdAt', n.created_at,
+    'created_at', n.created_at,
     -- Polymorphic entity resolution
     'entity', CASE n.entity_type
       WHEN 'Post' THEN (
@@ -1709,7 +1699,7 @@ SELECT
     'id', id,
     'type', activity_type,
     'details', details,
-    'createdAt', created_at
+    'created_at', created_at
   ) as data
 FROM (
   SELECT
@@ -1717,7 +1707,7 @@ FROM (
     user_id,
     'page_view' AS activity_type,
     jsonb_build_object(
-      'pageUrl', page_url,
+      'page_url', page_url,
       'referrer', referrer,
       'duration', duration_seconds
     ) AS details,
@@ -1731,8 +1721,8 @@ FROM (
     user_id,
     'button_click' AS activity_type,
     jsonb_build_object(
-      'buttonId', button_id,
-      'pageUrl', page_url
+      'button_id', button_id,
+      'page_url', page_url
     ) AS details,
     created_at
   FROM button_clicks
@@ -1744,7 +1734,7 @@ FROM (
     user_id,
     'form_submission' AS activity_type,
     jsonb_build_object(
-      'formId', form_id,
+      'form_id', form_id,
       'fields', form_data
     ) AS details,
     created_at
@@ -1841,30 +1831,34 @@ CREATE INDEX idx_entity_log_status ON core.tb_entity_change_log (change_status);
 **Usage in Mutations**:
 
 ```python
+import json
+
 import fraiseql
 from fraiseql.types import ID
+from fraiseql.db import DatabaseQuery
 
 @fraiseql.mutation
 async def update_order(info, id: ID, name: str) -> MutationResult:
     db = info.context["db"]
 
     # Log the mutation
-    result = await db.execute(
-        """
-        INSERT INTO core.tb_entity_change_log
-            (tenant_id, user_id, object_type, object_id,
-             modification_type, change_status, object_data)
-        VALUES
-            ($1, $2, 'order', $3, 'UPDATE', 'updated', $4::jsonb)
-        RETURNING id
-        """,
-        info.context["tenant_id"],
-        info.context["user_id"],
-        id,
-        json.dumps({
-            "before": {"name": old_name},
-            "after": {"name": name}
-        })
+    rows = await db.run(
+        DatabaseQuery(
+            """
+            INSERT INTO core.tb_entity_change_log
+                (tenant_id, user_id, object_type, object_id,
+                 modification_type, change_status, object_data)
+            VALUES
+                (%s, %s, 'order', %s, 'UPDATE', 'updated', %s::jsonb)
+            RETURNING id
+            """,
+            [
+                info.context["tenant_id"],
+                info.context["user_id"],
+                id,
+                json.dumps({"before": {"name": old_name}, "after": {"name": name}}),
+            ],
+        )
     )
 
     return MutationResult(status="updated", id=id)
@@ -2055,6 +2049,7 @@ class MutationLogResult:
 ```python
 import fraiseql
 from fraiseql.types import ID
+from fraiseql.db import DatabaseQuery
 
 @fraiseql.mutation
 async def update_product(
@@ -2065,17 +2060,23 @@ async def update_product(
 ) -> MutationLogResult:
     db = info.context["db"]
 
+    # Read the state as Python data (find_one builds a GraphQL response instead)
+    product_query = DatabaseQuery("SELECT data FROM v_product WHERE id = %s", [id])
+
     # Get current state
-    old_product = await db.find_one("v_product", {"id": id})
+    old_product = (await db.run(product_query))[0]["data"]
 
     # Update
-    await db.execute(
-        "UPDATE tb_product SET name = $1, price = $2 WHERE id = $3",
-        name, price, id
+    await db.run(
+        DatabaseQuery(
+            "UPDATE tb_product SET name = %s, price = %s WHERE id = %s",
+            [name, price, id],
+            fetch_result=False,
+        )
     )
 
     # Get new state
-    new_product = await db.find_one("v_product", {"id": id})
+    new_product = (await db.run(product_query))[0]["data"]
 
     return MutationLogResult(
         status="updated",

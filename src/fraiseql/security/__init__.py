@@ -26,6 +26,7 @@ Example usage:
 """
 
 import logging
+import secrets
 from typing import Any
 
 from fastapi import FastAPI
@@ -38,6 +39,9 @@ from .authorization import (
     Authorizer,
     normalize_decision,
 )
+
+# Client IP for rate limiting (trusted proxies)
+from .client_ip import TrustedProxies, get_client_ip
 
 # CSRF protection
 from .csrf_protection import (
@@ -136,6 +140,7 @@ __all__ = [
     # Security headers
     "SecurityHeadersConfig",
     "SecurityHeadersMiddleware",
+    "TrustedProxies",
     "ValidationResult",
     "any_permission",
     "authorize_field",
@@ -150,6 +155,7 @@ __all__ = [
     "create_production_security_config",
     "create_strict_csp",
     "field_authorizer_adapter",
+    "get_client_ip",
     "normalize_decision",
     "setup_csrf_protection",
     "setup_rate_limiting",
@@ -177,6 +183,7 @@ class SecurityConfig:
         custom_rate_limits: list[RateLimitRule] | None = None,
         custom_csrf_config: CSRFConfig | None = None,
         custom_security_headers: SecurityHeadersConfig | None = None,
+        trusted_proxies: list[str] | str | None = None,
     ) -> None:
         self.secret_key = secret_key
         self.environment = environment
@@ -191,6 +198,9 @@ class SecurityConfig:
         self.custom_rate_limits = custom_rate_limits
         self.custom_csrf_config = custom_csrf_config
         self.custom_security_headers = custom_security_headers
+        # Parsed here so a bad entry raises instead of setup_security() logging a
+        # warning and running without rate limiting.
+        self.trusted_proxies = TrustedProxies.coerce(trusted_proxies)
 
     @property
     def is_production(self) -> bool:
@@ -212,6 +222,7 @@ def setup_security(
     api_only: bool = False,
     redis_client: Any | None = None,
     custom_config: SecurityConfig | None = None,
+    trusted_proxies: list[str] | str | None = None,
 ) -> dict[str, Any]:
     """Set up comprehensive security for FraiseQL applications.
 
@@ -227,6 +238,8 @@ def setup_security(
         api_only: Whether this is an API-only application
         redis_client: Redis client for distributed rate limiting
         custom_config: Custom security configuration
+        trusted_proxies: Proxy addresses or CIDR networks whose X-Forwarded-For the
+            rate limiter believes. Without it, the client IP is the socket peer.
 
     Returns:
         Dictionary of configured middleware instances
@@ -266,6 +279,7 @@ def setup_security(
             trusted_origins=trusted_origins or set(),
             api_only=api_only,
             redis_client=redis_client,
+            trusted_proxies=trusted_proxies,
         )
 
     middleware_instances = {}
@@ -277,6 +291,7 @@ def setup_security(
                 app=app,
                 redis_client=config.redis_client,
                 custom_rules=config.custom_rate_limits,
+                trusted_proxies=config.trusted_proxies,
             )
             middleware_instances["rate_limiting"] = rate_limiting_middleware
         except Exception as e:
@@ -459,8 +474,13 @@ def setup_production_security(
     domain: str,
     trusted_origins: set[str],
     redis_client: Any | None = None,
+    trusted_proxies: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """Set up production security with strict settings."""
+    """Set up production security with strict settings.
+
+    Behind a reverse proxy, pass its addresses as ``trusted_proxies`` (or run
+    uvicorn with ``--forwarded-allow-ips``), or every client shares its rate limit.
+    """
     return setup_security(
         app=app,
         secret_key=secret_key,
@@ -468,16 +488,25 @@ def setup_production_security(
         domain=domain,
         trusted_origins=trusted_origins,
         redis_client=redis_client,
+        trusted_proxies=trusted_proxies,
     )
 
 
 def setup_development_security(
     app: FastAPI,
-    secret_key: str = "dev-secret-key-change-in-production",
+    secret_key: str | None = None,
+    trusted_proxies: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """Set up development security with permissive settings."""
+    """Set up development security with permissive settings.
+
+    Without ``secret_key`` a random key is made for this call, so tokens signed
+    with it don't survive a restart.
+    """
+    if not secret_key:
+        secret_key = secrets.token_urlsafe(32)
     return setup_security(
         app=app,
         secret_key=secret_key,
         environment="development",
+        trusted_proxies=trusted_proxies,
     )

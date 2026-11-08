@@ -14,14 +14,13 @@ A comprehensive example of integrating FraiseQL applications with modern observa
 
 **Prerequisites:**
 
-- `../blog_api/` - Basic GraphQL API patterns
+- `../blog_simple/` - Basic GraphQL API patterns
 - Docker and Docker Compose knowledge
 - Understanding of monitoring concepts
 
 **Next steps:**
 
-- `../enterprise_patterns/` - Production monitoring patterns
-- `../compliance-demo/` - Audit logging and compliance monitoring
+- `../saas-starter/` - A multi-tenant production app
 
 ## Overview
 
@@ -179,7 +178,7 @@ async def get_user(info, id: UUID) -> User | None:
 
     try:
         # Your database logic here
-        user = await db.find_one("v_users", id=id)
+        user = await db.find_one("v_users", mandatory_filters={"id": id})
 
         if user:
             logger.info(

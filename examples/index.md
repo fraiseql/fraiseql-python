@@ -7,7 +7,7 @@ Welcome to the FraiseQL examples collection! This index organizes all 20+ exampl
 **New to FraiseQL? Start here:**
 
 - **[`todo_quickstart.py`](todo_quickstart.py)** - 5-minute introduction to basic GraphQL API
-- **[`blog_api/`](blog_api/README.md)** - Complete content management system with enterprise patterns
+- **[`blog_simple/`](blog_simple/README.md)** - A blog with nested reads and SQL-function mutations
 
 ---
 
@@ -20,7 +20,7 @@ Perfect for learning FraiseQL fundamentals. These examples focus on core concept
 | Example | Description | Key Concepts | Time |
 |---------|-------------|--------------|------|
 | [`todo_quickstart.py`](todo_quickstart.py) | **RECOMMENDED START** - Simple todo app | Basic types, queries, mutations | 5 min |
-| [`blog_api/`](blog_api/README.md) | Content management with enterprise patterns | CQRS, audit trails, mutation results | 15 min |
+| [`blog_simple/`](blog_simple/README.md) | Blog with posts, tags and comments | JSONB views, list arguments, class mutations | 20 min |
 | [`health_check_example.py`](health_check_example.py) | Basic health check endpoints | Simple queries, FastAPI integration | 5 min |
 
 ### 🟡 Intermediate (Build Skills)
@@ -33,8 +33,8 @@ These examples demonstrate real-world patterns and integrations for production a
 | [`apq_multi_tenant/`](apq_multi_tenant/README.md) | Multi-tenant APQ caching | SaaS patterns, performance optimization | 20 min |
 | [`caching_example.py`](caching_example.py) | PostgreSQL-native caching | Performance, Redis alternatives | 15 min |
 | [`security/`](security/README.md) | Authentication & security patterns | JWT, role-based access, validation | 25 min |
-| [`turborouter/`](turborouter/README.md) | Pre-compiled query routing | Performance optimization, query planning | 20 min |
-| [`complex_nested_where_clauses.py`](complex_nested_where_clauses.py) | Advanced query patterns | Complex filtering, nested conditions | 15 min |
+| [`turbo_router_with_complexity.py`](turbo_router_with_complexity.py) | Pre-compiled query routing | Performance optimization, query planning | 20 min |
+| [`nested_array_filtering.py`](nested_array_filtering.py) | Advanced query patterns | Complex filtering, AND/OR/NOT, nested arrays | 15 min |
 
 ### 🟠 Advanced (Production Ready)
 
@@ -42,12 +42,7 @@ Enterprise-grade examples showcasing advanced patterns, scalability, and product
 
 | Example | Description | Key Concepts | Time |
 |---------|-------------|--------------|------|
-| [`enterprise_patterns/`](enterprise_patterns/README.md) | **ALL PATTERNS** - Complete enterprise reference | Audit trails, multi-tenancy, validation layers | 45 min |
-| [`blog_enterprise/`](blog_enterprise/README.md) | Enterprise blog with DDD | Domain-driven design, event sourcing | 40 min |
-| [`complete_cqrs_blog/`](complete_cqrs_blog/README.md) | Full CQRS implementation | Command-query separation, Docker, migrations | 35 min |
 | [`analytics_dashboard/`](analytics_dashboard/README.md) | Business intelligence platform | TimescaleDB, complex analytics, dashboards | 40 min |
-| [`admin-panel/`](admin-panel/README.md) | Administrative interface | CRUD operations, user management | 30 min |
-| [`real_time_chat/`](real_time_chat/README.md) | Real-time messaging system | WebSockets, presence tracking, subscriptions | 45 min |
 | [`saas-starter/`](saas-starter/README.md) | Multi-tenant SaaS foundation | Tenant isolation, billing, user management | 50 min |
 
 ### 🔴 Specialized (Domain Specific)
@@ -57,7 +52,6 @@ Examples for specific use cases and integrations.
 | Example | Description | Key Concepts | Time |
 |---------|-------------|--------------|------|
 | [`native-auth-app/`](native-auth-app/README.md) | Vue.js authentication app | Frontend integration, JWT handling | 25 min |
-| [`hybrid_tables/`](hybrid_tables/README.md) | Hybrid relational/document patterns | Flexible schemas, JSONB usage | 20 min |
 | [`token_revocation_example.py`](token_revocation_example.py) | Advanced auth patterns | Token management, revocation strategies | 15 min |
 | [`turbo_router_with_complexity.py`](turbo_router_with_complexity.py) | Complex routing scenarios | Advanced query optimization | 25 min |
 
@@ -73,9 +67,7 @@ Examples for specific use cases and integrations.
 
 ### 📝 Content Management
 
-- [`blog_api/`](blog_api/README.md) - Enterprise content system
-- [`blog_enterprise/`](blog_enterprise/README.md) - Advanced blogging platform
-- [`complete_cqrs_blog/`](complete_cqrs_blog/README.md) - CQRS blog implementation
+- [`blog_simple/`](blog_simple/README.md) - Blog with posts, tags and comments
 
 ### 🔐 Authentication & Security
 
@@ -87,13 +79,11 @@ Examples for specific use cases and integrations.
 
 - [`apq_multi_tenant/`](apq_multi_tenant/README.md) - Multi-tenant query caching
 - [`caching_example.py`](caching_example.py) - PostgreSQL caching
-- [`turborouter/`](turborouter/README.md) - Query pre-compilation
+- [`turbo_router_with_complexity.py`](turbo_router_with_complexity.py) - Query pre-compilation
 
 ### 🏢 Enterprise Patterns
 
-- [`enterprise_patterns/`](enterprise_patterns/README.md) - All enterprise patterns
-- [`admin-panel/`](admin-panel/README.md) - Administrative interfaces
-- [`real_time_chat/`](real_time_chat/README.md) - Real-time applications
+- [`saas-starter/`](saas-starter/README.md) - Multi-tenant scoping, usage tracking, activity log
 
 ---
 
@@ -102,13 +92,13 @@ Examples for specific use cases and integrations.
 ### 🚀 Complete Beginner Path
 
 1. **[`todo_quickstart.py`](todo_quickstart.py)** - Learn the basics (5 min)
-2. **[`blog_api/`](blog_api/README.md)** - Build a real application (15 min)
+2. **[`blog_simple/`](blog_simple/README.md)** - Build a real application (20 min)
 3. **[`ecommerce/`](ecommerce/README.md)** - Add complexity (30 min)
-4. **[`enterprise_patterns/`](enterprise_patterns/README.md)** - Master advanced patterns (45 min)
+4. **[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns (30 min)
 
 ### 🏢 Production Developer Path
 
-1. **[`blog_api/`](blog_api/README.md)** - Enterprise patterns foundation
+1. **[`blog_simple/`](blog_simple/README.md)** - Views, queries and mutations end to end
 2. **[`apq_multi_tenant/`](apq_multi_tenant/README.md)** - Performance optimization
 3. **[`security/`](security/README.md)** - Security implementation
 4. **[`saas-starter/`](saas-starter/README.md)** - Scalable architecture
@@ -116,16 +106,14 @@ Examples for specific use cases and integrations.
 ### 🔧 Performance Specialist Path
 
 1. **[`caching_example.py`](caching_example.py)** - Caching fundamentals
-2. **[`turborouter/`](turborouter/README.md)** - Query optimization
+2. **[`turbo_router_with_complexity.py`](turbo_router_with_complexity.py)** - Query optimization
 3. **[`apq_multi_tenant/`](apq_multi_tenant/README.md)** - Advanced caching
 4. **[`analytics_dashboard/`](analytics_dashboard/README.md)** - High-performance analytics
 
 ### 🏗️ Enterprise Architect Path
 
-1. **[`enterprise_patterns/`](enterprise_patterns/README.md)** - All enterprise patterns
-2. **[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
-3. **[`complete_cqrs_blog/`](complete_cqrs_blog/README.md)** - CQRS implementation
-4. **[`real_time_chat/`](real_time_chat/README.md)** - Event-driven architecture
+1. **[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
+2. **[`blog_simple/`](blog_simple/README.md)** - CQRS: views for reads, functions for writes
 
 ---
 

@@ -120,8 +120,8 @@ def test_production_mode_validation_error_with_unset(clear_registry, monkeypatch
     from unittest.mock import MagicMock
 
     # Mock the database pool to avoid actual database connection
-    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db_pool", lambda: MagicMock())
-    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db", lambda: MagicMock())
+    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db_pool", MagicMock)
+    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db", MagicMock)
 
     config = FraiseQLConfig(
         database_url="postgresql://test/test",
@@ -181,8 +181,8 @@ def test_production_mode_with_detailed_errors(clear_registry, monkeypatch) -> No
     from unittest.mock import MagicMock
 
     # Mock the database pool to avoid actual database connection
-    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db_pool", lambda: MagicMock())
-    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db", lambda: MagicMock())
+    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db_pool", MagicMock)
+    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db", MagicMock)
 
     # Custom config that shows error details in production
     config = FraiseQLConfig(

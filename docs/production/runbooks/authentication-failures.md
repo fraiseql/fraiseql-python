@@ -1,6 +1,6 @@
 # Authentication Failures Runbook
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-10-25
 **Severity**: HIGH
 **MTTR Target**: 15 minutes
 
@@ -24,78 +24,55 @@ This runbook guides you through diagnosing and resolving authentication failures
 
 ### Prometheus Metrics to Monitor
 
+FraiseQL has no authentication metric. With the metrics middleware installed
+(`setup_metrics(app)`, see [Metrics](./README.md#metrics-quick-reference)), a
+request rejected for a missing or invalid token is counted with status `401`:
+
 ```promql
-# Authentication failure rate
-rate(fraiseql_auth_failures_total[5m])
+# Rejected requests per second
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 
-# Failed logins by reason
-sum by (failure_reason) (
-  rate(fraiseql_auth_failures_total[5m])
-)
+# Percentage of requests rejected
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
+  / sum(rate(fraiseql_http_requests_total[5m])) * 100
 
-# Percentage of failed auth requests
-(rate(fraiseql_auth_failures_total[5m])
-/ rate(fraiseql_http_requests_total[5m])) * 100
-
-# Failed attempts by user (brute force indicator)
-topk(10,
-  sum by (user_id) (fraiseql_auth_failures_total)
-)
+# 403s (permission checks that answer with HTTP 403)
+sum(rate(fraiseql_http_requests_total{status="403"}[5m]))
 ```
 
-### Structured Logs Examples
+The metric has no user, IP or reason label; use the logs for those.
+
+### Log Entries
+
+`Auth0Provider` logs each token it rejects on the `fraiseql.security` logger at
+`WARNING`, as a JSON security event:
 
 ```json
 {
-  "timestamp": "2025-12-29T14:20:35.123Z",
-  "level": "WARNING",
-  "event": "security.auth_failure",
-  "message": "Authentication failed - invalid token",
-  "context": {
-    "user_id": null,
-    "ip_address": "198.51.100.75",
-    "failure_reason": "invalid_token",
-    "token_prefix": "eyJhbG...",
-    "endpoint": "/graphql",
-    "user_agent": "Mozilla/5.0"
-  },
-  "trace_id": "trace_auth123"
+  "event_type": "auth.token_expired",
+  "severity": "warning",
+  "timestamp": "2026-10-25T14:22:05.789012+00:00",
+  "user_id": null,
+  "user_email": null,
+  "ip_address": null,
+  "user_agent": null,
+  "request_id": null,
+  "resource": null,
+  "action": null,
+  "result": null,
+  "reason": "Token has expired",
+  "metadata": {}
 }
 ```
 
-```json
-{
-  "timestamp": "2025-12-29T14:21:10.456Z",
-  "level": "ERROR",
-  "event": "security.brute_force_detected",
-  "message": "Possible brute force attack detected",
-  "context": {
-    "user_id": "user_target",
-    "ip_address": "203.0.113.88",
-    "failed_attempts": 15,
-    "time_window_seconds": 300,
-    "action": "account_locked"
-  },
-  "trace_id": "trace_brute456"
-}
-```
+The other event types are `auth.token_invalid` (`reason` is `"Invalid token: ..."`,
+e.g. a bad signature, audience or issuer), `auth.failure` (any other validation
+error; `metadata.error_type` names it) and `auth.success` (`user_id` is the token's
+`sub`). The events have no IP address. A provider of your own logs only what it
+logs itself.
 
-```json
-{
-  "timestamp": "2025-12-29T14:22:05.789Z",
-  "level": "WARNING",
-  "event": "security.token_expired",
-  "message": "Token expired",
-  "context": {
-    "user_id": "user_123",
-    "ip_address": "192.0.2.100",
-    "token_issued_at": "2025-12-29T12:22:05Z",
-    "token_expires_at": "2025-12-29T14:22:05Z",
-    "current_time": "2025-12-29T14:22:05Z"
-  },
-  "trace_id": "trace_expired789"
-}
-```
+With an auth provider, a GraphQL request without a valid token gets a 401
+`{"detail": "Authentication required"}`.
 
 ---
 
@@ -103,74 +80,45 @@ topk(10,
 
 ### Step 1: Classify Authentication Failures
 
-**Via Prometheus - Failure Reasons**:
-
-```promql
-# Group failures by reason
-sum by (failure_reason) (
-  rate(fraiseql_auth_failures_total[5m])
-)
-```
-
-**Via Structured Logs**:
-
-```bash
-# Count failures by reason
-jq -r 'select(.event == "security.auth_failure") |
-  .context.failure_reason' \
-  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn
-
-# Example output:
-#  450 invalid_token
-#  120 token_expired
-#   45 missing_token
-#   30 invalid_signature
-#   15 user_not_found
-```
-
-**Common Failure Reasons**:
-
-- `invalid_token`: Malformed or tampered token
-- `token_expired`: Valid token but expired
-- `invalid_signature`: Token signature mismatch
-- `missing_token`: No auth header provided
-- `user_not_found`: Valid token but user doesn't exist
-- `user_disabled`: User account disabled
-- `insufficient_permissions`: Valid auth but lacks permissions (403)
-
-### Step 2: Identify Affected Users
-
 **Via Prometheus**:
 
 ```promql
-# Top users with auth failures
-topk(10,
-  sum by (user_id) (fraiseql_auth_failures_total)
-)
-
-# Failures by IP address
-topk(10,
-  sum by (ip_address) (fraiseql_auth_failures_total)
-)
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 ```
 
-**Via Structured Logs**:
+**Via the security log** (`security_events.log`, or wherever your handler writes
+the `fraiseql.security` logger):
 
 ```bash
-# Failures by user
-jq -r 'select(.event == "security.auth_failure") |
-  .context.user_id // "anonymous"' \
-  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn | head -20
+# Count rejections by event type
+grep -o '"event_type": "auth\.[a-z_]*"' security_events.log | sort | uniq -c | sort -rn
 
-# Failures by IP
-jq -r 'select(.event == "security.auth_failure") |
-  .context.ip_address' \
-  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn | head -20
+# Example output:
+#  450 "event_type": "auth.token_invalid"
+#  120 "event_type": "auth.token_expired"
+#   12 "event_type": "auth.failure"
 
-# Failures timeline
-jq -r 'select(.event == "security.auth_failure") |
-  "\(.timestamp) \(.context.failure_reason) \(.context.user_id // "anon")"' \
-  /var/log/fraiseql/app.log | tail -50
+# Reasons of the invalid tokens
+grep '"auth.token_invalid"' security_events.log | grep -o '"reason": "[^"]*"' \
+  | sort | uniq -c | sort -rn
+```
+
+**Common causes, by event**:
+
+- `auth.token_expired`: a valid token past its `exp`
+- `auth.token_invalid`: bad signature, wrong audience or issuer, malformed token
+- `auth.failure`: the JWKS couldn't be fetched, or another validation error
+- no event, but a 401: the request had no `Authorization: Bearer` header
+- 403: authenticated, but a permission or role check refused it
+
+### Step 2: Identify Affected Clients
+
+The security events have no client address. Find the clients in your access logs
+(reverse proxy, load balancer, or uvicorn's access log), which have the status:
+
+```bash
+# uvicorn access log: client addresses of the 401s
+grep '" 401' access.log | awk '{print $1}' | sort | uniq -c | sort -rn | head -20
 ```
 
 ### Step 3: Determine Root Cause Category
@@ -179,7 +127,7 @@ jq -r 'select(.event == "security.auth_failure") |
 
 **Symptoms**:
 
-- Many `token_expired` failures
+- Many `auth.token_expired` events
 - Concentrated around specific time period
 - Affects multiple users simultaneously
 
@@ -187,11 +135,11 @@ jq -r 'select(.event == "security.auth_failure") |
 
 ```bash
 # Count expired tokens
-jq -r 'select(.event == "security.token_expired")' \
-  /var/log/fraiseql/app.log | wc -l
+grep -c '"auth.token_expired"' security_events.log
 
-# Check token lifetime configuration
-echo $FRAISEQL_TOKEN_LIFETIME_SECONDS
+# Lifetime of a failing token, in seconds (exp - iat); the issuer sets it,
+# fraiseql only checks exp
+echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq '.exp - .iat'
 ```
 
 **Likely Causes**:
@@ -204,15 +152,16 @@ echo $FRAISEQL_TOKEN_LIFETIME_SECONDS
 
 **Symptoms**:
 
-- Many `invalid_signature` failures
+- Many `auth.token_invalid` events with `"reason": "Invalid token: Signature verification failed"`
 - Started after deployment or config change
 - All tokens failing validation
 
 **Check**:
 
 ```bash
-# Check JWT signing key
-echo $FRAISEQL_JWT_SECRET | wc -c  # Should be 32+ characters
+# Check the signing secret your auth provider validates with (here JWT_SECRET,
+# the variable the provider below reads; fraiseql reads none itself)
+echo $JWT_SECRET | wc -c  # Should be 32+ characters
 
 # Check if key changed recently
 git log --since="24 hours ago" --grep="JWT_SECRET" --oneline
@@ -237,15 +186,13 @@ git log --since="24 hours ago" --grep="JWT_SECRET" --oneline
 
 **Check**:
 
-```bash
-# Detect brute force patterns
-jq -r 'select(.event == "security.auth_failure") |
-  .context.ip_address + " " + (.context.user_id // "anon") + " " + .timestamp' \
-  /var/log/fraiseql/app.log | \
-  sort | uniq | \
-  cut -d' ' -f1 | uniq -c | sort -rn | head -10
+fraiseql never sees passwords (your identity provider checks them), so a
+credential attack shows at the provider (Auth0 logs, anomaly detection). Against
+the API, it shows as many 401s from few clients:
 
-# High count from single IP = brute force
+```bash
+# 401s per client address in the access log; a high count from one address
+grep '" 401' access.log | awk '{print $1}' | sort | uniq -c | sort -rn | head -10
 ```
 
 **Likely Causes**:
@@ -288,64 +235,28 @@ psql -c "SELECT 1" postgresql://localhost/fraiseql
 
 ### For Token Expiration Issues (5-10 minutes)
 
+fraiseql validates tokens through the provider passed as `create_fraiseql_app(auth=...)`;
+it doesn't issue them. Token lifetimes and the refresh flow belong to the issuer:
+with Auth0 (`auth=Auth0Config(...)`), set the API's token expiration in the Auth0
+dashboard; with your own issuer, in its configuration.
+
 #### 1. Increase Token Lifetime (If Too Short)
 
-```python
-# config/auth.py
-TOKEN_LIFETIME_SECONDS = 3600  # Increase from 900 (15 min) to 3600 (1 hour)
-REFRESH_TOKEN_LIFETIME_SECONDS = 86400  # 24 hours
-```
+Raise the access token lifetime at the issuer (e.g. Auth0 > APIs > your API >
+Token Expiration), then have clients log in again. Existing tokens keep their old
+`exp`.
 
-**Environment Variable**:
+#### 2. Make Sure Clients Refresh Tokens
 
-```bash
-export FRAISEQL_TOKEN_LIFETIME_SECONDS=3600
-export FRAISEQL_REFRESH_TOKEN_LIFETIME_SECONDS=86400
+The issuer's refresh endpoint (Auth0: `POST https://<domain>/oauth/token` with
+`grant_type=refresh_token`) returns a new access token; the client should call it
+before `exp`, or on a 401, and retry with the new token.
 
-# Restart application
-systemctl restart fraiseql
-```
+#### 3. Allow a Little Clock Skew
 
-#### 2. Implement Token Refresh Endpoint
-
-```python
-from fraiseql import FraiseQL
-from fraiseql.auth import create_access_token, verify_refresh_token
-
-app = FraiseQL()
-
-@app.post("/auth/refresh")
-async def refresh_token(refresh_token: str):
-    # Verify refresh token
-    payload = verify_refresh_token(refresh_token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
-
-    # Issue new access token
-    new_access_token = create_access_token(
-        user_id=payload["user_id"],
-        expires_in=3600,
-    )
-
-    return {
-        "access_token": new_access_token,
-        "token_type": "bearer",
-        "expires_in": 3600,
-    }
-```
-
-#### 3. Implement Grace Period for Token Expiry
-
-```python
-from fraiseql.auth import TokenValidator
-
-# Allow recently expired tokens (within 5 minutes)
-validator = TokenValidator(
-    grace_period_seconds=300,  # 5 minutes
-)
-
-# Tokens expired < 5 min ago still valid
-```
+A provider of your own can accept tokens that expired a few seconds to minutes ago
+with PyJWT's `leeway` (the provider below takes `leeway_seconds`). Keep it small:
+it extends every token's life.
 
 ### For Token Signature Issues (10-15 minutes)
 
@@ -353,10 +264,10 @@ validator = TokenValidator(
 
 ```bash
 # Check current secret (all instances must match!)
-echo $FRAISEQL_JWT_SECRET
+echo $JWT_SECRET
 
 # Update secret if needed (COORDINATED ROLLOUT REQUIRED)
-export FRAISEQL_JWT_SECRET="new-secret-key-at-least-32-chars-long"
+export JWT_SECRET="new-secret-key-at-least-32-chars-long"
 
 # Restart all instances simultaneously
 kubectl rollout restart deployment fraiseql
@@ -364,43 +275,78 @@ kubectl rollout restart deployment fraiseql
 
 #### 2. Implement Key Rotation with Grace Period
 
+With Auth0, signing keys rotate through the tenant's JWKS, which `Auth0Provider`
+fetches, so there's nothing to do in fraiseql. A provider of your own that checks
+an HS256 secret can accept the previous secret while tokens signed with it are
+still alive:
+
 ```python
-from fraiseql.auth import JWTManager
+import os
 
-# Support multiple keys during rotation
-jwt_manager = JWTManager(
-    primary_secret=os.getenv("FRAISEQL_JWT_SECRET"),
-    fallback_secrets=[
-        os.getenv("FRAISEQL_JWT_SECRET_OLD"),  # Accept old key during transition
-    ],
-    grace_period_hours=24,  # Accept old keys for 24 hours
+import jwt
+
+from fraiseql.auth import AuthProvider, UserContext
+from fraiseql.auth.base import AuthenticationError
+from fraiseql.fastapi import create_fraiseql_app
+
+
+class RotatingJWTProvider(AuthProvider):
+    """Validate HS256 tokens signed with the current or the previous secret."""
+
+    def __init__(self, secrets: list[str], leeway_seconds: int = 0) -> None:
+        self.secrets = [secret for secret in secrets if secret]
+        self.leeway_seconds = leeway_seconds
+
+    async def validate_token(self, token: str) -> dict:
+        for secret in self.secrets:
+            try:
+                return jwt.decode(
+                    token, secret, algorithms=["HS256"], leeway=self.leeway_seconds
+                )
+            except jwt.InvalidSignatureError:
+                continue  # Try the next secret
+            except jwt.InvalidTokenError as e:
+                raise AuthenticationError(str(e)) from e
+        raise AuthenticationError("Invalid token signature")
+
+    async def get_user_from_token(self, token: str) -> UserContext:
+        payload = await self.validate_token(token)
+        return UserContext(
+            user_id=payload["sub"],
+            roles=payload.get("roles", []),
+            permissions=payload.get("permissions", []),
+        )
+
+
+auth_provider = RotatingJWTProvider(
+    secrets=[os.environ["JWT_SECRET"], os.environ.get("JWT_SECRET_OLD", "")],
+    leeway_seconds=30,
 )
-
-# Sign with primary key
-token = jwt_manager.encode(payload)
-
-# Verify with primary OR fallback keys
-payload = jwt_manager.decode(token)
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[me],
+    auth=auth_provider,
+)
 ```
+
+With an auth provider, a request whose token fails validation (or that has none)
+gets a 401 `{"detail": "Authentication required"}`.
 
 **Rotation Process**:
 
 ```bash
-# Step 1: Add new key as fallback (no restart needed)
-export FRAISEQL_JWT_SECRET_NEW="new-key-here"
-
-# Step 2: Wait 24 hours (all old tokens expire)
-
-# Step 3: Promote new key to primary
-export FRAISEQL_JWT_SECRET="$FRAISEQL_JWT_SECRET_NEW"
-export FRAISEQL_JWT_SECRET_OLD="$FRAISEQL_JWT_SECRET"
-unset FRAISEQL_JWT_SECRET_NEW
-
-# Step 4: Restart application
+# Step 1: Keep the current key as the old one, sign new tokens with the new key
+export JWT_SECRET_OLD="$JWT_SECRET"
+export JWT_SECRET="new-key-here"
 kubectl rollout restart deployment fraiseql
 
-# Step 5: Wait 24 hours, remove old key
-unset FRAISEQL_JWT_SECRET_OLD
+# Step 2: Switch the issuer to the new key; wait until every token signed with the
+# old key has expired (the longest token lifetime)
+
+# Step 3: Remove the old key
+unset JWT_SECRET_OLD
+kubectl rollout restart deployment fraiseql
 ```
 
 #### 3. Fix Clock Skew (If Present)
@@ -420,60 +366,39 @@ sudo systemctl start ntpd
 
 ### For Brute Force Attacks (5 minutes)
 
+fraiseql has no block list, account lockout or CAPTCHA: credentials are checked by
+your identity provider (Auth0 has brute-force protection and bot detection settings
+for this), and fraiseql only sees tokens.
+
 #### 1. Block Attacking IPs
 
-```python
-from fraiseql.security import BlockList
-
-# Block IP immediately
-await BlockList.add_ip(
-    ip_address="203.0.113.88",
-    duration_seconds=86400,  # 24 hours
-    reason="Brute force attack detected"
-)
-```
-
-**Via Firewall**:
-
 ```bash
-# Block at firewall level (more efficient)
+# Block at firewall level
 sudo iptables -A INPUT -s 203.0.113.88 -j DROP
 
 # Or use cloud provider firewall
 # AWS Security Group, GCP Firewall Rule, etc.
 ```
 
-#### 2. Enable Account Lockout
+#### 2. Rate Limit Authentication Endpoints
+
+If the login endpoints are served by this app, limit them per client with
+`RateLimitMiddleware` (5 requests every 5 minutes on `/auth/*` with the defaults of
+`setup_rate_limiting`; see [Rate Limiting](./rate-limiting-triggered.md)):
 
 ```python
-from fraiseql.auth import AccountLockout
+from fraiseql.security import RateLimit, RateLimitRule, setup_rate_limiting
 
-# Lock account after 5 failed attempts
-lockout = AccountLockout(
-    max_attempts=5,
-    lockout_duration_seconds=1800,  # 30 minutes
-    window_seconds=300,  # 5-minute window
+setup_rate_limiting(
+    app,
+    custom_rules=[
+        RateLimitRule(
+            path_pattern="/auth/*",
+            rate_limit=RateLimit(requests=5, window=300),
+            message="Too many login attempts",
+        ),
+    ],
 )
-
-app.add_plugin(lockout)
-
-# Locked accounts require admin unlock or automatic expiry
-```
-
-#### 3. Implement CAPTCHA for Failed Attempts
-
-```python
-from fraiseql.security import CaptchaChallenge
-
-# Require CAPTCHA after 3 failed attempts
-captcha = CaptchaChallenge(
-    trigger_after_failures=3,
-    captcha_provider="recaptcha",
-    site_key=os.getenv("RECAPTCHA_SITE_KEY"),
-    secret_key=os.getenv("RECAPTCHA_SECRET_KEY"),
-)
-
-app.add_plugin(captcha)
 ```
 
 ### For Service Degradation (15 minutes)
@@ -496,66 +421,23 @@ curl -s https://oauth.provider.com/.well-known/openid-configuration
 # Check database connectivity
 psql -c "SELECT 1" $DATABASE_URL
 
-# Check connection pool
-curl -s http://localhost:8000/health/detailed | jq .database
+# Check that the app reaches the database (503 with the failing check if not)
+curl -s http://localhost:8000/ready | jq .checks
 ```
 
-**Cache/Redis Health**:
+**Cache/Redis Health** (if the app uses Redis, e.g. for rate limit counters):
 
 ```bash
 # Check Redis connectivity
 redis-cli ping
-
-# Check cache stats
-curl -s http://localhost:8000/health/detailed | jq .cache
 ```
 
-#### 2. Implement Fallback Authentication
+#### 2. Ride Out an Identity Provider Outage
 
-```python
-from fraiseql.auth import AuthManager
-
-# Fallback to local auth if OAuth unavailable
-auth_manager = AuthManager(
-    primary_provider="oauth",
-    fallback_provider="local",
-    fallback_timeout_seconds=5,
-)
-
-@app.post("/auth/login")
-async def login(credentials):
-    try:
-        # Try OAuth first
-        return await auth_manager.authenticate(
-            credentials,
-            provider="oauth",
-            timeout=5,
-        )
-    except TimeoutError:
-        # Fallback to local auth
-        return await auth_manager.authenticate(
-            credentials,
-            provider="local",
-        )
-```
-
-#### 3. Implement Circuit Breaker
-
-```python
-from fraiseql.resilience import CircuitBreaker
-
-# Prevent cascading failures
-oauth_circuit = CircuitBreaker(
-    failure_threshold=5,     # Open after 5 failures
-    timeout_seconds=60,      # Stay open for 60 seconds
-    expected_exception=ConnectionError,
-)
-
-@oauth_circuit.protected
-async def oauth_authenticate(token):
-    # This will fail fast if circuit is open
-    return await oauth_provider.validate(token)
-```
+fraiseql has no fallback authentication or circuit breaker. `Auth0Provider` caches
+the JWKS signing keys it has fetched (`cache_jwks=True`, the default; the key set for
+an hour), so validating tokens already issued keeps working through a short Auth0
+outage. New logins wait for the provider to recover.
 
 ---
 
@@ -569,88 +451,48 @@ groups:
   - name: authentication
     interval: 30s
     rules:
-      - alert: HighAuthFailureRate
+      - alert: HighAuthRejectionRate
         expr: |
-          rate(fraiseql_auth_failures_total[5m]) > 5
+          sum(rate(fraiseql_http_requests_total{status="401"}[5m])) > 5
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High authentication failure rate"
-          description: "{{ $value }} auth failures/sec"
+          summary: "High rate of rejected (401) requests"
+          description: "{{ $value }} rejections/sec"
 
-      - alert: AuthenticationServiceDown
+      - alert: MostRequestsRejected
         expr: |
-          (rate(fraiseql_auth_failures_total[5m])
-          / rate(fraiseql_http_requests_total[5m])) > 0.5
+          sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
+          / sum(rate(fraiseql_http_requests_total[5m])) > 0.5
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "50%+ of auth requests failing"
-          description: "Possible auth service outage"
-
-      - alert: BruteForceDetected
-        expr: |
-          sum by (ip_address) (
-            rate(fraiseql_auth_failures_total[5m])
-          ) > 10
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Brute force attack from {{ $labels.ip_address }}"
-          description: "{{ $value }} failed attempts/sec"
-
-      - alert: MassAccountLockout
-        expr: |
-          rate(fraiseql_account_lockouts_total[5m]) > 5
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Multiple accounts being locked"
-          description: "{{ $value }} accounts locked/sec - possible attack"
+          summary: "50%+ of requests rejected with 401"
+          description: "Possible identity provider outage or signing key mismatch"
 ```
+
+Alerts per client address or per reason need your log stack (Loki, ELK): count the
+`auth.*` security events, and the 401s of the access log by client.
 
 ### Grafana Dashboard Panels
 
-**1. Authentication Failure Rate**:
+**1. Rejected Requests**:
 
 ```promql
-rate(fraiseql_auth_failures_total[5m])
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 ```
 
-**2. Failures by Reason**:
+**2. Percentage of Requests Rejected**:
 
 ```promql
-sum by (failure_reason) (
-  rate(fraiseql_auth_failures_total[5m])
-)
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
+  / sum(rate(fraiseql_http_requests_total[5m])) * 100
 ```
 
-**3. Top Failing Users**:
-
-```promql
-topk(10,
-  sum by (user_id) (fraiseql_auth_failures_total)
-)
-```
-
-**4. Top Failing IPs**:
-
-```promql
-topk(10,
-  sum by (ip_address) (fraiseql_auth_failures_total)
-)
-```
-
-**5. Auth Success Rate**:
-
-```promql
-(rate(fraiseql_auth_success_total[5m])
-/ (rate(fraiseql_auth_success_total[5m]) + rate(fraiseql_auth_failures_total[5m]))) * 100
-```
+**3. Rejections by Event Type** (log panel): the `fraiseql.security` events whose
+`event_type` starts with `auth.`, grouped by `event_type`.
 
 ---
 
@@ -661,42 +503,30 @@ After applying fixes, verify authentication is working:
 ### 1. Check Metrics
 
 ```promql
-# Failure rate should decrease
-rate(fraiseql_auth_failures_total[5m])
-
-# Success rate should increase
-rate(fraiseql_auth_success_total[5m])
+# Should decrease
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 ```
 
 ### 2. Test Authentication
 
 ```bash
-# Test login
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "test", "password": "test123"}'
-
-# Should return token
-# {"access_token": "eyJ...", "token_type": "bearer"}
-
-# Test authenticated request
-curl http://localhost:8000/graphql \
+# A token from your identity provider
+curl -i http://localhost:8000/graphql \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"query": "{ users { id } }"}'
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ __typename }"}'
 
-# Should return 200 OK
+# Should return 200, not 401
 ```
 
 ### 3. Check Logs
 
 ```bash
-# Verify successful authentications
-jq -r 'select(.event == "security.auth_success")' \
-  /var/log/fraiseql/app.log | tail -10
+# Successful validations (Auth0Provider)
+grep '"auth.success"' security_events.log | tail -10
 
-# Verify no ongoing failures
-jq -r 'select(.event == "security.auth_failure")' \
-  /var/log/fraiseql/app.log | tail -10
+# No ongoing rejections
+grep -E '"auth\.(failure|token_expired|token_invalid)"' security_events.log | tail -10
 ```
 
 ---
@@ -732,7 +562,7 @@ After resolving the incident:
 
 ## 📚 Related Resources
 
-- [Authentication Configuration](../security.md#authentication)
+- [Authentication Configuration](../security.md#authentication-security)
 - [Rate Limiting](./rate-limiting-triggered.md)
 - [Security Hardening](../security.md)
 

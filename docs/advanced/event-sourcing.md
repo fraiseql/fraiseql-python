@@ -143,6 +143,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from psycopg.rows import dict_row
+
 @dataclass
 class EntityChange:
     """Entity change event."""
@@ -163,6 +165,7 @@ class EntityChangeLogRepository:
     """Repository for entity change logs."""
 
     def __init__(self, db_pool):
+        # A psycopg AsyncConnectionPool, e.g. fraiseql.fastapi.dependencies.get_db_pool()
         self.db = db_pool
 
     async def get_entity_history(
@@ -173,12 +176,12 @@ class EntityChangeLogRepository:
     ) -> list[EntityChange]:
         """Get complete history for an entity."""
         async with self.db.connection() as conn:
-            result = await conn.execute("""
+            result = await conn.cursor(row_factory=dict_row).execute("""
                 SELECT * FROM audit.entity_change_log
-                WHERE entity_type = $1 AND entity_id = $2
+                WHERE entity_type = %s AND entity_id = %s
                 ORDER BY changed_at DESC
-                LIMIT $3
-            """, entity_type, entity_id, limit)
+                LIMIT %s
+            """, (entity_type, entity_id, limit))
 
             return [
                 EntityChange(**row)
@@ -192,12 +195,12 @@ class EntityChangeLogRepository:
     ) -> list[EntityChange]:
         """Get all changes made by a user."""
         async with self.db.connection() as conn:
-            result = await conn.execute("""
+            result = await conn.cursor(row_factory=dict_row).execute("""
                 SELECT * FROM audit.entity_change_log
-                WHERE changed_by = $1
+                WHERE changed_by = %s
                 ORDER BY changed_at DESC
-                LIMIT $2
-            """, user_id, limit)
+                LIMIT %s
+            """, (user_id, limit))
 
             return [EntityChange(**row) for row in await result.fetchall()]
 
@@ -207,11 +210,11 @@ class EntityChangeLogRepository:
     ) -> list[EntityChange]:
         """Get all changes in a transaction."""
         async with self.db.connection() as conn:
-            result = await conn.execute("""
+            result = await conn.cursor(row_factory=dict_row).execute("""
                 SELECT * FROM audit.entity_change_log
-                WHERE transaction_id = $1
+                WHERE transaction_id = %s
                 ORDER BY id
-            """, transaction_id)
+            """, (transaction_id,))
 
             return [EntityChange(**row) for row in await result.fetchall()]
 
@@ -223,16 +226,16 @@ class EntityChangeLogRepository:
     ) -> dict[str, Any] | None:
         """Get entity state at specific point in time."""
         async with self.db.connection() as conn:
-            result = await conn.execute("""
+            result = await conn.cursor(row_factory=dict_row).execute("""
                 SELECT after_snapshot
                 FROM audit.entity_change_log
-                WHERE entity_type = $1
-                  AND entity_id = $2
-                  AND changed_at <= $3
+                WHERE entity_type = %s
+                  AND entity_id = %s
+                  AND changed_at <= %s
                   AND operation != 'DELETE'
                 ORDER BY changed_at DESC
                 LIMIT 1
-            """, entity_type, entity_id, at_time)
+            """, (entity_type, entity_id, at_time))
 
             row = await result.fetchone()
             return row["after_snapshot"] if row else None
@@ -246,8 +249,9 @@ Debezium-style change data capture:
 
 ```python
 import fraiseql
+from fraiseql.fastapi.dependencies import get_db_pool
 
-@fraiseql.type_
+@fraiseql.type
 class EntityChange:
     id: int
     entity_type: str
@@ -258,6 +262,9 @@ class EntityChange:
     before_snapshot: dict | None
     after_snapshot: dict | None
     changed_fields: dict | None
+    metadata: dict | None
+    transaction_id: int
+    correlation_id: str | None
 
 @fraiseql.query
 async def get_order_history(info, order_id: str) -> list[EntityChange]:
@@ -285,6 +292,10 @@ Rebuild entity state from event log:
 ```python
 from datetime import datetime
 from decimal import Decimal
+
+from psycopg.rows import dict_row
+
+from fraiseql.fastapi.dependencies import get_db_pool
 from fraiseql.types import ID
 
 class OrderEventReplayer:
@@ -303,17 +314,17 @@ class OrderEventReplayer:
                 SELECT operation, after_snapshot, changed_at
                 FROM audit.entity_change_log
                 WHERE entity_type = 'orders.orders'
-                  AND entity_id = $1
+                  AND entity_id = %s
             """
             params = [entity_id]
 
             if up_to_time:
-                query += " AND changed_at <= $2"
+                query += " AND changed_at <= %s"
                 params.append(up_to_time)
 
             query += " ORDER BY changed_at ASC"
 
-            result = await conn.execute(query, *params)
+            result = await conn.cursor(row_factory=dict_row).execute(query, params)
             events = await result.fetchall()
 
         if not events:
@@ -351,12 +362,12 @@ class OrderEventReplayer:
         # Rebuild order items from their change logs
         items_repo = EntityChangeLogRepository(get_db_pool())
         async with items_repo.db.connection() as conn:
-            result = await conn.execute("""
+            result = await conn.cursor(row_factory=dict_row).execute("""
                 SELECT DISTINCT entity_id
                 FROM audit.entity_change_log
                 WHERE entity_type = 'orders.order_items'
-                  AND (after_snapshot->>'order_id')::UUID = $1
-            """, entity_id)
+                  AND (after_snapshot->>'order_id')::UUID = %s
+            """, (entity_id,))
 
             item_ids = [row["entity_id"] for row in await result.fetchall()]
 
@@ -373,7 +384,10 @@ class OrderEventReplayer:
 Query entity state at any point in time:
 
 ```python
+from psycopg.rows import dict_row
+
 import fraiseql
+from fraiseql.fastapi.dependencies import get_db_pool
 
 @fraiseql.query
 async def get_order_timeline(
@@ -386,7 +400,7 @@ async def get_order_timeline(
     repo = EntityChangeLogRepository(get_db_pool())
 
     async with repo.db.connection() as conn:
-        result = await conn.execute("""
+        result = await conn.cursor(row_factory=dict_row).execute("""
             SELECT
                 changed_at,
                 operation,
@@ -394,10 +408,10 @@ async def get_order_timeline(
                 changed_by
             FROM audit.entity_change_log
             WHERE entity_type = 'orders.orders'
-              AND entity_id = $1
-              AND changed_at BETWEEN $2 AND $3
+              AND entity_id = %s
+              AND changed_at BETWEEN %s AND %s
             ORDER BY changed_at ASC
-        """, order_id, from_time, to_time)
+        """, (order_id, from_time, to_time))
 
         return [dict(row) for row in await result.fetchall()]
 
@@ -436,9 +450,12 @@ async def compare_states(
 ### Complete Audit Dashboard
 
 ```python
-import fraiseql
+from psycopg.rows import dict_row
 
-@fraiseql.type_
+import fraiseql
+from fraiseql.fastapi.dependencies import get_db_pool
+
+@fraiseql.type
 class AuditSummary:
     total_changes: int
     changes_by_operation: dict[str, int]
@@ -454,51 +471,52 @@ async def get_audit_summary(
     to_time: datetime | None = None
 ) -> AuditSummary:
     """Get comprehensive audit summary."""
+    filters = {"entity_type": entity_type, "from_time": from_time, "to_time": to_time}
     async with get_db_pool().connection() as conn:
         # Total changes
-        result = await conn.execute("""
+        result = await conn.cursor(row_factory=dict_row).execute("""
             SELECT COUNT(*) as total
             FROM audit.entity_change_log
-            WHERE ($1::TEXT IS NULL OR entity_type = $1)
-              AND ($2::TIMESTAMPTZ IS NULL OR changed_at >= $2)
-              AND ($3::TIMESTAMPTZ IS NULL OR changed_at <= $3)
-        """, entity_type, from_time, to_time)
+            WHERE (%(entity_type)s::TEXT IS NULL OR entity_type = %(entity_type)s)
+              AND (%(from_time)s::TIMESTAMPTZ IS NULL OR changed_at >= %(from_time)s)
+              AND (%(to_time)s::TIMESTAMPTZ IS NULL OR changed_at <= %(to_time)s)
+        """, filters)
         total = (await result.fetchone())["total"]
 
         # By operation
-        result = await conn.execute("""
+        result = await conn.cursor(row_factory=dict_row).execute("""
             SELECT operation, COUNT(*) as count
             FROM audit.entity_change_log
-            WHERE ($1::TEXT IS NULL OR entity_type = $1)
-              AND ($2::TIMESTAMPTZ IS NULL OR changed_at >= $2)
-              AND ($3::TIMESTAMPTZ IS NULL OR changed_at <= $3)
+            WHERE (%(entity_type)s::TEXT IS NULL OR entity_type = %(entity_type)s)
+              AND (%(from_time)s::TIMESTAMPTZ IS NULL OR changed_at >= %(from_time)s)
+              AND (%(to_time)s::TIMESTAMPTZ IS NULL OR changed_at <= %(to_time)s)
             GROUP BY operation
-        """, entity_type, from_time, to_time)
+        """, filters)
         by_operation = {row["operation"]: row["count"] for row in await result.fetchall()}
 
         # By user
-        result = await conn.execute("""
+        result = await conn.cursor(row_factory=dict_row).execute("""
             SELECT changed_by::TEXT, COUNT(*) as count
             FROM audit.entity_change_log
             WHERE changed_by IS NOT NULL
-              AND ($1::TEXT IS NULL OR entity_type = $1)
-              AND ($2::TIMESTAMPTZ IS NULL OR changed_at >= $2)
-              AND ($3::TIMESTAMPTZ IS NULL OR changed_at <= $3)
+              AND (%(entity_type)s::TEXT IS NULL OR entity_type = %(entity_type)s)
+              AND (%(from_time)s::TIMESTAMPTZ IS NULL OR changed_at >= %(from_time)s)
+              AND (%(to_time)s::TIMESTAMPTZ IS NULL OR changed_at <= %(to_time)s)
             GROUP BY changed_by
             ORDER BY count DESC
             LIMIT 10
-        """, entity_type, from_time, to_time)
+        """, filters)
         by_user = {row["changed_by"]: row["count"] for row in await result.fetchall()}
 
         # Recent changes
-        result = await conn.execute("""
+        result = await conn.cursor(row_factory=dict_row).execute("""
             SELECT * FROM audit.entity_change_log
-            WHERE ($1::TEXT IS NULL OR entity_type = $1)
-              AND ($2::TIMESTAMPTZ IS NULL OR changed_at >= $2)
-              AND ($3::TIMESTAMPTZ IS NULL OR changed_at <= $3)
+            WHERE (%(entity_type)s::TEXT IS NULL OR entity_type = %(entity_type)s)
+              AND (%(from_time)s::TIMESTAMPTZ IS NULL OR changed_at >= %(from_time)s)
+              AND (%(to_time)s::TIMESTAMPTZ IS NULL OR changed_at <= %(to_time)s)
             ORDER BY changed_at DESC
             LIMIT 50
-        """, entity_type, from_time, to_time)
+        """, filters)
         recent = [EntityChange(**row) for row in await result.fetchall()]
 
     return AuditSummary(
@@ -514,6 +532,10 @@ async def get_audit_summary(
 **[CQRS (Command Query Responsibility Segregation)](../core/concepts-glossary.md#cqrs-command-query-responsibility-segregation)** separates read and write models using event sourcing:
 
 ```python
+from psycopg.rows import dict_row
+
+from fraiseql.fastapi.dependencies import get_db_pool
+
 # Write Model (Command Side)
 class OrderCommandHandler:
     """Handle order commands, generate events."""
@@ -525,8 +547,8 @@ class OrderCommandHandler:
         async with get_db_pool().connection() as conn:
             await conn.execute("""
                 INSERT INTO orders.orders (id, customer_id, total, status)
-                VALUES ($1, $2, 0, 'draft')
-            """, order_id, customer_id)
+                VALUES (%s, %s, 0, 'draft')
+            """, (order_id, customer_id))
 
         # Event automatically logged via trigger
         return order_id
@@ -536,17 +558,17 @@ class OrderCommandHandler:
         async with get_db_pool().connection() as conn:
             await conn.execute("""
                 INSERT INTO orders.order_items (id, order_id, product_id, quantity, price, total)
-                VALUES ($1, $2, $3, $4, $5, $6)
-            """, str(uuid4()), order_id, product_id, quantity, price, price * quantity)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (str(uuid4()), order_id, product_id, quantity, price, price * quantity))
 
             # Update order total
             await conn.execute("""
                 UPDATE orders.orders
                 SET total = (
-                    SELECT SUM(total) FROM orders.order_items WHERE order_id = $1
+                    SELECT SUM(total) FROM orders.order_items WHERE order_id = %(order_id)s
                 )
-                WHERE id = $1
-            """, order_id)
+                WHERE id = %(order_id)s
+            """, {"order_id": order_id})
 
 # Read Model (Query Side)
 class OrderQueryModel:
@@ -555,7 +577,7 @@ class OrderQueryModel:
     async def get_order_summary(self, order_id: str) -> dict:
         """Get denormalized order summary."""
         async with get_db_pool().connection() as conn:
-            result = await conn.execute("""
+            result = await conn.cursor(row_factory=dict_row).execute("""
                 SELECT
                     o.id,
                     o.customer_id,
@@ -572,9 +594,9 @@ class OrderQueryModel:
                     ) as items
                 FROM orders.orders o
                 LEFT JOIN orders.order_items oi ON oi.order_id = o.id
-                WHERE o.id = $1
+                WHERE o.id = %s
                 GROUP BY o.id
-            """, order_id)
+            """, (order_id,))
 
             return dict(await result.fetchone())
 ```

@@ -5,6 +5,17 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- The role the row-level security policies below apply to. The app's own
+-- connection (the tables' owner) bypasses RLS; queries are scoped by tenant
+-- through mandatory_filters on organization_id.
+DO $$
+BEGIN
+    CREATE ROLE authenticated_user NOLOGIN;
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$$;
+
 -- ============================================================================
 -- ORGANIZATIONS (TENANTS)
 -- ============================================================================
@@ -246,16 +257,16 @@ CREATE OR REPLACE FUNCTION track_usage(
     amount INT
 ) RETURNS VOID AS $$
 DECLARE
-    period_start TIMESTAMP;
-    period_end TIMESTAMP;
+    v_period_start TIMESTAMP;
+    v_period_end TIMESTAMP;
     org_pk INT;
 BEGIN
     -- Get organization pk
     SELECT pk_organization INTO org_pk FROM tb_organization WHERE id = org_id;
 
     -- Get current billing period
-    period_start := DATE_TRUNC('month', CURRENT_TIMESTAMP);
-    period_end := period_start + INTERVAL '1 month';
+    v_period_start := DATE_TRUNC('month', CURRENT_TIMESTAMP);
+    v_period_end := v_period_start + INTERVAL '1 month';
 
     -- Upsert usage metrics
     INSERT INTO tb_usage_metric (
@@ -269,8 +280,8 @@ BEGIN
     )
     VALUES (
         org_pk,
-        period_start,
-        period_end,
+        v_period_start,
+        v_period_end,
         CASE WHEN usage_type = 'projects' THEN amount ELSE 0 END,
         CASE WHEN usage_type = 'storage' THEN amount ELSE 0 END,
         CASE WHEN usage_type = 'api_calls' THEN amount ELSE 0 END,
@@ -294,6 +305,7 @@ CREATE VIEW v_organization AS
 SELECT
     o.pk_organization,
     o.id,
+    o.id AS organization_id,
     jsonb_build_object(
         'id', o.id,
         'name', o.name,
@@ -310,26 +322,29 @@ FROM tb_organization o;
 -- Users view (excludes password_hash)
 CREATE VIEW v_user AS
 SELECT
-    pk_user,
-    id,
+    u.pk_user,
+    u.id,
+    o.id AS organization_id,  -- the tenant, for filtering
     jsonb_build_object(
-        'id', id,
-        'fk_organization', fk_organization,
-        'email', email,
-        'name', name,
-        'role', role,
-        'status', status,
-        'avatar_url', avatar_url,
-        'last_active', last_active,
-        'created_at', created_at
+        'id', u.id,
+        'fk_organization', u.fk_organization,
+        'email', u.email,
+        'name', u.name,
+        'role', u.role,
+        'status', u.status,
+        'avatar_url', u.avatar_url,
+        'last_active', u.last_active,
+        'created_at', u.created_at
     ) as data
-FROM tb_user;
+FROM tb_user u
+JOIN tb_organization o ON o.pk_organization = u.fk_organization;
 
 -- Projects view
 CREATE VIEW v_project AS
 SELECT
     p.pk_project,
     p.id,
+    o.id AS organization_id,  -- the tenant, for filtering
     jsonb_build_object(
         'id', p.id,
         'fk_organization', p.fk_organization,
@@ -341,7 +356,163 @@ SELECT
         'created_at', p.created_at,
         'updated_at', p.updated_at
     ) as data
-FROM tb_project p;
+FROM tb_project p
+JOIN tb_organization o ON o.pk_organization = p.fk_organization;
+
+-- ============================================================================
+-- MUTATION FUNCTIONS
+-- ============================================================================
+--
+-- Each is called by the class mutation named after it, with the tenant and the
+-- user first (context_params) and the input as one jsonb. mutation_response and
+-- the mutation_* helpers come from migrations/trinity/005_add_mutation_response.sql.
+
+-- Log an action in the organization's activity log
+CREATE OR REPLACE FUNCTION log_activity(
+    p_organization_id UUID,
+    p_user_id UUID,
+    p_action TEXT,
+    p_resource TEXT,
+    p_resource_id UUID,
+    p_details JSONB
+) RETURNS VOID AS $$
+    INSERT INTO tb_activity_log (fk_organization, fk_user, action, resource, resource_id, details)
+    SELECT o.pk_organization, u.pk_user, p_action, p_resource, p_resource_id, p_details
+    FROM tb_organization o, tb_user u
+    WHERE o.id = p_organization_id AND u.id = p_user_id;
+$$ LANGUAGE sql;
+
+CREATE OR REPLACE FUNCTION create_project(
+    p_organization_id UUID,
+    p_user_id UUID,
+    input JSONB
+) RETURNS mutation_response AS $$
+DECLARE
+    v_project_id UUID;
+BEGIN
+    IF coalesce(input->>'name', '') = '' THEN
+        RETURN mutation_validation_error('Project name is required', 'name');
+    END IF;
+
+    INSERT INTO tb_project (fk_organization, name, description, fk_owner)
+    SELECT o.pk_organization, input->>'name', input->>'description', u.pk_user
+    FROM tb_organization o
+    JOIN tb_user u ON u.fk_organization = o.pk_organization
+    WHERE o.id = p_organization_id AND u.id = p_user_id
+    RETURNING id INTO v_project_id;
+
+    IF v_project_id IS NULL THEN
+        RETURN mutation_not_found('User in organization', p_user_id::text);
+    END IF;
+
+    PERFORM track_usage(p_organization_id, 'projects', 1);
+    PERFORM log_activity(
+        p_organization_id, p_user_id, 'create_project', 'project', v_project_id,
+        jsonb_build_object('name', input->>'name')
+    );
+
+    RETURN mutation_created(
+        'Project created', (SELECT data FROM v_project WHERE id = v_project_id), 'Project'
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_project(
+    p_organization_id UUID,
+    p_user_id UUID,
+    input JSONB
+) RETURNS mutation_response AS $$
+DECLARE
+    v_project_id UUID := (input->>'id')::uuid;
+BEGIN
+    -- Only a project of the caller's organization
+    UPDATE tb_project p
+    SET name = coalesce(input->>'name', p.name),
+        description = coalesce(input->>'description', p.description),
+        status = coalesce(input->>'status', p.status),
+        updated_at = NOW()
+    FROM tb_organization o
+    WHERE p.id = v_project_id
+      AND o.pk_organization = p.fk_organization
+      AND o.id = p_organization_id;
+
+    IF NOT FOUND THEN
+        RETURN mutation_not_found('Project', v_project_id::text);
+    END IF;
+
+    PERFORM log_activity(
+        p_organization_id, p_user_id, 'update_project', 'project', v_project_id,
+        jsonb_strip_nulls(input - 'id')
+    );
+
+    RETURN mutation_updated(
+        'Project updated',
+        (SELECT data FROM v_project WHERE id = v_project_id),
+        ARRAY(SELECT jsonb_object_keys(jsonb_strip_nulls(input - 'id'))),
+        'Project'
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION delete_project(
+    p_organization_id UUID,
+    p_user_id UUID,
+    input JSONB
+) RETURNS mutation_response AS $$
+DECLARE
+    v_project_id UUID := (input->>'id')::uuid;
+    v_name TEXT;
+BEGIN
+    DELETE FROM tb_project p
+    USING tb_organization o
+    WHERE p.id = v_project_id
+      AND o.pk_organization = p.fk_organization
+      AND o.id = p_organization_id
+    RETURNING p.name INTO v_name;
+
+    IF NOT FOUND THEN
+        RETURN mutation_not_found('Project', v_project_id::text);
+    END IF;
+
+    PERFORM track_usage(p_organization_id, 'projects', -1);
+    PERFORM log_activity(
+        p_organization_id, p_user_id, 'delete_project', 'project', v_project_id,
+        jsonb_build_object('name', v_name)
+    );
+
+    RETURN mutation_deleted('Project deleted', v_project_id::text, 'Project');
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_organization(
+    p_organization_id UUID,
+    p_user_id UUID,
+    input JSONB
+) RETURNS mutation_response AS $$
+BEGIN
+    UPDATE tb_organization
+    SET name = coalesce(input->>'name', name),
+        settings = coalesce(input->'settings', settings),
+        updated_at = NOW()
+    WHERE id = p_organization_id;
+
+    IF NOT FOUND THEN
+        RETURN mutation_not_found('Organization', p_organization_id::text);
+    END IF;
+
+    PERFORM log_activity(
+        p_organization_id, p_user_id, 'update_organization', 'organization',
+        p_organization_id, jsonb_strip_nulls(input)
+    );
+
+    RETURN mutation_updated(
+        'Organization updated',
+        (SELECT data FROM v_organization WHERE id = p_organization_id),
+        ARRAY(SELECT jsonb_object_keys(jsonb_strip_nulls(input))),
+        'Organization'
+    );
+END;
+$$ LANGUAGE plpgsql;
 
 -- ============================================================================
 -- SAMPLE DATA (FOR TESTING)

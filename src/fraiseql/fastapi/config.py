@@ -1,10 +1,11 @@
 """Configuration for FraiseQL FastAPI integration."""
 
 import logging
+import warnings
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import Field, PostgresDsn, ValidationInfo, field_validator
+from pydantic import Field, PostgresDsn, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fraiseql.mutations.error_config import MutationErrorConfig
@@ -108,6 +109,17 @@ def validate_postgres_url(v: Any) -> str:
         return v
 
 
+# Settings nothing reads: setting one warns (see FraiseQLConfig.warn_settings_with_no_effect)
+_NO_EFFECT_REASONS = {
+    "database_echo": "nothing reads it",
+    "complexity_include_in_response": "no response carries the complexity score",
+    "execution_timeout_ms": "use query_timeout (seconds), the statement timeout of each query",
+    "default_query_schema": (
+        "a query reads the view its sql_source names; qualify the name to pick a schema"
+    ),
+}
+
+
 # Type alias for the validated database URL
 PostgresUrl = Annotated[str, Field(description="PostgreSQL connection URL (supports Unix sockets)")]
 
@@ -132,7 +144,7 @@ class FraiseQLConfig(BaseSettings):
     GraphQL Settings:
         introspection_policy: Schema introspection policy (PUBLIC/DISABLED/AUTHENTICATED)
         enable_playground: Enable GraphQL IDE (auto-disabled in production)
-        max_query_depth: Maximum query nesting depth
+        max_query_depth: Reject queries nested deeper than this (default: 15; None: no limit)
         auto_camel_case: Auto-convert snake_case to camelCase (default: True)
 
     Auth Settings:
@@ -142,13 +154,13 @@ class FraiseQLConfig(BaseSettings):
         auth0_api_identifier: Auth0 API identifier (if using Auth0)
 
     Performance Settings:
-        cache_ttl: Query cache TTL in seconds (default: 300)
-        execution_timeout_ms: Query timeout in milliseconds (default: 30000)
+        cache_ttl: Deprecated, and has no effect (nothing reads it)
+        query_timeout: Statement timeout in seconds for each query (default: 30)
         jsonb_field_limit_threshold: Fields threshold for JSONB optimization (default: 20)
 
     Security Settings:
-        complexity_enabled: Enable query complexity analysis (default: True)
-        rate_limit_enabled: Enable rate limiting (default: True)
+        complexity_enabled: Enforce complexity_max_score / _max_depth (default: False)
+        rate_limit_enabled: Install RateLimiterMiddleware, per client IP (default: False)
         cors_enabled: Enable CORS (default: False - use reverse proxy)
         enable_rust_endpoint: Mount POST /graphql/rust resolver-bypass route (default: False)
 
@@ -180,6 +192,7 @@ class FraiseQLConfig(BaseSettings):
     database_pool_timeout: int = 30
     database_pool_recycle: int = 3600  # Recycle connections after 1 hour
     database_echo: bool = False
+    """Deprecated, and has no effect: nothing reads it. It will be removed."""
 
     # Application settings
     app_name: str = "FraiseQL API"
@@ -190,7 +203,14 @@ class FraiseQLConfig(BaseSettings):
     introspection_policy: IntrospectionPolicy = IntrospectionPolicy.PUBLIC
     enable_playground: bool = True
     playground_tool: Literal["graphiql", "apollo-sandbox"] = "graphiql"  # Which GraphQL IDE to use
-    max_query_depth: int | None = None
+    max_query_depth: int | None = Field(default=15, ge=1)
+    """Reject a query nested deeper than this (default 15); ``None`` is no limit.
+
+    ``{ users { id } }`` has depth 1, ``{ users { posts { id } } }`` depth 2. A deeper
+    query is answered with a ``QUERY_TOO_DEEP`` GraphQL error and is not executed.
+    Introspection (``__schema``, ``__type``) is not counted: ``introspection_policy``
+    governs it. See ``fraiseql.gql.query_limits``.
+    """
     query_timeout: int = 30  # seconds
     auto_camel_case: bool = True  # Auto-convert snake_case to camelCase in GraphQL
 
@@ -223,7 +243,30 @@ class FraiseQLConfig(BaseSettings):
         return validate_postgres_url(v)
 
     # Performance settings
-    cache_ttl: int = 300  # seconds
+    cache_ttl: int = 300
+    """Deprecated, and has no effect: nothing reads it.
+
+    No cache uses it: APQ responses have ``apq_response_cache_ttl``, and
+    ``CachedRepository.find`` takes ``cache_ttl=`` per call. It will be removed.
+    """
+
+    @field_validator("cache_ttl", mode="before")
+    @classmethod
+    def warn_cache_ttl(cls, v: Any) -> Any:
+        """Warn that a cache_ttl set to anything but its default changes nothing."""
+        try:
+            unchanged = int(v) == 300
+        except (TypeError, ValueError):
+            return v  # the int validation reports it
+        if not unchanged:
+            warnings.warn(
+                "FraiseQLConfig.cache_ttl has no effect: nothing reads it. "
+                "It is deprecated and will be removed; remove it from your configuration.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return v
+
     turbo_router_cache_size: int = 1000  # Max number of queries to cache
     jsonb_field_limit_threshold: int = (
         20  # Switch to full data column when field count exceeds this
@@ -237,21 +280,51 @@ class FraiseQLConfig(BaseSettings):
     revocation_store_type: str = "memory"  # "memory" or "redis"
 
     # Query complexity settings
-    complexity_enabled: bool = True
-    complexity_max_score: int = 1000
-    complexity_max_depth: int = 10
-    complexity_default_list_size: int = 10
-    complexity_include_in_response: bool = False
-    complexity_field_multipliers: dict[str, int] = {}
+    complexity_enabled: bool = False
+    """Reject a query over ``complexity_max_score`` or ``complexity_max_depth``.
 
-    # Rate limiting settings
-    rate_limit_enabled: bool = True
+    Off by default. Setting ``complexity_max_score`` or ``complexity_max_depth``
+    (in code or with ``FRAISEQL_COMPLEXITY_MAX_SCORE`` / ``_MAX_DEPTH``) turns it on
+    unless ``complexity_enabled`` is set too. A rejected query gets a
+    ``QUERY_TOO_COMPLEX`` (or ``QUERY_TOO_DEEP``) GraphQL error and is not executed.
+    See ``fraiseql.gql.query_limits`` for how the score is computed.
+    """
+    complexity_max_score: int = Field(default=1000, ge=1)
+    """Highest complexity score a query may have, when ``complexity_enabled``.
+
+    A scalar costs 1, an object field 1 plus its selections, and a list field 1 plus
+    its selections times the list size (its ``limit`` / ``first`` argument, else
+    ``complexity_default_list_size``). Introspection is not counted.
+    """
+    complexity_max_depth: int = Field(default=10, ge=1)
+    """Deepest query allowed when ``complexity_enabled``; see ``max_query_depth``."""
+    complexity_default_list_size: int = Field(default=10, ge=0)
+    """List size assumed for a list field the query passes no ``limit`` / ``first`` to."""
+    complexity_include_in_response: bool = False
+    """Deprecated, and has no effect: no response carries the score. It will be removed."""
+    complexity_field_multipliers: dict[str, int] = {}
+    """Cost of a field instead of 1, by field name or ``"Type.field"``."""
+
+    @model_validator(mode="after")
+    def enable_complexity_when_a_limit_is_set(self) -> Self:
+        """Turn complexity limits on when one is set and ``complexity_enabled`` is not."""
+        fields_set = self.model_fields_set
+        if "complexity_enabled" not in fields_set and (
+            {"complexity_max_score", "complexity_max_depth"} & fields_set
+        ):
+            self.complexity_enabled = True
+        return self
+
+    # Rate limiting settings: when enabled, create_fraiseql_app installs
+    # RateLimiterMiddleware, keyed on the client IP, with a per-process
+    # in-memory count
+    rate_limit_enabled: bool = False
     rate_limit_requests_per_minute: int = 60
     rate_limit_requests_per_hour: int = 1000
     rate_limit_burst_size: int = 10
-    rate_limit_window_type: str = "sliding"  # "sliding" or "fixed"
-    rate_limit_whitelist: list[str] = []
-    rate_limit_blacklist: list[str] = []
+    rate_limit_window_type: str = "sliding"  # only "sliding" is implemented
+    rate_limit_whitelist: list[str] = []  # client IPs never limited
+    rate_limit_blacklist: list[str] = []  # client IPs always rejected (403)
 
     # APQ Backend Configuration
     apq_mode: APQMode = APQMode.OPTIONAL
@@ -281,8 +354,17 @@ class FraiseQLConfig(BaseSettings):
     cors_headers: list[str] = ["Content-Type", "Authorization"]
 
     # Execution settings (Rust-first: single execution path)
-    execution_timeout_ms: int = 30000  # 30 seconds
-    include_execution_metadata: bool = False  # Include timing in response
+    execution_timeout_ms: int = 30000
+    """Deprecated, and has no effect: ``query_timeout`` (seconds) is the statement timeout.
+
+    It will be removed.
+    """
+    include_execution_metadata: bool = False
+    """Add ``extensions.execution`` (mode, ``time_ms``) to responses in production too.
+
+    Outside production the timing is always included. Responses served as raw
+    Rust bytes (the zero-copy paths) carry no extensions either way.
+    """
 
     enable_rust_endpoint: bool = False
     """Mount POST /graphql/rust (Rust passthrough, bypasses Python resolvers).
@@ -292,7 +374,12 @@ class FraiseQLConfig(BaseSettings):
 
     # Default schema settings
     default_mutation_schema: str = "public"  # Default schema for mutations when not specified
-    default_query_schema: str = "public"  # Default schema for queries when not specified
+    default_query_schema: str = "public"
+    """Deprecated, and has no effect: a query reads the view its ``sql_source`` names.
+
+    An unqualified view name resolves through the connection's ``search_path``;
+    qualify it (``sql_source="app.v_user"``) to pick a schema. It will be removed.
+    """
     # Schema for tb_* entity tables (needed by descendant_of_id / ancestor_of_id operators)
     default_entity_schema: str | None = None
 
@@ -361,9 +448,32 @@ class FraiseQLConfig(BaseSettings):
             WHERE code = COALESCE(current_setting('app.locale', true), 'fr-FR')
     """
 
+    @field_validator(
+        "database_echo",
+        "complexity_include_in_response",
+        "execution_timeout_ms",
+        "default_query_schema",
+    )
+    @classmethod
+    def warn_settings_with_no_effect(cls, v: Any, info: ValidationInfo) -> Any:
+        """Warn that a setting nothing reads, set to anything but its default, changes nothing."""
+        name = info.field_name
+        if name is not None and v != cls.model_fields[name].default:
+            warnings.warn(
+                f"FraiseQLConfig.{name} has no effect: {_NO_EFFECT_REASONS[name]}. "
+                "It is deprecated and will be removed; remove it from your configuration.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return v
+
     # Entity routing settings
     entity_routing: Any = None
-    """Configuration for entity-aware query routing (optional)."""
+    """Deprecated, and has no effect: no query is routed by entity.
+
+    It is validated and stored, but nothing builds a ``QueryRouter`` from it,
+    and every query runs standard execution. It will be removed.
+    """
 
     @field_validator("entity_routing", mode="before")
     @classmethod
@@ -371,6 +481,13 @@ class FraiseQLConfig(BaseSettings):
         """Validate entity routing configuration."""
         if v is None:
             return None
+
+        warnings.warn(
+            "FraiseQLConfig.entity_routing has no effect: no query is routed by entity. "
+            "It is deprecated and will be removed; remove it from your configuration.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         from fraiseql.routing.config import EntityRoutingConfig
 

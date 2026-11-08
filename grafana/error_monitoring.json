@@ -1,118 +1,288 @@
 {
   "dashboard": {
+    "uid": "fraiseql-errors",
     "title": "FraiseQL Error Monitoring",
-    "tags": ["fraiseql", "errors", "monitoring"],
+    "description": "Errors captured by PostgreSQLErrorTracker (tables of src/fraiseql/monitoring/schema.sql).",
+    "tags": [
+      "fraiseql",
+      "errors",
+      "monitoring"
+    ],
     "timezone": "browser",
     "schemaVersion": 38,
     "version": 1,
     "refresh": "30s",
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "label": "PostgreSQL",
+          "type": "datasource",
+          "query": "grafana-postgresql-datasource",
+          "current": {},
+          "hide": 0,
+          "refresh": 1,
+          "regex": "",
+          "options": []
+        },
+        {
+          "name": "environment",
+          "label": "Environment",
+          "type": "custom",
+          "query": "production,staging,development",
+          "options": [
+            {
+              "text": "production",
+              "value": "production",
+              "selected": true
+            },
+            {
+              "text": "staging",
+              "value": "staging",
+              "selected": false
+            },
+            {
+              "text": "development",
+              "value": "development",
+              "selected": false
+            }
+          ],
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "multi": false
+        }
+      ]
+    },
     "panels": [
       {
         "id": 1,
         "title": "Error Rate Over Time",
         "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  date_trunc('minute', occurred_at) as time,\n  COUNT(*) as error_count\nFROM monitoring.errors\nWHERE\n  occurred_at >= $__timeFrom()\n  AND occurred_at <= $__timeTo()\n  AND environment = '$environment'\n  AND resolved_at IS NULL\nGROUP BY time\nORDER BY time;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  $__timeGroupAlias(eo.occurred_at, $__interval),\n  COUNT(*) AS errors\nFROM tb_error_occurrence eo\nJOIN tb_error_log el ON el.error_id = eo.error_id\nWHERE $__timeFilter(eo.occurred_at)\n  AND el.environment = '$environment'\nGROUP BY 1\nORDER BY 1",
             "format": "time_series"
           }
         ],
+        "description": "Error occurrences (rows of tb_error_occurrence) per interval.",
         "fieldConfig": {
           "defaults": {
-            "color": {"mode": "palette-classic"},
+            "unit": "short",
             "custom": {
               "lineInterpolation": "smooth",
               "showPoints": "never",
               "fillOpacity": 10
             },
-            "unit": "short"
-          }
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
         },
         "options": {
-          "legend": {"displayMode": "list", "placement": "bottom"}
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
         }
       },
       {
         "id": 2,
         "title": "Error Distribution by Type",
         "type": "piechart",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  exception_type as metric,\n  COUNT(*) as value\nFROM monitoring.errors\nWHERE\n  occurred_at >= $__timeFrom()\n  AND occurred_at <= $__timeTo()\n  AND environment = '$environment'\n  AND resolved_at IS NULL\nGROUP BY exception_type\nORDER BY value DESC\nLIMIT 10;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  el.error_type AS metric,\n  COUNT(*) AS value\nFROM tb_error_occurrence eo\nJOIN tb_error_log el ON el.error_id = eo.error_id\nWHERE $__timeFilter(eo.occurred_at)\n  AND el.environment = '$environment'\nGROUP BY el.error_type\nORDER BY value DESC\nLIMIT 10",
             "format": "table"
           }
         ],
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
         "options": {
-          "legend": {"displayMode": "table", "placement": "right"},
+          "legend": {
+            "displayMode": "table",
+            "placement": "right"
+          },
           "pieType": "pie",
-          "displayLabels": ["name", "percent"]
+          "displayLabels": [
+            "name",
+            "percent"
+          ],
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": true
+          }
         }
       },
       {
         "id": 3,
         "title": "Top 10 Error Fingerprints",
         "type": "table",
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n    fingerprint,\n    exception_type,\n    message,\n    COUNT(*) as occurrences,\n    MAX(occurred_at) as last_seen,\n    MIN(occurred_at) as first_seen,\n    COUNT(DISTINCT context->>'user_id') as affected_users\nFROM monitoring.errors\nWHERE occurred_at > NOW() - INTERVAL '24 hours'\n  AND resolved_at IS NULL\n  AND environment = '$environment'\nGROUP BY fingerprint, exception_type, message\nORDER BY occurrences DESC\nLIMIT 10;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  el.error_fingerprint,\n  el.error_type,\n  LEFT(el.error_message, 120) AS error_message,\n  el.severity,\n  el.status,\n  COUNT(eo.occurrence_id) AS occurrences,\n  el.occurrence_count AS all_time_occurrences,\n  COUNT(DISTINCT eo.user_context->>'user_id') AS affected_users,\n  el.first_seen,\n  MAX(eo.occurred_at) AS last_seen\nFROM tb_error_occurrence eo\nJOIN tb_error_log el ON el.error_id = eo.error_id\nWHERE $__timeFilter(eo.occurred_at)\n  AND el.environment = '$environment'\n  AND el.status IN ('unresolved', 'investigating')\nGROUP BY el.error_id\nORDER BY occurrences DESC\nLIMIT 10",
             "format": "table"
           }
         ],
+        "description": "Open errors (unresolved or investigating) with the most occurrences in the time range. affected_users counts distinct user_context->>'user_id' values passed to capture_exception.",
         "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": {"id": "byName", "options": "occurrences"},
-              "properties": [
-                {"id": "custom.width", "value": 120}
-              ]
-            },
-            {
-              "matcher": {"id": "byName", "options": "affected_users"},
-              "properties": [
-                {"id": "custom.width", "value": 140}
-              ]
-            }
-          ]
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
         }
       },
       {
         "id": 4,
         "title": "Error Resolution Status",
         "type": "stat",
-        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 18},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 0,
+          "y": 18
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  COUNT(*) FILTER (WHERE resolved_at IS NULL) as unresolved,\n  COUNT(*) FILTER (WHERE resolved_at IS NOT NULL) as resolved,\n  COUNT(*) as total\nFROM monitoring.errors\nWHERE occurred_at > NOW() - INTERVAL '7 days'\n  AND environment = '$environment';",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  COUNT(*) FILTER (WHERE status = 'unresolved') AS unresolved,\n  COUNT(*) FILTER (WHERE status = 'investigating') AS investigating,\n  COUNT(*) FILTER (WHERE status = 'resolved') AS resolved,\n  COUNT(*) FILTER (WHERE status = 'ignored') AS ignored\nFROM tb_error_log\nWHERE $__timeFilter(last_seen)\n  AND environment = '$environment'",
             "format": "table"
           }
         ],
+        "description": "Distinct errors (fingerprints) seen in the time range, by status.",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
         "options": {
-          "graphMode": "none",
-          "colorMode": "background",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
           "orientation": "horizontal",
-          "textMode": "value_and_name"
+          "textMode": "value_and_name",
+          "colorMode": "background"
         }
       },
       {
         "id": 5,
         "title": "Errors by Environment",
         "type": "bargauge",
-        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 18},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 12,
+          "x": 12,
+          "y": 18
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  environment,\n  COUNT(*) as error_count\nFROM monitoring.errors\nWHERE occurred_at > NOW() - INTERVAL '24 hours'\n  AND resolved_at IS NULL\nGROUP BY environment\nORDER BY error_count DESC;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  el.environment,\n  COUNT(*) AS error_count\nFROM tb_error_occurrence eo\nJOIN tb_error_log el ON el.error_id = eo.error_id\nWHERE $__timeFilter(eo.occurred_at)\nGROUP BY el.environment\nORDER BY error_count DESC",
             "format": "table"
           }
         ],
+        "description": "Error occurrences in the time range in every environment (ignores the environment variable).",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
         "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": true
+          },
           "orientation": "horizontal",
           "displayMode": "gradient"
         }
@@ -121,69 +291,125 @@
         "id": 6,
         "title": "Recent Errors (Last Hour)",
         "type": "table",
-        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 18},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  occurred_at,\n  exception_type,\n  LEFT(message, 80) as message,\n  context->>'user_id' as user_id\nFROM monitoring.errors\nWHERE occurred_at > NOW() - INTERVAL '1 hour'\n  AND environment = '$environment'\n  AND resolved_at IS NULL\nORDER BY occurred_at DESC\nLIMIT 20;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  eo.occurred_at,\n  el.error_type,\n  LEFT(el.error_message, 80) AS error_message,\n  el.severity,\n  eo.user_context->>'user_id' AS user_id,\n  eo.trace_id\nFROM tb_error_occurrence eo\nJOIN tb_error_log el ON el.error_id = eo.error_id\nWHERE eo.occurred_at > NOW() - INTERVAL '1 hour'\n  AND el.environment = '$environment'\nORDER BY eo.occurred_at DESC\nLIMIT 20",
             "format": "table"
           }
         ],
         "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": {"id": "byName", "options": "occurred_at"},
-              "properties": [
-                {"id": "custom.width", "value": 180}
-              ]
-            }
-          ]
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
         }
       },
       {
         "id": 7,
         "title": "Users Affected by Errors",
         "type": "timeseries",
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 34
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  date_trunc('hour', occurred_at) as time,\n  COUNT(DISTINCT context->>'user_id') as affected_users\nFROM monitoring.errors\nWHERE\n  occurred_at >= $__timeFrom()\n  AND occurred_at <= $__timeTo()\n  AND environment = '$environment'\n  AND context->>'user_id' IS NOT NULL\nGROUP BY time\nORDER BY time;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  $__timeGroupAlias(eo.occurred_at, $__interval),\n  COUNT(DISTINCT eo.user_context->>'user_id') AS affected_users\nFROM tb_error_occurrence eo\nJOIN tb_error_log el ON el.error_id = eo.error_id\nWHERE $__timeFilter(eo.occurred_at)\n  AND el.environment = '$environment'\n  AND eo.user_context->>'user_id' IS NOT NULL\nGROUP BY 1\nORDER BY 1",
             "format": "time_series"
           }
         ],
         "fieldConfig": {
           "defaults": {
-            "color": {"mode": "palette-classic"},
+            "unit": "short",
             "custom": {
               "lineInterpolation": "smooth",
-              "showPoints": "auto",
-              "fillOpacity": 20
+              "showPoints": "never",
+              "fillOpacity": 10
             },
-            "unit": "short"
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
           }
         }
-      }
-    ],
-    "templating": {
-      "list": [
-        {
-          "name": "environment",
-          "type": "custom",
-          "options": [
-            {"text": "production", "value": "production"},
-            {"text": "staging", "value": "staging"},
-            {"text": "development", "value": "development"}
-          ],
-          "current": {"text": "production", "value": "production"},
-          "multi": false
+      },
+      {
+        "id": 8,
+        "title": "Notification Deliveries",
+        "type": "table",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 34
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  nl.channel_type,\n  nl.status,\n  COUNT(*) AS notifications,\n  MAX(nl.sent_at) AS last_sent\nFROM tb_error_notification_log nl\nJOIN tb_error_log el ON el.error_id = nl.error_id\nWHERE $__timeFilter(nl.sent_at)\n  AND el.environment = '$environment'\nGROUP BY nl.channel_type, nl.status\nORDER BY notifications DESC",
+            "format": "table"
+          }
+        ],
+        "description": "Error notifications sent by fraiseql.monitoring.notifications, by channel and delivery status.",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
         }
-      ]
-    },
-    "time": {
-      "from": "now-24h",
-      "to": "now"
-    }
+      }
+    ]
   },
   "overwrite": true,
   "message": "FraiseQL Error Monitoring Dashboard"

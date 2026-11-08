@@ -31,7 +31,7 @@ without requiring explicit manual setup for each field type.
 """
 
 import logging
-from typing import Annotated, Any, get_args, get_origin
+from typing import Annotated, Any, get_args, get_origin, get_type_hints
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +52,23 @@ def patch_missing_field_types(cls: type[Any]) -> None:
 
     This function is especially useful for FraiseQL types where fields can be
     automatically decorated without manually adding `fraise_field` to each attribute.
+
+    Annotations are resolved with `get_type_hints`, as `collect_fraise_fields` does, so a
+    module using `from __future__ import annotations` gets types, not strings. A field
+    whose annotation can't be resolved yet is left unset; `define_fraiseql_type` fills it
+    from its own resolved hints.
     """
+    localns = {cls.__name__: cls}
     for base in reversed(cls.__mro__):
         annotations = getattr(base, "__annotations__", {})
-        for name, typ in annotations.items():
+        try:
+            hints = get_type_hints(base, localns=localns, include_extras=True)
+        except Exception:  # a forward reference that isn't defined yet
+            hints = {}
+        for name, raw in annotations.items():
+            typ = hints.get(name, raw)
+            if isinstance(typ, str):
+                continue
             origin = get_origin(typ)
             args = get_args(typ)
 

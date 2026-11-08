@@ -79,6 +79,11 @@ class _Connection:
     def cursor(self, *_: object, **__: object) -> _Cursor:
         return _Cursor(self.log)
 
+    async def execute(self, statement: Any, params: Any = None) -> _Cursor:
+        cursor = self.cursor()
+        await cursor.execute(statement, params)
+        return cursor
+
 
 class _Pool:
     """Pool that always hands out the same recording connection."""
@@ -207,9 +212,17 @@ _READS: dict[str, Read] = {
 
 
 async def _run_read(read: Read, context: dict[str, Any]) -> list[tuple[Any, Any]]:
+    """The statements of a read, once the repository has read the view's columns.
+
+    The first read of a view no type is registered for reads its columns from
+    the catalog; the second is what every later read sends.
+    """
     pool = _Pool()
+    repo = FraiseQLRepository(pool=pool, context=context)
     with patch("fraiseql.db.execute_via_rust_pipeline", new=_fake_pipeline):
-        await read(FraiseQLRepository(pool=pool, context=context))
+        await read(repo)
+        pool.conn.log.clear()
+        await read(repo)
     return pool.conn.log
 
 
@@ -229,11 +242,30 @@ class TestReadPathsApplySessionVariables:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("name", list(_READS))
     async def test_no_extra_round_trip_without_session_context(self, name: str) -> None:
-        """Apps that map no session variables pay nothing on the read path."""
-        log = await _run_read(_READS[name], {"config": _Config({})})
+        """Without session variables or a statement timeout, nothing precedes the read."""
+        log = await _run_read(_READS[name], {"config": _Config({}), "query_timeout": 0})
 
         assert len(log) == 1, log
         assert not str(log[0][0]).startswith(SESSION_PREFIX)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("name", list(_READS))
+    async def test_the_statement_timeout_goes_with_the_session_variables(self, name: str) -> None:
+        """``query_timeout`` is one more ``set_config`` of the same statement."""
+        context = {"config": _Config({"locale": "app.locale"}), "locale": "fr-FR"}
+        log = await _run_read(_READS[name], {**context, "query_timeout": 2})
+
+        assert len(log) == 2, log
+        assert _pairs(log[0][1])[:2] == [("statement_timeout", "2000ms"), ("app.locale", "fr-FR")]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("name", list(_READS))
+    async def test_the_statement_timeout_alone(self, name: str) -> None:
+        """Without session variables, the timeout is set on its own before the read."""
+        log = await _run_read(_READS[name], {"config": _Config({}), "query_timeout": 2})
+
+        assert len(log) == 2, log
+        assert log[0] == ("SELECT set_config(%s, %s, true)", ["statement_timeout", "2000ms"])
 
 
 # ---------------------------------------------------------------------------
@@ -280,7 +312,7 @@ class TestRequestContextReachesRepository:
         }
 
     @pytest.fixture
-    def app(self) -> Iterator[FastAPI]:
+    def app(self, clear_registry: None) -> Iterator[FastAPI]:
         config = FraiseQLConfig(
             database_url="postgresql://test:test@localhost:5432/test",
             environment="development",

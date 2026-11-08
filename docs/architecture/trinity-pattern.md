@@ -211,7 +211,7 @@ SELECT
         'name', name,
         'email', email,
         'identifier', identifier,  -- Slug also available
-        'createdAt', created_at
+        'created_at', created_at
     ) AS data
 FROM tb_user;
 ```
@@ -260,8 +260,8 @@ SELECT
     c.id,
     jsonb_build_object(
         'id', c.id,
-        'userId', u.id,  -- UUID relationship
-        'postId', p.id,  -- UUID relationship
+        'user_id', u.id,  -- UUID relationship
+        'post_id', p.id,  -- UUID relationship
         'content', c.content
     ) AS data
 FROM tb_comment c

@@ -19,7 +19,7 @@
 //!
 //! ❌ **Use `core::camel` instead when**:
 //! - Hot path streaming transformation (3-5x faster)
-//! - Zero-copy performance required (arena allocation)
+//! - Zero-copy performance required (reused scratch buffer)
 //! - Processing byte slices (`&[u8]`)
 //!
 //! For detailed architecture rationale, see: `docs/camel-case-apis.md`

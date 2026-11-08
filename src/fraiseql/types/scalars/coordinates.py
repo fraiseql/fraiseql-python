@@ -27,7 +27,7 @@ Examples:
     # GraphQL query with distance filtering
     query {
       locations(where: {
-        coordinates: { distance_within: { center: [37.7749, -122.4194], radius: 50000 } }
+        coordinates: { distanceWithin: { center: [37.7749, -122.4194], radius: 50000 } }
       }) {
         name
         coordinates
@@ -243,7 +243,7 @@ Examples:
     # Distance filtering
     query {
       nearbyLocations(where: {
-        coordinates: { distance_within: { center: [37.7749, -122.4194], radius: 5000 } }
+        coordinates: { distanceWithin: { center: [37.7749, -122.4194], radius: 5000 } }
       }) {
         name
         coordinates

@@ -256,7 +256,7 @@ class TestPerformanceWithLargeDatasets:
             "name": {"contains": "test"},
             "age": {"gte": 18, "lte": 65},
             "score": {"gt": 0.0, "lt": 100.0},
-            "balance": {"ne": Decimal("0.00")},
+            "balance": {"neq": Decimal("0.00")},
             "is_active": {"eq": True},
             "birth_date": {"gte": date(1990, 1, 1), "lte": date(2000, 12, 31)},
             "last_login": {"gte": datetime(2024, 1, 1, tzinfo=UTC)},

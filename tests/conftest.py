@@ -6,10 +6,10 @@ import pytest
 # Import chaos database fixtures plugin (must be at top level)
 # Use full module path for plugin import
 try:
-    pytest_plugins = ["tests.chaos.database_fixtures"]
+    pytest_plugins = ["tests.chaos.database_fixtures", "tests.plugins.registry_guard", "pytester"]
 except ImportError:
     # Skip if chaos fixtures not available
-    pytest_plugins = []
+    pytest_plugins = ["tests.plugins.registry_guard", "pytester"]
 
 # Check if Rust extension should be skipped for performance optimization
 SKIP_RUST = os.getenv("FRAISEQL_SKIP_RUST") == "1"
@@ -32,9 +32,6 @@ except ImportError:
 # Import fixtures from the new organized structure
 # Import examples fixtures first as they don't require heavy dependencies
 from tests.fixtures.examples.conftest_examples import (  # noqa: F401
-    blog_enterprise_app,
-    blog_enterprise_client,
-    blog_enterprise_db_url,
     blog_simple_app,
     blog_simple_client,
     blog_simple_context,
@@ -96,17 +93,17 @@ except ImportError:
     pass  # Skip cascade fixtures if dependencies not available
 
 try:
-    from tests.fixtures.security.vault_conftest import (  # noqa: F401
-        vault_container,
-        vault_token,
-        vault_transit_ready,
-        vault_url,
-    )
     from tests.fixtures.security.aws_conftest import (  # noqa: F401
         aws_kms_client,
         aws_kms_mock,
         aws_region,
         kms_key_id,
+    )
+    from tests.fixtures.security.vault_conftest import (  # noqa: F401
+        vault_container,
+        vault_token,
+        vault_transit_ready,
+        vault_url,
     )
 except ImportError:
     pass  # Skip security fixtures if dependencies not available
@@ -144,7 +141,7 @@ def clear_type_caches() -> Generator[None]:
         _type_registry.clear()  # type: ignore
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def clear_registry() -> Generator[None]:
     """Clear the schema registry before and after each test.
 
@@ -171,6 +168,23 @@ def _clear_all_fraiseql_state() -> None:
     from fraiseql.testing import clear_fraiseql_state
 
     clear_fraiseql_state()
+
+
+@pytest.fixture(autouse=True)
+def _reset_schema_config() -> Generator[None]:
+    """Restore SchemaConfig's defaults after every test.
+
+    SchemaConfig is a process-wide singleton, and `build_fraiseql_schema(camel_case_fields=False)`
+    writes into it and leaves it there. Tests that convert types without building a schema
+    then got snake_case names from whichever test ran before them in the same process,
+    which under pytest-xdist depends on how tests land on workers.
+
+    Yields:
+        None: This fixture performs teardown only.
+    """
+    yield
+    if FRAISEQL_AVAILABLE:
+        SchemaConfig.reset()  # type: ignore
 
 
 @pytest.fixture
@@ -221,6 +235,7 @@ async def setup_hybrid_table(class_db_pool, test_schema):
         dict with test data IDs
     """
     import uuid
+
     from fraiseql.db import register_type_for_view
 
     # Get connection, do setup, then release it before yielding

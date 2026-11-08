@@ -1,6 +1,6 @@
 """Test to reproduce the Date duplicate registration issue."""
 
-import datetime
+import datetime as dt
 
 import pytest
 from graphql import GraphQLError
@@ -20,11 +20,11 @@ def test_date_scalar_in_fastapi_app() -> None:
     @fraiseql.type
     class Event:
         name: str
-        event_date: datetime.date
+        event_date: dt.date
 
     @fraiseql.query
     async def get_event(info) -> Event:
-        return Event(name="Test", event_date=datetime.date.today())
+        return Event(name="Test", event_date=dt.date.today())
 
     # This might trigger duplicate registration if there's an issue
     try:
@@ -48,11 +48,11 @@ def test_date_scalar_multiple_registrations() -> None:
 
     @fraiseql.type
     class Model1:
-        date1: datetime.date
+        date1: dt.date
 
     @fraiseql.query
     async def get_model1(info) -> Model1:
-        return (Model1(date1=datetime.date.today()),)
+        return (Model1(date1=dt.date.today()),)
 
     schema1 = registry.build_schema()
     assert "Date" in schema1.type_map
@@ -62,11 +62,11 @@ def test_date_scalar_multiple_registrations() -> None:
 
     @fraiseql.type
     class Model2:
-        date2: datetime.date
+        date2: dt.date
 
     @fraiseql.query
     async def get_model2(info) -> Model2:
-        return Model2(date2=datetime.date.today())
+        return Model2(date2=dt.date.today())
 
     # This should not fail with duplicate Date
     schema2 = registry.build_schema()
@@ -80,17 +80,17 @@ def test_date_scalar_with_interface() -> None:
 
     @fraiseql.interface
     class Timestamped:
-        created_date: datetime.date
+        created_date: dt.date
 
     @fraiseql.type(implements=[Timestamped])
     class Article:
         title: str
-        created_date: datetime.date
-        published_date: datetime.date
+        created_date: dt.date
+        published_date: dt.date
 
     @fraiseql.query
     async def get_article(info) -> Article:
-        today = datetime.date.today()
+        today = dt.date.today()
         return Article(title="Test", created_date=today, published_date=today)
 
     # Should not raise duplicate Date type error

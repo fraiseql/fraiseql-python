@@ -28,7 +28,7 @@ def test_success_decorator_adds_fields_to_gql_fields():
     assert "id" in gql_fields, "Auto-injected id missing (entity detected)"
 
     # Verify field types
-    assert gql_fields["status"].field_type == str
+    assert gql_fields["status"].field_type is str
     assert gql_fields["message"].field_type == str | None
 
 
@@ -49,7 +49,7 @@ def test_failure_decorator_adds_fields():
     assert "id" not in gql_fields  # Errors don't create entities (v1.8.1)
 
     # Verify field types
-    assert gql_fields["code"].field_type == int  # Error code is integer
+    assert gql_fields["code"].field_type is int  # Error code is integer
 
 
 def test_no_entity_field_no_id():

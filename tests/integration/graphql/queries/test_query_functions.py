@@ -34,7 +34,9 @@ async def get_user(info, id: ID) -> User | None:
     # Mock implementation
     # IDScalar parses the id to uuid.UUID, so compare as string
     if str(id) == "123e4567-e89b-12d3-a456-426614174000":
-        return User(id=id if isinstance(id, UUID) else UUID(id), name="John Doe", email="john@example.com")
+        return User(
+            id=id if isinstance(id, UUID) else UUID(id), name="John Doe", email="john@example.com"
+        )
     return None
 
 

@@ -143,7 +143,7 @@ Prototypes   Apps       Apps      Apps
 - ❌ Don't put business logic in resolvers
 - ❌ Don't skip database migrations
 
-**Example Projects**: [Blog with Auth](../../examples/blog_api/), [E-commerce](../../examples/ecommerce/)
+**Example Projects**: [Blog](../../examples/blog_simple/), [E-commerce](../../examples/ecommerce/)
 
 ### Enterprise Template Best Practices
 
@@ -155,7 +155,7 @@ Prototypes   Apps       Apps      Apps
 - ❌ Don't compromise on security
 - ❌ Don't skip performance monitoring
 
-**Example Projects**: [Enterprise Blog](../../examples/blog_enterprise/), [Multi-tenant App](../../examples/apq_multi_tenant/)
+**Example Projects**: [Blog](../../examples/blog_simple/), [Multi-tenant App](../../examples/apq_multi_tenant/)
 
 ## Directory Structure
 
@@ -262,7 +262,7 @@ class UserQueries:
 
     async def resolve_user_by_username(self, info, username: str):
         db = info.context["db"]
-        return await db.find_one("v_user", username=username)
+        return await db.find_one("v_user", mandatory_filters={"username": username})
 ```
 
 ### Mutation Handlers (`src/mutations/`)
@@ -294,7 +294,7 @@ class UserMutations:
             "username": input.username,
             "email": input.email
         })
-        return await db.find_one("v_user", id=result["id"])
+        return await db.find_one("v_user", mandatory_filters={"id": result["id"]})
 ```
 
 ### Main Application (`src/main.py`)

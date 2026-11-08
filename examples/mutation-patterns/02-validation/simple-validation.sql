@@ -26,7 +26,7 @@ BEGIN
 
     post_title := input_payload->>'title';
     post_content := input_payload->>'content';
-    user_id := (input_payload->>'userId')::uuid;
+    user_id := (input_payload->>'user_id')::uuid;
 
     -- ========================================================================
     -- Simple Validation (Pattern 1)
@@ -94,7 +94,7 @@ $$ LANGUAGE plpgsql;
 
 -- Success case
 SELECT * FROM create_post('{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "My First Post",
     "content": "This is the content of my post."
 }'::jsonb);
@@ -102,14 +102,14 @@ SELECT * FROM create_post('{
 
 -- Validation error - missing title
 SELECT * FROM create_post('{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "content": "This is the content of my post."
 }'::jsonb);
 -- Returns: status='failed:validation', message='Post title is required'
 
 -- Validation error - title too short
 SELECT * FROM create_post('{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "Hi",
     "content": "This is the content of my post."
 }'::jsonb);
@@ -117,7 +117,7 @@ SELECT * FROM create_post('{
 
 -- Not found error - user doesn't exist
 SELECT * FROM create_post('{
-    "userId": "00000000-0000-0000-0000-000000000000",
+    "user_id": "00000000-0000-0000-0000-000000000000",
     "title": "My First Post",
     "content": "This is the content of my post."
 }'::jsonb);

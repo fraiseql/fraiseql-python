@@ -752,13 +752,10 @@ init_query_stats(pool)
 
 ### 7.3 Environment Variables
 
-Application-level toggles use the `FRAISEQL_` prefix and your own logging
-configuration:
+The log level is your own logging configuration (FraiseQL has no
+`FRAISEQL_LOG_LEVEL`); the security audit log path is read from the environment:
 
 ```bash
-# Set the root logging level
-FRAISEQL_LOG_LEVEL=debug
-
 # Path for the security audit log file
 FRAISEQL_SECURITY_LOG_PATH=/var/log/fraiseql/security_events.log
 ```

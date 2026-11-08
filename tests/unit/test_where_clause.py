@@ -5,6 +5,8 @@ for the canonical WHERE representation.
 """
 
 import uuid
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from typing import cast
 
 import pytest
@@ -487,7 +489,7 @@ class TestWhereClause:
             logical_op="OR",
         )
 
-        sql, params = clause.to_sql()
+        sql, _params = clause.to_sql()
 
         sql_str = sql.as_string(None)
         assert "OR" in sql_str
@@ -527,7 +529,7 @@ class TestWhereClause:
             ],
         )
 
-        sql, params = clause.to_sql()
+        sql, _params = clause.to_sql()
 
         sql_str = sql.as_string(None)
         assert "machine_id" in sql_str
@@ -561,7 +563,7 @@ class TestWhereClause:
             ),
         )
 
-        sql, params = clause.to_sql()
+        sql, _params = clause.to_sql()
 
         sql_str = sql.as_string(None)
         assert "NOT" in sql_str
@@ -585,3 +587,111 @@ class TestWhereClause:
         repr_str = repr(clause)
         assert "WhereClause" in repr_str
         assert "status" in repr_str
+
+
+class TestJsonbNumericComparison:
+    """A number compared with a JSONB field is compared as a number, not as text.
+
+    As text, ``'9' > '10'`` and ``'10.50' <> '10.5'``.
+    """
+
+    @staticmethod
+    def _sql(operator: str, value: object) -> tuple[str, list]:
+        condition = FieldCondition(
+            field_path=["price"],
+            operator=operator,
+            value=value,
+            lookup_strategy="jsonb_path",
+            target_column="data",
+            jsonb_path=["price"],
+        )
+        sql, params = condition.to_sql()
+        return sql.as_string(None), params
+
+    @pytest.mark.parametrize(
+        ("operator", "sql_op"),
+        [("eq", "="), ("neq", "!="), ("gt", ">"), ("gte", ">="), ("lt", "<"), ("lte", "<=")],
+    )
+    @pytest.mark.parametrize("value", [10, 10.5, Decimal("10.50")])
+    def test_number_is_compared_as_numeric(self, operator: str, sql_op: str, value) -> None:
+        sql, params = self._sql(operator, value)
+
+        assert sql == f"(\"data\" ->> 'price')::numeric {sql_op} %s"
+        assert params == [value]
+
+    def test_numbers_in_list_are_compared_as_numeric(self) -> None:
+        sql, params = self._sql("in", [1, Decimal("2.5")])
+
+        assert sql == "(\"data\" ->> 'price')::numeric IN (%s, %s)"
+        assert params == [1, Decimal("2.5")]
+
+    @pytest.mark.parametrize(("value", "param"), [("10", "10"), (True, "true")])
+    def test_strings_and_booleans_stay_text(self, value: object, param: str) -> None:
+        sql, params = self._sql("eq", value)
+
+        assert sql == "\"data\" ->> 'price' = %s"
+        assert params == [param]
+
+    def test_mixed_list_stays_text(self) -> None:
+        sql, _params = self._sql("in", ["a", 1])
+
+        assert sql == "\"data\" ->> 'price' IN (%s, %s)"
+
+
+class TestJsonbTemporalComparison:
+    """A datetime or date compared with a JSONB field is compared as one, not as text.
+
+    As text, ``'2025-01-01T00:00:00+00:00' < '2025-01-01T00:00:00Z'``.
+    """
+
+    @staticmethod
+    def _sql(operator: str, value: object, temporal_cast=None) -> tuple[str, list]:
+        condition = FieldCondition(
+            field_path=["created_at"],
+            operator=operator,
+            value=value,
+            lookup_strategy="jsonb_path",
+            target_column="data",
+            jsonb_path=["created_at"],
+            temporal_cast=temporal_cast,
+        )
+        sql, params = condition.to_sql()
+        return sql.as_string(None), params
+
+    @pytest.mark.parametrize(
+        ("operator", "sql_op"),
+        [("eq", "="), ("neq", "!="), ("gt", ">"), ("gte", ">="), ("lt", "<"), ("lte", "<=")],
+    )
+    def test_declared_datetime_string_casts_to_timestamptz(
+        self, operator: str, sql_op: str
+    ) -> None:
+        sql, params = self._sql(operator, "2025-01-01T00:00:00Z", "timestamptz")
+
+        assert sql == f"(\"data\" ->> 'created_at')::timestamptz {sql_op} %s::timestamptz"
+        assert params == ["2025-01-01T00:00:00Z"]
+
+    def test_declared_date_in_list_casts_to_date(self) -> None:
+        sql, params = self._sql("nin", ["2025-01-01", "2025-01-02"], "date")
+
+        assert sql == "(\"data\" ->> 'created_at')::date NOT IN (%s::date, %s::date)"
+        assert params == ["2025-01-01", "2025-01-02"]
+
+    @pytest.mark.parametrize(
+        ("value", "cast"),
+        [(datetime(2025, 1, 1, tzinfo=UTC), "timestamptz"), (date(2025, 1, 1), "date")],
+    )
+    def test_temporal_value_casts_without_a_declared_type(self, value, cast: str) -> None:
+        sql, params = self._sql("gte", value)
+
+        assert sql == f"(\"data\" ->> 'created_at')::{cast} >= %s::{cast}"
+        assert params == [value]
+
+    def test_undeclared_string_stays_text(self) -> None:
+        sql, _params = self._sql("gte", "2025-01-01T00:00:00Z")
+
+        assert sql == "\"data\" ->> 'created_at' >= %s"
+
+    def test_declared_datetime_isnull_is_not_cast(self) -> None:
+        sql, _params = self._sql("isnull", True, "timestamptz")
+
+        assert sql == "\"data\" ->> 'created_at' IS NULL"

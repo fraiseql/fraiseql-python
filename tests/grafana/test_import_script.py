@@ -92,7 +92,6 @@ class TestImportScriptContent:
         expected_dashboards = [
             "error_monitoring.json",
             "performance_metrics.json",
-            "cache_hit_rate.json",
             "database_pool.json",
             "apq_effectiveness.json",
         ]

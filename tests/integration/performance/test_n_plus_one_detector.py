@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from graphql import GraphQLResolveInfo
+from graphql.pyutils import Path
 
 from fraiseql.optimization.n_plus_one_detector import (
     N1DetectionResult,
@@ -21,19 +22,28 @@ from fraiseql.optimization.n_plus_one_detector import (
 pytestmark = pytest.mark.integration
 
 
+def _path(*keys: str | int) -> Path:
+    """Build a graphql-core response path, as ``info.path`` is at runtime."""
+    path = None
+    for key in keys:
+        path = Path(path, key, None)
+    assert path is not None
+    return path
+
+
 class TestQueryPattern:
     """Test QueryPattern dataclass."""
 
     def test_query_pattern_creation(self) -> None:
         """Test creating a QueryPattern."""
         pattern = QueryPattern(
-            field_path="articles.0.author",
+            field_path="articles.author",
             parent_type="Article",
             field_name="author",
             resolver_name="Article.author",
         )
 
-        assert pattern.field_path == "articles.0.author"
+        assert pattern.field_path == "articles.author"
         assert pattern.parent_type == "Article"
         assert pattern.field_name == "author"
         assert pattern.resolver_name == "Article.author"
@@ -377,7 +387,7 @@ class TestN1QueryDetector:
         mock_info = Mock(spec=GraphQLResolveInfo)
         mock_info.parent_type = Mock()
         mock_info.parent_type.name = "Article"
-        mock_info.path = ["articles", 0, "author"]
+        mock_info.path = _path("articles", 0, "author")
 
         await detector.track_field_resolution(mock_info, "author", 0.1)
 
@@ -402,7 +412,7 @@ class TestN1QueryDetector:
         mock_info = Mock(spec=GraphQLResolveInfo)
         mock_info.parent_type = Mock()
         mock_info.parent_type.name = "Article"
-        mock_info.path = ["articles", 0, "author"]
+        mock_info.path = _path("articles", 0, "author")
 
         # Track multiple times
         await detector.track_field_resolution(mock_info, "author", 0.1)
@@ -421,7 +431,7 @@ class TestN1QueryDetector:
 
         mock_info = Mock(spec=GraphQLResolveInfo)
         mock_info.parent_type = None
-        mock_info.path = ["field"]
+        mock_info.path = _path("field")
 
         await detector.track_field_resolution(mock_info, "test_field", 0.1)
 
@@ -437,7 +447,7 @@ class TestN1QueryDetector:
         mock_info = Mock(spec=GraphQLResolveInfo)
         mock_info.parent_type = Mock()
         mock_info.parent_type.name = "Test"
-        mock_info.path = ["test"]
+        mock_info.path = _path("test")
 
         # Track with some delay
         await detector.track_field_resolution(mock_info, "field", 0.1)
@@ -777,12 +787,12 @@ class TestEdgeCases:
         mock_info = Mock(spec=GraphQLResolveInfo)
         mock_info.parent_type = Mock()
         mock_info.parent_type.name = "Article"
-        mock_info.path = ["articles", 0, "author", "posts", 1, "comments"]
+        mock_info.path = _path("articles", 0, "author", "posts", 1, "comments")
 
         await detector.track_field_resolution(mock_info, "comments", 0.1)
 
         pattern = detector._patterns["Article.comments"]
-        assert "articles.0.author.posts.1.comments" in pattern.field_path
+        assert pattern.field_path == "articles.author.posts.comments"
 
     def test_end_request_with_zero_threshold(self) -> None:
         """Test end_request with threshold of 0."""
@@ -844,7 +854,7 @@ class TestEdgeCases:
         detector.start_request("test-request")
 
         pattern = QueryPattern(
-            field_path="articles.0.author",
+            field_path="articles.author",
             parent_type="Article",
             field_name="author",
             resolver_name="Article.author",
@@ -869,7 +879,7 @@ class TestEdgeCases:
         mock_info = Mock(spec=GraphQLResolveInfo)
         mock_info.parent_type = Mock()
         mock_info.parent_type.name = "Test"
-        mock_info.path = ["test"]
+        mock_info.path = _path("test")
 
         # Simulate concurrent tracking
         tasks = []

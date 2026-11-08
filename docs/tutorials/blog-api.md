@@ -91,8 +91,8 @@ SELECT
         'email', email,
         'name', name,
         'bio', bio,
-        'avatarUrl', avatar_url,
-        'createdAt', created_at
+        'avatar_url', avatar_url,
+        'created_at', created_at
     ) AS data
 FROM tb_user;
 
@@ -111,9 +111,9 @@ SELECT
         'content', p.content,
         'excerpt', p.excerpt,
         'tags', p.tags,
-        'isPublished', p.is_published,
-        'publishedAt', p.published_at,
-        'createdAt', p.created_at,
+        'is_published', p.is_published,
+        'published_at', p.published_at,
+        'created_at', p.created_at,
         'author', (SELECT data FROM v_user WHERE id = u.id)
     ) AS data
 FROM tb_post p
@@ -124,16 +124,18 @@ CREATE VIEW v_comment AS
 SELECT
     c.id,
     c.fk_post,
+    c.fk_parent,
     c.created_at,
     jsonb_build_object(
         '__typename', 'Comment',
         'id', c.id,
         'content', c.content,
-        'createdAt', c.created_at,
-        'author', (SELECT data FROM v_user WHERE pk_user = c.fk_author),
+        'created_at', c.created_at,
+        'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
+                   WHERE u.pk_user = c.fk_author),
         'post', (
             SELECT jsonb_build_object(
-                '__typename', 'Post',
+                '__typename', 'PostSummary',
                 'id', p.id,
                 'title', p.title
             )
@@ -145,8 +147,9 @@ SELECT
                     '__typename', 'Comment',
                     'id', r.id,
                     'content', r.content,
-                    'createdAt', r.created_at,
-                    'author', (SELECT data FROM v_user WHERE pk_user = r.fk_author)
+                    'created_at', r.created_at,
+                    'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
+                               WHERE u.pk_user = r.fk_author)
                 ) ORDER BY r.created_at
             )
             FROM tb_comment r
@@ -164,20 +167,21 @@ SELECT
     p.created_at,
     jsonb_build_object(
         '__typename', 'Post',
-        'id', p.pk_post,
+        'id', p.id,
         'title', p.title,
         'slug', p.slug,
         'content', p.content,
         'excerpt', p.excerpt,
         'tags', p.tags,
-        'isPublished', p.is_published,
-        'publishedAt', p.published_at,
-        'createdAt', p.created_at,
-        'author', (SELECT data FROM v_user WHERE id = p.fk_author),
+        'is_published', p.is_published,
+        'published_at', p.published_at,
+        'created_at', p.created_at,
+        'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
+                   WHERE u.pk_user = p.fk_author),
         'comments', COALESCE(
             (SELECT jsonb_agg(data ORDER BY created_at)
              FROM v_comment
-             WHERE fk_post = p.id AND fk_parent IS NULL),
+             WHERE fk_post = p.pk_post AND fk_parent IS NULL),
             '[]'::jsonb
         )
     ) AS data
@@ -185,6 +189,10 @@ FROM tb_post p;
 ```
 
 **Performance**: Fetching post + author + comments + replies = **1 query** (not N+1).
+
+**JSONB keys are snake_case**, like the Python field names (`created_at`).
+FraiseQL's `where` and `order_by` read these keys (`data -> 'created_at'`), and
+the response turns them into the GraphQL names (`createdAt`).
 
 ## GraphQL Types
 
@@ -202,13 +210,20 @@ class User:
     avatar_url: str | None
     created_at: datetime
 
+# The post a comment belongs to, as v_comment embeds it (id and title).
+# Comment can't name Post here: Post isn't defined yet.
+@fraiseql.type
+class PostSummary:
+    id: ID
+    title: str
+
 @fraiseql.type(sql_source="v_comment")
 class Comment:
     id: ID
     content: str
     created_at: datetime
     author: User
-    post: "Post"
+    post: PostSummary
     replies: list["Comment"]
 
 @fraiseql.type(sql_source="v_post")
@@ -224,59 +239,81 @@ class Post:
     created_at: datetime
     author: User
     comments: list[Comment]
+
+# get_post reads Post rows from v_post_full too
+from fraiseql.db import register_type_for_view
+register_type_for_view("v_post_full", Post, has_jsonb_data=True, jsonb_column="data")
 ```
 
 ## Queries
 
+A query is an `async` resolver whose first parameter is `info`. It reads a view
+through the repository in `info.context["db"]`: `find_one` for one row, `find`
+for a list. `mandatory_filters` compares view columns (`id`, `is_published`)
+for equality. A list query also gets `where` and `orderBy` arguments; leave
+`order_by` unannotated and pass it on, or the client's `orderBy` is ignored.
+
 ```python
+from graphql import GraphQLResolveInfo
 from fraiseql.types import ID
 import fraiseql
 
 @fraiseql.query
-def get_post(id: ID) -> Post | None:
+async def get_post(info: GraphQLResolveInfo, id: ID) -> Post | None:
     """Get single post with all nested data."""
-    pass  # Implementation handled by framework
+    db = info.context["db"]
+    # v_post_full embeds the comments and their replies
+    return await db.find_one("v_post_full", info=info, mandatory_filters={"id": id})
 
 @fraiseql.query
-def get_posts(
+async def get_posts(
+    info: GraphQLResolveInfo,
     is_published: bool | None = None,
+    order_by=None,
     limit: int = 20,
     offset: int = 0
 ) -> list[Post]:
-    """List posts with filtering and pagination."""
-    pass  # Implementation handled by framework
+    """List posts with filtering and pagination, newest first by default."""
+    db = info.context["db"]
+    filters = {} if is_published is None else {"is_published": is_published}
+    return await db.find(
+        "v_post",
+        info=info,
+        mandatory_filters=filters,
+        order_by=order_by or {"created_at": "DESC"},
+        limit=limit,
+        offset=offset,
+    )
 ```
 
 ## Mutations
 
-**Pattern**: PostgreSQL functions handle business logic.
+**Pattern**: PostgreSQL functions handle business logic. A class mutation calls
+the function named after it (`CreatePost` calls `create_post`) with its context
+params first and the input as one `jsonb`, and turns the `mutation_response` it
+returns into the success or error type. `mutation_response` and the `mutation_*`
+helpers come from `migrations/trinity/005_add_mutation_response.sql`.
 
 ```sql
 -- Create post function
-CREATE OR REPLACE FUNCTION fn_create_post(
-    p_author_id UUID,
-    p_title TEXT,
-    p_content TEXT,
-    p_excerpt TEXT DEFAULT NULL,
-    p_tags TEXT[] DEFAULT '{}',
-    p_is_published BOOLEAN DEFAULT false
-)
-RETURNS UUID AS $$
+CREATE OR REPLACE FUNCTION create_post(p_author_id UUID, input JSONB)
+RETURNS mutation_response AS $$
 DECLARE
     v_post_id UUID;
     v_author_pk INT;
     v_slug TEXT;
+    v_is_published BOOLEAN := coalesce((input->>'is_published')::boolean, false);
 BEGIN
     -- Get author internal pk_user
     SELECT pk_user INTO v_author_pk
     FROM tb_user WHERE id = p_author_id;
 
     IF v_author_pk IS NULL THEN
-        RAISE EXCEPTION 'Author not found: %', p_author_id;
+        RETURN mutation_not_found('User', p_author_id::text);
     END IF;
 
     -- Generate slug
-    v_slug := lower(regexp_replace(p_title, '[^a-zA-Z0-9]+', '-', 'g'));
+    v_slug := lower(regexp_replace(input->>'title', '[^a-zA-Z0-9]+', '-', 'g'));
     v_slug := trim(both '-' from v_slug);
     v_slug := v_slug || '-' || substr(md5(random()::text), 1, 8);
 
@@ -286,24 +323,24 @@ BEGIN
         is_published, published_at
     )
     VALUES (
-        v_author_pk, p_title, v_slug, p_content, p_excerpt, p_tags,
-        p_is_published,
-        CASE WHEN p_is_published THEN NOW() ELSE NULL END
+        v_author_pk, input->>'title', v_slug, input->>'content', input->>'excerpt',
+        -- an omitted tags field arrives as JSON null
+        ARRAY(SELECT jsonb_array_elements_text(
+            coalesce(jsonb_strip_nulls(input)->'tags', '[]'))),
+        v_is_published,
+        CASE WHEN v_is_published THEN NOW() ELSE NULL END
     )
     RETURNING id INTO v_post_id;
 
-    RETURN v_post_id;
+    RETURN mutation_created(
+        'Post created', (SELECT data FROM v_post WHERE id = v_post_id), 'Post'
+    );
 END;
 $$ LANGUAGE plpgsql;
 
 -- Create comment function
-CREATE OR REPLACE FUNCTION fn_create_comment(
-    p_author_id UUID,
-    p_post_id UUID,
-    p_content TEXT,
-    p_parent_id UUID DEFAULT NULL
-)
-RETURNS UUID AS $$
+CREATE OR REPLACE FUNCTION create_comment(p_author_id UUID, input JSONB)
+RETURNS mutation_response AS $$
 DECLARE
     v_comment_id UUID;
     v_author_pk INT;
@@ -312,21 +349,24 @@ DECLARE
 BEGIN
     -- Get internal primary keys
     SELECT pk_user INTO v_author_pk FROM tb_user WHERE id = p_author_id;
-    SELECT pk_post INTO v_post_pk FROM tb_post WHERE id = p_post_id;
-    IF p_parent_id IS NOT NULL THEN
-        SELECT pk_comment INTO v_parent_pk FROM tb_comment WHERE id = p_parent_id;
+    SELECT pk_post INTO v_post_pk FROM tb_post WHERE id = (input->>'post_id')::uuid;
+    IF input->>'parent_id' IS NOT NULL THEN
+        SELECT pk_comment INTO v_parent_pk
+        FROM tb_comment WHERE id = (input->>'parent_id')::uuid;
     END IF;
 
     IF v_author_pk IS NULL OR v_post_pk IS NULL THEN
-        RAISE EXCEPTION 'Author or post not found';
+        RETURN mutation_not_found('Author or post');
     END IF;
 
     -- Insert comment
     INSERT INTO tb_comment (fk_author, fk_post, fk_parent, content)
-    VALUES (v_author_pk, v_post_pk, v_parent_pk, p_content)
+    VALUES (v_author_pk, v_post_pk, v_parent_pk, input->>'content')
     RETURNING id INTO v_comment_id;
 
-    RETURN v_comment_id;
+    RETURN mutation_created(
+        'Comment added', (SELECT data FROM v_comment WHERE id = v_comment_id), 'Comment'
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -351,48 +391,60 @@ class CreateCommentInput:
     content: str
     parent_id: ID | None = None
 
-@fraiseql.mutation
-def create_post(input: CreatePostInput) -> Post:
-    """Create new blog post."""
-    pass  # Implementation handled by framework
+@fraiseql.success
+class CreatePostSuccess:
+    post: Post
 
-@fraiseql.mutation
-def create_comment(input: CreateCommentInput) -> Comment:
+@fraiseql.success
+class CreateCommentSuccess:
+    comment: Comment
+
+@fraiseql.error
+class BlogError:
+    """status, message and code come from the function's mutation_response."""
+
+# The author is the signed-in user: info.context["user_id"] is passed first
+@fraiseql.mutation(context_params={"user_id": "p_author_id"})
+class CreatePost:
+    """Create new blog post."""
+    input: CreatePostInput
+    success: CreatePostSuccess
+    error: BlogError
+
+@fraiseql.mutation(context_params={"user_id": "p_author_id"})
+class CreateComment:
     """Add comment to post."""
-    pass  # Implementation handled by framework
+    input: CreateCommentInput
+    success: CreateCommentSuccess
+    error: BlogError
 ```
 
 ## Application Setup
 
+`create_fraiseql_app` builds the schema and the FastAPI app, and opens the
+connection pool. The repository reaches every resolver as `info.context["db"]`;
+`context_getter` adds the request's own values to that context, here the
+`user_id` the mutations pass as `p_author_id`.
+
 ```python
 import os
-from fraiseql import FraiseQL
-from psycopg_pool import AsyncConnectionPool
+from fraiseql.fastapi import create_fraiseql_app
+
+# Context setup: merged into the default context (which holds "db")
+async def get_context(request):
+    return {
+        "user_id": request.headers.get("X-User-ID"),  # From auth middleware
+    }
 
 # Initialize app
-app = FraiseQL(
+app = create_fraiseql_app(
     database_url=os.getenv("DATABASE_URL", "postgresql://localhost/blog"),
     types=[User, Post, Comment],
-    enable_playground=True
+    queries=[get_post, get_posts],
+    mutations=[CreatePost, CreateComment],
+    context_getter=get_context,
+    production=False,  # False enables the GraphQL playground
 )
-
-# Connection pool
-pool = AsyncConnectionPool(
-    conninfo=app.config.database_url,
-    min_size=5,
-    max_size=20
-)
-
-# Context setup
-@app.context
-async def get_context(request):
-    async with pool.connection() as conn:
-        repo = PsycopgRepository(pool=pool)
-        return {
-            "repo": repo,
-            "tenant_id": request.headers.get("X-Tenant-ID"),
-            "user_id": request.headers.get("X-User-ID"),  # From auth middleware
-        }
 
 if __name__ == "__main__":
     import uvicorn
@@ -448,25 +500,45 @@ query GetPosts {
 
 ### GraphQL Mutations
 
+A mutation returns a union of its success and error types, so select the
+fields with inline fragments. The author comes from the `X-User-ID` header,
+through `get_context`.
+
 ```graphql
 mutation CreatePost($input: CreatePostInput!) {
   createPost(input: $input) {
-    id
-    title
-    slug
-    author {
-      name
+    ... on CreatePostSuccess {
+      post {
+        id
+        title
+        slug
+        author {
+          name
+        }
+      }
+    }
+    ... on BlogError {
+      message
+      code
     }
   }
 }
 
 mutation AddComment($input: CreateCommentInput!) {
   createComment(input: $input) {
-    id
-    content
-    createdAt
-    author {
-      name
+    ... on CreateCommentSuccess {
+      comment {
+        id
+        content
+        createdAt
+        author {
+          name
+        }
+      }
+    }
+    ... on BlogError {
+      message
+      code
     }
   }
 }
@@ -484,11 +556,14 @@ SELECT
     COUNT(DISTINCT c.id) as comment_count,
     array_agg(DISTINCT u.name) as commenters
 FROM tb_post p
-LEFT JOIN tb_comment c ON c.fk_post = p.id
-LEFT JOIN tb_user u ON u.id = c.fk_author
+LEFT JOIN tb_comment c ON c.fk_post = p.pk_post
+LEFT JOIN tb_user u ON u.pk_user = c.fk_author
 WHERE p.is_published = true
 GROUP BY p.pk_post, p.title
 HAVING COUNT(DISTINCT c.id) > 5;
+
+-- CONCURRENTLY needs a unique index on the materialized view
+CREATE UNIQUE INDEX ON mv_popular_posts (pk_post);
 
 -- Refresh periodically
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_popular_posts;

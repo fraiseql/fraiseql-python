@@ -5,6 +5,7 @@ operations, making chaos engineering tests more valuable and representative.
 """
 
 import random
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -189,6 +190,8 @@ class MockFraiseQLClient:
         self.base_url = base_url
         self.connection_pool_size = 10
         self.active_connections = 0
+        # The concurrency tests call one client from several threads
+        self._connections_lock = threading.Lock()
         # Chaos simulation state
         self.connection_disabled = False
         self.latency_ms = 0
@@ -219,29 +222,28 @@ class MockFraiseQLClient:
         - Connection acquisition time
         - Query execution time based on complexity
         - Response formatting
-        """
-        start_time = time.time()
 
+        The time is simulated, not slept: each step adds its cost to the
+        ``_execution_time_ms`` of the response. Sleeping and timing the sleep
+        reported the cost plus whatever time.sleep overshot by, which grows with
+        the machine's load and pushed the tests' bounds over on a busy machine.
+        """
         # Check for chaos conditions
         if self.connection_disabled:
-            time.sleep(0.001)  # Fast failure
             raise ConnectionError("Connection refused (chaos injection)")
 
         if random.random() < self.packet_loss_rate:
-            time.sleep(0.001)  # Fast failure
             raise ConnectionError("Packet loss (chaos injection)")
 
         try:
             # Simulate connection acquisition
-            self._acquire_connection()
+            elapsed_ms = self._acquire_connection()
 
             # Apply latency chaos
-            if self.latency_ms > 0:
-                time.sleep(self.latency_ms / 1000.0)
+            elapsed_ms += self.latency_ms
 
             # Simulate query execution based on complexity
-            execution_time = self._calculate_execution_time(operation.expected_complexity)
-            time.sleep(execution_time / 1000.0)
+            elapsed_ms += self._calculate_execution_time(operation.expected_complexity)
 
             # Simulate response
             response = self._generate_mock_response(operation)
@@ -249,28 +251,28 @@ class MockFraiseQLClient:
             # Simulate connection release
             self._release_connection()
 
-            total_time = time.time() - start_time
-            response["_execution_time_ms"] = total_time * 1000
+            response["_execution_time_ms"] = elapsed_ms
 
             return response
 
-        except Exception as e:
+        except Exception:
             self._release_connection()
-            raise e
+            raise
 
-    def _acquire_connection(self):
-        """Simulate connection pool acquisition."""
-        if self.active_connections >= self.connection_pool_size:
-            raise ConnectionError("Connection pool exhausted")
+    def _acquire_connection(self) -> float:
+        """Simulate connection pool acquisition; return its simulated cost in ms."""
+        with self._connections_lock:
+            if self.active_connections >= self.connection_pool_size:
+                raise ConnectionError("Connection pool exhausted")
 
-        self.active_connections += 1
-        # Simulate connection acquisition time
-        time.sleep(0.005)  # 5ms
+            self.active_connections += 1
+        return 5.0  # 5ms connection acquisition time
 
     def _release_connection(self):
         """Simulate connection release."""
-        if self.active_connections > 0:
-            self.active_connections -= 1
+        with self._connections_lock:
+            if self.active_connections > 0:
+                self.active_connections -= 1
 
     def _calculate_execution_time(self, complexity: int) -> float:
         """Calculate realistic execution time based on query complexity.
@@ -279,21 +281,11 @@ class MockFraiseQLClient:
         """
         base_time = 5.0  # 5ms base time
         complexity_factor = complexity / 10.0  # Scale complexity
-        variable_factor = 1.0 + (time.time() % 0.2)  # Small variance
 
-        return base_time + (complexity_factor * variable_factor)
+        return base_time + complexity_factor
 
     def _generate_mock_response(self, operation: GraphQLOperation) -> Dict[str, Any]:
         """Generate a mock GraphQL response."""
-        # Simulate occasional errors
-        if time.time() % 100 < 1:  # 1% error rate
-            return {
-                "errors": [
-                    {"message": "Simulated GraphQL error", "extensions": {"code": "INTERNAL_ERROR"}}
-                ],
-                "data": None,
-            }
-
         # Generate mock data based on operation
         if "GetUser" in operation.query:
             return {

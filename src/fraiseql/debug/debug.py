@@ -4,7 +4,6 @@ This module provides tools to help developers debug and optimize their
 GraphQL queries and resolvers.
 """
 
-import functools
 import inspect
 import json
 import time
@@ -17,6 +16,8 @@ from graphql import GraphQLResolveInfo
 from fraiseql.db import DatabaseQuery
 from fraiseql.fastapi.dependencies import get_db_pool
 from fraiseql.partial_instantiation import get_available_fields, is_partial_instance
+from fraiseql.utils.annotations import wraps
+from fraiseql.utils.paths import format_path
 
 logger = structlog.get_logger()
 
@@ -113,7 +114,7 @@ def profile_resolver(
     def decorator(func: T) -> T:
         if inspect.iscoroutinefunction(func):
 
-            @functools.wraps(func)
+            @wraps(func)
             async def async_wrapper(parent: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
                 start_time = time.perf_counter()
                 resolver_name = func.__name__
@@ -122,7 +123,7 @@ def profile_resolver(
                 log_context = {
                     "resolver": resolver_name,
                     "field": info.field_name,
-                    "path": str(info.path),
+                    "path": info.path.as_list(),
                     "parent_type": type(parent).__name__ if parent else None,
                 }
 
@@ -164,7 +165,7 @@ def profile_resolver(
 
             return cast(T, async_wrapper)
 
-        @functools.wraps(func)
+        @wraps(func)
         def sync_wrapper(parent: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
             start_time = time.perf_counter()
             resolver_name = func.__name__
@@ -173,7 +174,7 @@ def profile_resolver(
             log_context = {
                 "resolver": resolver_name,
                 "field": info.field_name,
-                "path": str(info.path),
+                "path": info.path.as_list(),
                 "parent_type": type(parent).__name__ if parent else None,
             }
 
@@ -403,7 +404,7 @@ def debug_graphql_info(info: GraphQLResolveInfo) -> str:
         f"Field: {info.field_name}",
         f"Parent Type: {info.parent_type}",
         f"Return Type: {info.return_type}",
-        f"Path: {info.path}",
+        f"Path: {format_path(info.path)}",
     ]
 
     # Show operation
@@ -412,10 +413,11 @@ def debug_graphql_info(info: GraphQLResolveInfo) -> str:
         if info.operation.name:
             lines.append(f"Operation Name: {info.operation.name.value}")
 
-    # Show variables
-    if info.variable_values:
+    # Show variables: a dict on graphql-core 3.2, a VariableValues on 3.3
+    variables = getattr(info.variable_values, "coerced", info.variable_values)
+    if variables:
         lines.append("Variables:")
-        for key, value in info.variable_values.items():
+        for key, value in variables.items():
             lines.append(f"  {key}: {value}")
 
     # Show selected fields

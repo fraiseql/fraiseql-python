@@ -288,7 +288,7 @@ mod tests {
         assert!(matches!(value_to_query_param(&json!(null)), QueryParam::Null));
         assert!(matches!(value_to_query_param(&json!(true)), QueryParam::Bool(true)));
         assert!(matches!(value_to_query_param(&json!(42)), QueryParam::BigInt(42)));
-        assert!(matches!(value_to_query_param(&json!(3.14)), QueryParam::Double(3.14)));
+        assert!(matches!(value_to_query_param(&json!(2.5)), QueryParam::Double(2.5)));
         assert!(
             matches!(value_to_query_param(&json!("hello")), QueryParam::Text(s) if s == "hello")
         );

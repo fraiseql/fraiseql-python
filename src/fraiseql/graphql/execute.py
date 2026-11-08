@@ -1,16 +1,20 @@
 """Custom GraphQL execution with passthrough support."""
 
 import asyncio
+import json
 import logging
 from typing import Any, Optional
 
 from graphql import (
     ExecutionResult,
+    GraphQLError,
     GraphQLSchema,
     parse,
 )
 
+from fraiseql.core.field_resolvers import python_type, selects_field_resolver, typed_rows
 from fraiseql.core.rust_pipeline import RustResponseBytes
+from fraiseql.utils.naming import snake_to_camel
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +37,9 @@ def _rust_response_bytes_middleware(next: Any, root: Any, info: Any, **kwargs: A
         **kwargs: Additional resolver arguments
 
     Returns:
-        The resolver result (unchanged) - RustResponseBytes is captured in context
+        The resolver result - RustResponseBytes is captured in context. Below the
+        root (a resolver wrapped db.find's result in another object), the field's
+        data from the RustResponseBytes, for graphql-core to complete.
     """
     result = next(root, info, **kwargs)
 
@@ -43,33 +49,112 @@ def _rust_response_bytes_middleware(next: Any, root: Any, info: Any, **kwargs: A
         async def async_wrapper():
             resolved = await result
             # Check if resolved value is RustResponseBytes
-            if (
-                isinstance(resolved, RustResponseBytes)
-                and hasattr(info, "context")
-                and isinstance(info.context, dict)
-            ):
-                # Store it in context for execute_graphql() to find
-                marker = info.context.get("__rust_response_bytes_marker__")
-                if marker is not None:
-                    marker["rust_response"] = resolved
+            if isinstance(resolved, RustResponseBytes):
+                if not _is_root_field(info):
+                    return _field_data(resolved, info)
+                if hasattr(info, "context") and isinstance(info.context, dict):
+                    _capture(info, resolved)
                     logger.debug("Middleware captured RustResponseBytes from async resolver")
             return resolved
 
         return async_wrapper()
 
     # Check sync result
-    if (
-        isinstance(result, RustResponseBytes)
-        and hasattr(info, "context")
-        and isinstance(info.context, dict)
-    ):
-        # Store it in context for execute_graphql() to find
-        marker = info.context.get("__rust_response_bytes_marker__")
-        if marker is not None:
-            marker["rust_response"] = result
+    if isinstance(result, RustResponseBytes):
+        if not _is_root_field(info):
+            return _field_data(result, info)
+        if hasattr(info, "context") and isinstance(info.context, dict):
+            _capture(info, result)
             logger.debug("Middleware captured RustResponseBytes from sync resolver")
 
     return result
+
+
+def _is_root_field(info: Any) -> bool:
+    path = getattr(info, "path", None)
+    return path is None or path.prev is None
+
+
+class _RustObject(dict):
+    """A JSON object the Rust pipeline wrote, readable by Python field names too.
+
+    Its keys are the GraphQL (camelCase) names; fraiseql's field resolvers read a
+    dict by the Python name (``created_at``), graphql-core's by the GraphQL name.
+    """
+
+    def get(self, key: Any, default: Any = None) -> Any:
+        if key in self:
+            return self[key]
+        if isinstance(key, str):
+            return super().get(snake_to_camel(key), default)
+        return default
+
+
+def _field_data(response: RustResponseBytes, info: Any = None) -> Any:
+    """The value of the one field in a RustResponseBytes, as graphql-core completes it.
+
+    db.find / db.find_one return a complete ``{"data": {<field>: ...}}`` response,
+    which only a root field can pass through. Wrapped in another object (a success
+    type, a page), it reaches a nested field: graphql-core gets the field's data
+    (camelCase keys, as the Rust pipeline wrote them) instead.
+    """
+    payload = json.loads(bytes(response), object_hook=_RustObject)
+    errors = payload.get("errors")
+    if errors:
+        raise GraphQLError(errors[0].get("message", "Query failed"))
+    data = payload.get("data") or {}
+    value = next(iter(data.values()), None)
+    if info is not None and value and selects_field_resolver(info):
+        # A selected field resolver runs with the row as self: typed objects
+        rows = value if isinstance(value, list) else [value]
+        typed = [
+            typed_rows([row], python_type(info.schema, info.return_type, row))[0]
+            if isinstance(row, dict)
+            else row
+            for row in rows
+        ]
+        return typed if isinstance(value, list) else typed[0]
+    return value
+
+
+def _capture(info: Any, response: RustResponseBytes) -> None:
+    """Record a resolver's RustResponseBytes, with its response key, for execute_graphql()."""
+    marker = info.context.get("__rust_response_bytes_marker__")
+    if marker is None:
+        return
+    marker["rust_response"] = response
+    path = getattr(info, "path", None)
+    if path is not None and path.prev is None:
+        marker["root_fields"][path.key] = response
+
+
+def _merge_rust_responses(
+    result: ExecutionResult, root_fields: dict[str, RustResponseBytes]
+) -> ExecutionResult:
+    """One result for an operation whose root fields include RustResponseBytes.
+
+    Each RustResponseBytes holds a complete ``{"data": {<field>: ...}}`` response
+    for its field; its value goes under the field's response key (its alias), in
+    the operation's field order. graphql-core's errors about those fields (it can't
+    complete RustResponseBytes) are dropped; errors Rust reported are kept.
+    """
+    data = dict(result.data or {})
+    errors = [
+        error for error in result.errors or [] if not (error.path and error.path[0] in root_fields)
+    ]
+    for key, response in root_fields.items():
+        payload = json.loads(bytes(response))
+        values = payload.get("data") or {}
+        data[key] = values.get(key, next(iter(values.values()), None))
+        errors.extend(
+            GraphQLError(
+                error.get("message", ""),
+                path=error.get("path"),
+                extensions=error.get("extensions"),
+            )
+            for error in payload.get("errors") or []
+        )
+    return ExecutionResult(data=data, errors=errors or None, extensions=result.extensions)
 
 
 def _should_block_introspection(enable_introspection: bool, context_value: Any) -> tuple[bool, str]:
@@ -190,7 +275,7 @@ async def execute_graphql(
         context_value = {}
 
     # Add a special key to track if any resolver returns RustResponseBytes
-    rust_response_marker = {"rust_response": None}
+    rust_response_marker: dict[str, Any] = {"rust_response": None, "root_fields": {}}
     if isinstance(context_value, dict):
         context_value["__rust_response_bytes_marker__"] = rust_response_marker
 
@@ -211,6 +296,13 @@ async def execute_graphql(
     # Ensure we have an ExecutionResult
     if not isinstance(result, ExecutionResult):
         raise TypeError(f"Expected ExecutionResult, got {type(result)}")
+
+    # An operation with several root fields (two mutations, say) can't be answered
+    # by one field's RustResponseBytes: merge them with the rest of the result
+    root_fields = rust_response_marker["root_fields"]
+    if root_fields and len(result.data or root_fields) > 1:
+        logger.debug("Merging RustResponseBytes of %d root fields", len(root_fields))
+        return _serialize_fraise_types_in_result(_merge_rust_responses(result, root_fields))
 
     # 🚀 RUST RESPONSE BYTES PASS-THROUGH:
     # Check if middleware captured RustResponseBytes from any resolver

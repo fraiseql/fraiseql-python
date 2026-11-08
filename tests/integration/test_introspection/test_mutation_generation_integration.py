@@ -134,7 +134,7 @@ class TestMutationGenerationIntegration:
         )
         assert (
             input_cls.__name__
-            == f"CreateUser{test_mutation_function.split('_')[-1].capitalize()}Input"
+            == f"CreateUser{test_mutation_function.rsplit('_', maxsplit=1)[-1].capitalize()}Input"
         )
         assert hasattr(input_cls, "__annotations__")
         annotations = input_cls.__annotations__

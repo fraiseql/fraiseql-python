@@ -45,7 +45,7 @@ FraiseQL Router
   └─ [Store Result Cache] (Optional) Cache query result if enabled
   ↓
 Return Result (from cache or freshly computed)
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -82,13 +82,14 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="optional"
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Behavior**:
 
 - ✅ Accepts both persisted query hashes and full query strings
-- ✅ Allows new query registration (hash + query) on first request
+- ✅ Allows new query registration (hash + query) on first request; the query must
+  hash to `sha256Hash` (see Hash Mismatch below)
 - ✅ Automatically stores queries for future hash-only requests
 - ✅ Useful for development and gradual client migration
 
@@ -107,7 +108,7 @@ config = FraiseQLConfig(
   },
   "query": "query { users { id name } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *Subsequent request - hash only*:
@@ -122,7 +123,7 @@ config = FraiseQLConfig(
     }
   }
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Use Cases**:
@@ -143,36 +144,27 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="required"
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Behavior**:
 
-- ✅ Only accepts persisted query hashes
+- ✅ Only runs persisted queries the server already knows: loaded from
+  `apq_queries_dir` at startup, registered by the operator
+  (`register_queries` / `store_persisted_query`), or already in the `postgresql`
+  backend's table
 - ❌ Rejects all arbitrary (non-hash) queries
-- ✅ Requires all queries pre-registered (either at build-time or runtime)
+- ❌ Clients cannot register queries: a request with a hash the server doesn't know
+  and the query text is refused (`PERSISTED_QUERY_NOT_IN_LIST`), and nothing is stored
+- ✅ A query text sent with a hash must hash to it (see Hash Mismatch below), so a
+  known hash always runs the text the server stored
 - ✅ Prevents query injection attacks and unauthorised GraphQL exploration
-- ⚠️ Clients must send hash + query on first request to register
+- ❌ `POST /graphql/rust` (when `enable_rust_endpoint=True`) takes query text only, so
+  it refuses every request with `ARBITRARY_QUERY_NOT_ALLOWED`
 
 **Request Examples**:
 
-*Registration request (requires both)*:
-
-```json
-<!-- Code example in JSON -->
-{
-  "extensions": {
-    "persistedQuery": {
-      "version": 1,
-      "sha256Hash": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1"
-    }
-  },
-  "query": "query { products { id name price } }"
-}
-```text
-<!-- Code example in TEXT -->
-
-*Subsequent request (hash only)*:
+*Hash-only request (runs if the hash is registered)*:
 
 ```json
 <!-- Code example in JSON -->
@@ -184,8 +176,30 @@ config = FraiseQLConfig(
     }
   }
 }
-```text
+```
 <!-- Code example in TEXT -->
+
+An unknown hash gets the usual `PERSISTED_QUERY_NOT_FOUND`. An Apollo client then
+sends the hash with the query text once; in `required` mode that request gets:
+
+```json
+<!-- Code example in JSON -->
+{
+  "errors": [
+    {
+      "message": "PersistedQueryNotInList",
+      "extensions": {
+        "code": "PERSISTED_QUERY_NOT_IN_LIST",
+        "details": "This server only runs pre-registered persisted queries (apq_mode='required'); this hash is not registered."
+      }
+    }
+  ]
+}
+```
+<!-- Code example in TEXT -->
+
+The code is neither `PERSISTED_QUERY_NOT_FOUND` (the client would send the text again)
+nor `PERSISTED_QUERY_NOT_SUPPORTED` (the client would stop sending hashes).
 
 *Arbitrary query (REJECTED)*:
 
@@ -194,7 +208,7 @@ config = FraiseQLConfig(
 {
   "query": "query { __schema { types { name } } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Response to Rejected Request**:
@@ -212,7 +226,7 @@ config = FraiseQLConfig(
     }
   ]
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Use Cases**:
@@ -234,7 +248,7 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="disabled"
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Behavior**:
@@ -253,7 +267,7 @@ config = FraiseQLConfig(
 {
   "query": "query { articles { id title content } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *APQ request with hash (treated as regular, hash ignored)*:
@@ -269,7 +283,7 @@ config = FraiseQLConfig(
   },
   "query": "query { articles { id title content } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *APQ hash-only request (FAILS - no query)*:
@@ -284,7 +298,7 @@ config = FraiseQLConfig(
     }
   }
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Response to Hash-Only Request**:
@@ -299,7 +313,7 @@ config = FraiseQLConfig(
     }
   ]
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Use Cases**:
@@ -323,7 +337,7 @@ import hashlib
 def compute_query_hash(query: str) -> str:
     """Compute SHA-256 hash of a GraphQL query."""
     return hashlib.sha256(query.encode("utf-8")).hexdigest()
-```text
+```
 <!-- Code example in TEXT -->
 
 **Properties**:
@@ -355,7 +369,7 @@ def compute_response_cache_key(
     var_json = json.dumps(variables, sort_keys=True, separators=(",", ":"))
     combined = f"{query_hash}:{var_json}"
     return hashlib.sha256(combined.encode()).hexdigest()
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Security Example: Preventing Data Leakage
@@ -377,7 +391,7 @@ cache_key_b = compute_response_cache_key(query_hash, variables_b)
 assert cache_key_a != cache_key_b
 # Result: cache_key_a = "hash:{"userId":"alice-123"}" (SHA-256)
 # Result: cache_key_b = "hash:{"userId":"bob-456"}" (SHA-256)
-```text
+```
 <!-- Code example in TEXT -->
 
 Without variable-aware cache keys, both users would receive the same cached response containing Alice's data.
@@ -398,7 +412,7 @@ function computeAPQHash(query) {
 }
 
 const hash = computeAPQHash(query);
-```text
+```
 <!-- Code example in TEXT -->
 
 **Python Client**:
@@ -409,7 +423,7 @@ import hashlib
 
 def compute_apq_hash(query: str) -> str:
     return hashlib.sha256(query.encode()).hexdigest()
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -428,7 +442,7 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_storage_backend="memory",  # Default for local development
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Characteristics**:
@@ -449,7 +463,7 @@ _query_storage = {
     "e4c7e8f5...": "query { users { id name } }",
     "a1b2c3d4...": "query { products { id price } }",
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Purpose**:
@@ -475,15 +489,30 @@ _query_storage = {
 <!-- Code example in Python -->
 config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
-    apq_storage_backend="database",
+    apq_storage_backend="postgresql",
     apq_backend_config={
         "table_prefix": "apq_",
         "auto_create_tables": True,
         "connection_timeout": 30,
     }
 )
-```text
+```
 <!-- Code example in TEXT -->
+
+> **Note:** the `postgresql` backend opens its own small connection pool to
+> `database_url` (or `apq_backend_config["database_url"]`) on the first APQ request,
+> and creates its tables if they don't exist (`auto_create_tables`, default on).
+> Persisted queries survive a restart and are shared by every instance using that
+> database. Its methods are synchronous (one indexed query each; a persisted query's
+> text is kept in process once read), so the `/graphql` route calls them in a worker
+> thread: a slow or unavailable database doesn't stall the event loop. Up to
+> `pool_max_size` lookups run at once; the others wait for a connection, at most
+> `connection_timeout` seconds.
+
+`apq_backend_config` keys: `database_url` (default: the app's `database_url`),
+`table_prefix` (default `"apq_"`, may include a schema: `"myschema.apq_"`),
+`auto_create_tables` (default `True`), `connection_timeout` (seconds, default 30) and
+`pool_max_size` (default 4).
 
 **Database Tables**:
 
@@ -500,7 +529,7 @@ CREATE TABLE apq_queries (
 
 -- Index for efficient storage
 CREATE INDEX idx_apq_queries_created ON apq_queries (created_at);
-```text
+```
 <!-- Code example in TEXT -->
 
 **Columns**:
@@ -544,7 +573,7 @@ SELECT
     pg_size_pretty(pg_total_relation_size('apq_queries')) as table_size,
     count(*) as query_count
 FROM apq_queries;
-```text
+```
 <!-- Code example in TEXT -->
 
 Clean up unused queries (optional):
@@ -559,7 +588,7 @@ ORDER BY created_at DESC;
 -- Delete very old queries if needed (careful: clients may still reference)
 DELETE FROM apq_queries
 WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days';
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -581,7 +610,7 @@ config = FraiseQLConfig(
         "ttl": 3600,  # 1 hour
     }
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Custom Backend Interface**:
@@ -589,9 +618,16 @@ config = FraiseQLConfig(
 Custom backends must implement the APQ storage interface with the following methods:
 
 - `get_persisted_query(hash_value)` → query string or None
-- `store_persisted_query(hash_value, query)` → None
+- `store_persisted_query(hash_value, query)` → None; raise `ValueError` when
+  `hash_value` is not the SHA-256 of `query`
+  (`fraiseql.storage.apq_store.check_query_hash` does it), as the built-in backends do
 - `register_queries(queries)` → dict mapping hash to query
 - `get_storage_stats()` → dict with backend statistics
+
+The methods are synchronous. A backend whose methods do blocking I/O (a database, a
+network cache) sets the class attribute `blocking_io = True`, and the `/graphql` route
+then calls them in a worker thread (`asyncio.to_thread`) instead of on the event loop;
+such a backend must be thread-safe. The default, `False`, calls them on the event loop.
 
 **Example Use Cases**:
 
@@ -604,7 +640,13 @@ Custom backends must implement the APQ storage interface with the following meth
 
 - FraiseQL dynamically imports backend class via reflection
 - Class must be importable from full path (module.ClassName)
-- Receives `apq_backend_config` dict in constructor
+- Receives the `apq_backend_config` dict as the constructor's first argument
+- Also receives `response_ttl=` (`apq_response_cache_ttl`) and `database_url=` (the
+  app's `database_url`) if the constructor has a parameter of that name; `**kwargs`
+  gets neither
+- A subclass of `MemoryAPQBackend` that keeps its `__init__(response_ttl=None)` gets
+  only `response_ttl=`, and a constructor without parameters is called without
+  arguments
 
 ---
 
@@ -627,7 +669,7 @@ src/
 │   └── mutations/
 │       ├── createUser.graphql
 │       └── updateProduct.graphql
-```text
+```
 <!-- Code example in TEXT -->
 
 **Configuration**:
@@ -638,19 +680,26 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="required",
     apq_storage_backend="postgresql",
-    apq_queries_dir="./src/graphql",  # Auto-load at startup
+    apq_queries_dir="./src/graphql",  # Operations registered as persisted queries
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Behavior**:
 
-1. On startup, FraiseQL scans `apq_queries_dir` recursively
-2. Finds all `.graphql` and `.gql` files
-3. Extracts individual queries/mutations/subscriptions from each file
-4. Computes SHA-256 hash for each operation
-5. Stores in selected backend (memory or database)
-6. Ready to serve hash-only APQ requests
+1. At startup, the app fails (`FileNotFoundError`) if `apq_queries_dir` doesn't exist
+2. When the first APQ request creates the APQ backend, FraiseQL scans
+   `apq_queries_dir` recursively for `.graphql` and `.gql` files
+3. Splits each file into its operations (`query`, `mutation`, `subscription`)
+4. Stores each operation under the SHA-256 of its text as written in the file, without
+   surrounding whitespace (for a file with one operation: the whole file, stripped)
+5. Ready to serve hash-only APQ requests (in `required` mode: only these, plus what
+   the backend already holds)
+
+The hash is the SHA-256 of the exact text the client sends, so the files must hold
+each operation the way your client's build emits it. A fragment is kept with the
+operation written before it in the same file; put each operation in its own file,
+followed by the fragments it uses. In `disabled` mode the directory isn't read.
 
 **Benefits**:
 
@@ -673,7 +722,7 @@ config = FraiseQLConfig(
     apq_storage_backend="postgresql",
     # No apq_queries_dir - start empty
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Registration Flow**:
@@ -694,7 +743,7 @@ POST /graphql HTTP/1.1
   "query": "query GetUser($id: ID!) { user(id: $id) { id name email } }",
   "variables": {"id": "user-123"}
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *Server processes*:
@@ -720,7 +769,7 @@ POST /graphql HTTP/1.1
   },
   "variables": {"id": "user-456"}
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *Server processes*:
@@ -766,7 +815,7 @@ Layer 2: GraphQL Execution
 Store in Response Cache
   ↓
 Return Response
-```text
+```
 <!-- Code example in TEXT -->
 
 **Performance Impact**:
@@ -782,16 +831,12 @@ Return Response
 config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="optional",
-    apq_storage_backend="database",
-    # Query result caching configuration (see Caching Specification)
-    cache_enabled=True,
-    cache_default_ttl=300,              # 5 minutes default
-    cache_include_complexity=True,
+    apq_storage_backend="postgresql",
 )
-```text
+```
 <!-- Code example in TEXT -->
 
-**Note**: Query result caching is configured separately from APQ. See the Caching Specification for complete configuration options including TTL, backends, and complexity-aware settings.
+**Note**: Query result caching is not a `FraiseQLConfig` setting; it is configured separately from APQ. See the Caching Specification for complete configuration options including TTL, backends, and complexity-aware settings.
 
 ### Cache Key Generation (Query Result Caching)
 
@@ -807,7 +852,7 @@ When query result caching is enabled, the cache key includes:
 ```text
 <!-- Code example in TEXT -->
 cache_key = sha256(query_hash + ":" + sorted_variables_json + ":" + tenant_id + ":" + complexity)
-```text
+```
 <!-- Code example in TEXT -->
 
 **Security Property**:
@@ -857,7 +902,7 @@ Response before filtering:
 ```json
 <!-- Code example in JSON -->
 {"data": {"user": {"id": "123", "name": "Alice", "email": "alice@example.com", "ssn": "123-45-6789"}}}
-```text
+```
 <!-- Code example in TEXT -->
 
 Response after field selection filtering:
@@ -865,7 +910,7 @@ Response after field selection filtering:
 ```json
 <!-- Code example in JSON -->
 {"data": {"user": {"id": "123", "name": "Alice"}}}
-```text
+```
 <!-- Code example in TEXT -->
 
 **Benefits**:
@@ -897,10 +942,21 @@ config = FraiseQLConfig(
     apq_mode="optional",                    # Allow registration
     apq_storage_backend="memory",           # Fast, no persistence needed
     apq_cache_responses=True,               # Optimization
-    apq_response_cache_ttl=300,             # 5 minutes
 )
-```text
+```
 <!-- Code example in TEXT -->
+
+A cached response is served for `apq_response_cache_ttl` seconds after it was stored
+(default 600; 0 means it does not expire), then the query runs again and its new
+response is stored.
+
+A response is cached when an APQ request runs a query (never a mutation or a
+subscription) without errors, whichever execution path built it. The key is the
+query's hash, its variables, the tenant (`tenant_id` in the request context) and, for
+an authenticated request, the user's id (`user_id`, `id` or `sub` of
+`context["user"]`): a user is only served their own cached responses. An authenticated
+request whose user has no such id is not cached. Anonymous requests share entries
+(hash, variables and tenant).
 
 **Environment Variables**:
 
@@ -910,9 +966,7 @@ FRAISEQL_DATABASE_URL=postgresql://localhost/fraiseql_db
 FRAISEQL_APQ_MODE=optional
 FRAISEQL_APQ_STORAGE_BACKEND=memory
 FRAISEQL_APQ_CACHE_RESPONSES=true
-FRAISEQL_APQ_RESPONSE_CACHE_TTL=300
-FRAISEQL_APQ_QUERIES_DIR=./src/graphql
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Staging Environment
@@ -922,14 +976,13 @@ FRAISEQL_APQ_QUERIES_DIR=./src/graphql
 config = FraiseQLConfig(
     database_url="postgresql://pg-staging/fraiseql_db",
     apq_mode="optional",                    # Allow client registration
-    apq_storage_backend="database",         # Persistent
+    apq_storage_backend="postgresql",       # Persistent
     apq_cache_responses=True,
-    apq_response_cache_ttl=600,             # 10 minutes
     apq_backend_config={
         "auto_create_tables": True,
     }
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Production Environment
@@ -939,9 +992,8 @@ config = FraiseQLConfig(
 config = FraiseQLConfig(
     database_url="postgresql://pg-prod-1/fraiseql_db",
     apq_mode="required",                    # Only persisted queries
-    apq_storage_backend="database",         # Persistent, shared
+    apq_storage_backend="postgresql",       # Persistent, shared
     apq_cache_responses=True,
-    apq_response_cache_ttl=1800,            # 30 minutes
     apq_queries_dir="./dist/graphql",       # Pre-built queries
     apq_backend_config={
         "table_prefix": "apq_",
@@ -949,7 +1001,7 @@ config = FraiseQLConfig(
         "connection_timeout": 30,
     }
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Environment Variables**:
@@ -958,11 +1010,10 @@ config = FraiseQLConfig(
 <!-- Code example in BASH -->
 # Production APQ configuration
 FRAISEQL_APQ_MODE=required
-FRAISEQL_APQ_STORAGE_BACKEND=database
+FRAISEQL_APQ_STORAGE_BACKEND=postgresql
 FRAISEQL_APQ_CACHE_RESPONSES=true
-FRAISEQL_APQ_RESPONSE_CACHE_TTL=1800
 FRAISEQL_APQ_QUERIES_DIR=/app/dist/graphql
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -1009,7 +1060,7 @@ fraiseql_apq_response_cache_hits_total
 fraiseql_apq_response_cache_misses_total
 fraiseql_apq_stored_queries_count
 fraiseql_apq_response_cache_size_bytes
-```text
+```
 <!-- Code example in TEXT -->
 
 **Health Check Endpoint**:
@@ -1026,7 +1077,7 @@ fraiseql_apq_response_cache_size_bytes
         "cached_responses_count": 15234
     }
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Dashboard Recommendations
@@ -1067,14 +1118,15 @@ fraiseql_apq_response_cache_size_bytes
 **Causes**:
 
 1. Query hash mismatch between client and server
-2. Query not registered (in required mode)
+2. Query not registered
 3. Storage backend lost data (memory backend restart)
 4. Whitespace differences in query string
 
 **Solutions**:
 
 1. Verify hash matches: recompute SHA-256 of query string
-2. In `optional` mode, send query with hash to register
+2. In `optional` mode, send query with hash to register; in `required` mode, register
+   it on the server
 3. Use persistent backend (PostgreSQL) instead of memory
 4. Ensure query strings are identical (whitespace sensitive!)
 
@@ -1085,16 +1137,14 @@ fraiseql_apq_response_cache_size_bytes
 **Causes**:
 
 1. Each query executes with different variables (unique cache keys)
-2. TTL too short for query frequency
-3. Response caching disabled
-4. Queries have errors (not cached)
+2. Response caching disabled
+3. Queries have errors (not cached)
 
 **Solutions**:
 
 1. Verify queries are reused with same variables (use APQ registration metrics)
-2. Increase `apq_response_cache_ttl`
-3. Enable with `apq_cache_responses=true`
-4. Check for errors in responses (not cached by design)
+2. Enable with `apq_cache_responses=true`
+3. Check for errors in responses (not cached by design)
 
 ### ARBITRARY_QUERY_NOT_ALLOWED Error
 
@@ -1104,13 +1154,34 @@ fraiseql_apq_response_cache_size_bytes
 
 1. Client not configured for APQ
 2. Client APQ support disabled
-3. Query not pre-registered
 
 **Solutions**:
 
 1. Configure client for APQ (Apollo Client, Relay, etc.)
 2. Enable APQ in client SDK
-3. Register query: send hash + query to register
+
+### Hash Mismatch (`provided sha does not match query`)
+
+**Symptom**: a request carrying both `sha256Hash` and `query` gets HTTP 400 with
+`provided sha does not match query` (code `BAD_REQUEST`, as Apollo Server answers)
+
+**Cause**: the SHA-256 of the query text is not `sha256Hash`. In `optional` and
+`required` mode such a request is refused and nothing is stored, so no client can store
+a text under the hash of another query. (`disabled` mode ignores the extension and
+stores nothing.)
+
+**Solution**: hash the exact text you send (UTF-8, SHA-256, lowercase hex).
+
+### PERSISTED_QUERY_NOT_IN_LIST Error
+
+**Symptom**: In `required` mode, a client sends a hash with its query text and gets
+`PersistedQueryNotInList`
+
+**Cause**: the hash is not registered on the server; `required` mode doesn't let
+clients register queries.
+
+**Solution**: register the operation on the server (put it in `apq_queries_dir`, or call
+`register_queries` at startup), with the exact text the client hashes.
 
 ### Backend Storage Issues (Database)
 
@@ -1141,8 +1212,8 @@ fraiseql_apq_response_cache_size_bytes
 
 **Solutions**:
 
-1. Switch to database backend: `apq_storage_backend="database"`
-2. Pre-register queries: set `apq_queries_dir` and restart
+1. Pre-register queries with `apq_queries_dir` (see Build-Time Registration)
+2. Use a persistent backend: `apq_storage_backend="postgresql"
 
 ---
 
@@ -1186,7 +1257,7 @@ variables = {"userId": "bob"}
 cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
 
 # assert cache_key_a != cache_key_b  ✅ Prevents data leakage
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Multi-Tenant Isolation
@@ -1199,7 +1270,7 @@ cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
 # Tenant A: caches response with tenant_id="tenant-123"
 # Tenant B: caches response with tenant_id="tenant-456"
 # Never mixed
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Sensitive Data in Error Responses
@@ -1214,7 +1285,7 @@ cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
     "extensions": {"code": "PERSISTED_QUERY_NOT_FOUND"}
   }]
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Unsafe** (avoid):
@@ -1227,7 +1298,7 @@ cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
     "extensions": {"provided_query": "SELECT * FROM users"}
   }]
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -1251,7 +1322,10 @@ cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
 ### Enforcement (Week 4)
 
 1. Switch to `required` mode on staging
-2. Test that only registered queries execute
+2. Test that only registered queries execute. With the `postgresql` backend, every hash
+   clients registered while in `optional` mode is still in `apq_queries` and keeps
+   running: empty the table (or use a new `table_prefix`) and register only the
+   approved operations
 3. Verify client handles ARBITRARY_QUERY_NOT_ALLOWED
 4. Plan rollout schedule
 
@@ -1294,7 +1368,7 @@ const client = new ApolloClient({
   ),
   cache: new InMemoryCache(),
 });
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Relay (JavaScript)
@@ -1317,7 +1391,7 @@ const network = createRelayNetworkLayer(
   ],
   { disableBatching: false }
 );
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Python Client
@@ -1331,7 +1405,7 @@ transport = HttpTransport(
     apq_enabled=True,
 )
 client = Client(transport=transport)
-```text
+```
 <!-- Code example in TEXT -->
 
 The client library automatically:

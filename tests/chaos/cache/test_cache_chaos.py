@@ -39,13 +39,25 @@ class TestCacheChaos(ChaosTestCase):
         cache_hits = 0
         cache_misses = 0
 
+        # DETERMINISTIC SCHEDULE: each half hits the cache at its rate, in an order
+        # shuffled with a fixed seed (an unseeded random.random() per operation fell
+        # under the 40% overall hit rate about 1 run in 100)
+        rng = random.Random("cache_invalidation_storm")
+        storm_ops = total_operations // 2
+        normal_ops = total_operations - storm_ops
+        storm_hits = round(storm_ops * storm_cache_hit_rate)
+        normal_hits = round(normal_ops * cache_hit_rate)
+        storm = [True] * storm_hits + [False] * (storm_ops - storm_hits)
+        normal = [True] * normal_hits + [False] * (normal_ops - normal_hits)
+        rng.shuffle(storm)
+        rng.shuffle(normal)
+        hits = storm + normal
+
         for i in range(total_operations):
             # Simulate cache invalidation storm (first half of operations)
-            current_hit_rate = storm_cache_hit_rate if i < total_operations // 2 else cache_hit_rate
-
-            if random.random() < current_hit_rate:
+            if hits[i]:
                 # Cache hit - fast response
-                execution_time = 5.0 + random.uniform(-1, 1)  # ~5ms cache hit
+                execution_time = 5.0 + (i % 3 - 1)  # ~5ms cache hit
                 cache_hits += 1
             else:
                 # Cache miss - database query
@@ -54,11 +66,6 @@ class TestCacheChaos(ChaosTestCase):
                 cache_misses += 1
 
             self.metrics.record_query_time(execution_time)
-
-            # Simulate storm: invalidate cache entries randomly
-            if i < total_operations // 2 and random.random() < 0.3:  # 30% invalidation rate
-                # Cache invalidation causes next request to miss
-                pass
 
         self.metrics.end_test()
 
@@ -91,12 +98,24 @@ class TestCacheChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         total_operations = max(7, int(15 * self.chaos_config.load_multiplier))
 
-        for i in range(total_operations):
+        # DETERMINISTIC SCHEDULE: 15% cache misses, 15% of the hits corrupted (at
+        # least one), in an order shuffled with a fixed seed. Two unseeded
+        # random.random() draws per operation drew no corruption about 1 run in 50.
+        misses = round(total_operations * 0.15)
+        corrupted = max(1, round((total_operations - misses) * 0.15))
+        accesses = (
+            ["miss"] * misses
+            + ["corrupted"] * corrupted
+            + ["hit"] * (total_operations - misses - corrupted)
+        )
+        random.Random("cache_corruption").shuffle(accesses)
+
+        for i, access in enumerate(accesses):
             try:
                 # Simulate cache access
-                if random.random() < 0.85:  # 85% cache hit rate
+                if access != "miss":  # 85% cache hit rate
                     # Check for corruption
-                    if random.random() < 0.15:  # 15% of cache entries corrupted
+                    if access == "corrupted":  # 15% of cache entries corrupted
                         # Corrupted cache entry detected
                         corruption_detected += 1
                         self.metrics.record_error()
@@ -108,7 +127,7 @@ class TestCacheChaos(ChaosTestCase):
                         successful_fallbacks += 1
                     else:
                         # Valid cache hit
-                        execution_time = 4.0 + random.uniform(-0.5, 0.5)
+                        execution_time = 4.0 + (i % 3 - 1) * 0.5
                         self.metrics.record_query_time(execution_time)
                 else:
                     # Cache miss - direct database query
@@ -160,7 +179,9 @@ class TestCacheChaos(ChaosTestCase):
         failure_interval = max(1, int(1 / 0.25))  # Every 4th operation (25% rate)
         failure_iterations = set(range(failure_interval - 1, total_operations, failure_interval))
 
-        cache_miss_interval = max(1, int(1 / 0.2))  # Every 5th operation (20% miss rate = 80% hit rate)
+        cache_miss_interval = max(
+            1, int(1 / 0.2)
+        )  # Every 5th operation (20% miss rate = 80% hit rate)
 
         # State tracking
         backend_available = True
@@ -198,7 +219,9 @@ class TestCacheChaos(ChaosTestCase):
 
                     # Deterministic backend recovery (after 2-3 operations)
                     operations_in_failure = i - failure_start
-                    if operations_in_failure >= 2:  # Recover after 2 operations (40% cumulative chance)
+                    if (
+                        operations_in_failure >= 2
+                    ):  # Recover after 2 operations (40% cumulative chance)
                         backend_available = True
                         failure_start = None
                         print(f"Cache backend recovered at operation {i}")
@@ -234,11 +257,7 @@ class TestCacheChaos(ChaosTestCase):
         Scenario: Multiple concurrent requests try to populate same cache entry.
         Expected: FraiseQL prevents cache stampede with proper synchronization.
         """
-        import queue
         import threading
-
-        client = MockFraiseQLClient()
-        operation = FraiseQLTestScenarios.simple_user_query()
 
         self.metrics.start_test()
 
@@ -246,42 +265,49 @@ class TestCacheChaos(ChaosTestCase):
         # Scale num_threads based on hardware (5 on baseline, 3-20 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         num_threads = max(3, int(5 * self.chaos_config.load_multiplier))
-        results_queue = queue.Queue()
-        cache_populated = False
-        stampede_events = 0
+        population_ms = 50.0  # Simulated cache population time
+        cache = {"populated": False, "populating": False, "waiting": 0}
+        cache_changed = threading.Condition()
+        stampede_events = 0  # Cache populations: one, if the stampede is prevented
+        results = []
 
         def simulate_concurrent_request(thread_id: int):
-            """Simulate a request that might trigger cache stampede."""
+            """A request for an entry the cache doesn't have yet."""
+            nonlocal stampede_events
+
             try:
-                nonlocal cache_populated, stampede_events
+                with cache_changed:
+                    if not cache["populated"] and not cache["populating"]:
+                        # First miss: this request populates the entry
+                        cache["populating"] = True
+                        stampede_events += 1
+                        # Every request arrives during the population, which is the
+                        # stampede: wait until the others are waiting for this one
+                        cache_changed.wait_for(
+                            lambda: cache["waiting"] == num_threads - 1, timeout=30
+                        )
+                        cache["populated"] = True
+                        cache_changed.notify_all()
+                    else:
+                        # Miss during the population: wait for it instead of
+                        # populating the entry again
+                        cache["waiting"] += 1
+                        cache_changed.notify_all()
+                        if not cache_changed.wait_for(lambda: cache["populated"], timeout=30):
+                            raise TimeoutError("cache population never finished")
 
-                # Check if cache needs population (simulate cache miss)
-                if not cache_populated and random.random() < 0.7:  # 70% chance of cache miss
-                    # This would be a stampede scenario in real systems
-                    stampede_events += 1
-
-                    # Simulate cache population time
-                    time.sleep(0.05)  # 50ms cache population
-
-                    if not cache_populated:  # Check if another thread already populated
-                        cache_populated = True
-
-                    # Return populated cache result
-                    execution_time = 50.0  # Includes population time
-                else:
-                    # Cache hit
-                    execution_time = 4.0 + random.uniform(-0.5, 0.5)
-
-                results_queue.put(("success", thread_id, execution_time))
+                # Every request waited for the one population
+                results.append(("success", thread_id, population_ms))
 
             except Exception as e:
-                results_queue.put(("error", thread_id, str(e)))
+                results.append(("error", thread_id, str(e)))
 
         # Start concurrent requests
-        threads = []
-        for i in range(num_threads):
-            thread = threading.Thread(target=simulate_concurrent_request, args=(i,))
-            threads.append(thread)
+        threads = [
+            threading.Thread(target=simulate_concurrent_request, args=(i,))
+            for i in range(num_threads)
+        ]
+        for thread in threads:
             thread.start()
 
         # Wait for completion
@@ -293,8 +319,7 @@ class TestCacheChaos(ChaosTestCase):
         errors = 0
         execution_times = []
 
-        while not results_queue.empty():
-            result_type, thread_id, data = results_queue.get()
+        for result_type, _thread_id, data in results:
             if result_type == "success":
                 successes += 1
                 execution_times.append(data)
@@ -305,25 +330,20 @@ class TestCacheChaos(ChaosTestCase):
 
         self.metrics.end_test()
 
-        # Validate stampede prevention
-        assert successes >= num_threads * 0.8, (
-            f"Too many failed requests: {successes}/{num_threads}"
-        )
-        assert stampede_events > 0, "Should detect stampede events"
-        # With more threads, expect proportionally more stampede events
-        # But stampede prevention should keep it below 80% of threads
-        max_expected_stampedes = int(num_threads * 0.8)
-        assert stampede_events <= max_expected_stampedes, (
-            f"Too many stampede events: {stampede_events}/{num_threads} "
-            f"(expected <= {max_expected_stampedes})"
+        # Validate stampede prevention: every request served, the entry populated once
+        # (each request drew a 70% chance of populating it with an unseeded
+        # random.random(), and how many saw the cache empty depended on how fast the
+        # threads started: the counts failed about 1 run in 5)
+        assert successes == num_threads, f"Too many failed requests: {successes}/{num_threads}"
+        assert stampede_events == 1, (
+            f"{stampede_events} cache populations for {num_threads} concurrent misses"
         )
 
-        if execution_times:
-            avg_time = statistics.mean(execution_times)
-            max_time = max(execution_times)
-            assert max_time <= avg_time * 3, (
-                f"Excessive variance indicates stampede: max {max_time:.1f}ms vs avg {avg_time:.1f}ms"
-            )
+        avg_time = statistics.mean(execution_times)
+        max_time = max(execution_times)
+        assert max_time <= avg_time * 3, (
+            f"Excessive variance indicates stampede: max {max_time:.1f}ms vs avg {avg_time:.1f}ms"
+        )
 
     @pytest.mark.chaos
     @pytest.mark.chaos_cache
@@ -350,13 +370,16 @@ class TestCacheChaos(ChaosTestCase):
 
         cache_entries = {}
         evictions = 0
+        # Seeded: the hits and the evicted entries were unseeded random draws, which
+        # evicted more than 70% of the operations about 1 run in 300
+        rng = random.Random("cache_memory_pressure")
 
         for i in range(total_operations):
             cache_key = f"query_{i % key_space}"  # More keys than capacity → evictions
 
-            if cache_key in cache_entries and random.random() < 0.7:  # 70% hit rate
+            if cache_key in cache_entries and rng.random() < 0.7:  # 70% hit rate
                 # Cache hit
-                execution_time = 4.0 + random.uniform(-0.5, 0.5)
+                execution_time = 4.0 + rng.uniform(-0.5, 0.5)
                 self.metrics.record_query_time(execution_time)
             else:
                 # Cache miss - database query
@@ -367,7 +390,7 @@ class TestCacheChaos(ChaosTestCase):
                 # Cache the result (with eviction pressure)
                 if len(cache_entries) >= cache_capacity:
                     # Evict random entry
-                    evicted_key = random.choice(list(cache_entries.keys()))
+                    evicted_key = rng.choice(list(cache_entries.keys()))
                     del cache_entries[evicted_key]
                     evictions += 1
 

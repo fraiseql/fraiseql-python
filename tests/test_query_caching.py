@@ -34,7 +34,7 @@ def test_schema():
                 "jsonb_column": "data",
                 "fk_mappings": {},
                 "has_jsonb_data": True,
-            }
+            },
         },
         "types": {},
     }
@@ -91,7 +91,7 @@ async def test_cache_clear(parser, builder, test_schema):
     builder.build_cached(parsed, test_schema)
 
     stats_before = RustQueryBuilder.get_stats()
-    initial_cached = stats_before["cached_plans"]
+    stats_before["cached_plans"]
 
     # Clear cache
     RustQueryBuilder.clear_cache()

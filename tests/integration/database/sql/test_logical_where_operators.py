@@ -213,7 +213,7 @@ class TestLogicalOperatorsSQLGeneration:
 
         # Should generate SQL with AND
         assert sql is not None
-        sql_str = str(sql)
+        str(sql)
         # Note: explicit AND might be omitted as it's default behavior
         # The key is that both conditions should be present
 
@@ -319,7 +319,7 @@ class TestEdgeCasesAndErrorHandling:
 
         where_input = ProductWhereInput(OR=[])
         sql_where = where_input._to_sql_where()
-        sql = sql_where.to_sql()
+        sql_where.to_sql()
 
         # Empty OR should either generate no SQL or valid empty condition
         # The exact behavior can be determined during implementation
@@ -330,7 +330,7 @@ class TestEdgeCasesAndErrorHandling:
 
         where_input = ProductWhereInput(AND=[])
         sql_where = where_input._to_sql_where()
-        sql = sql_where.to_sql()
+        sql_where.to_sql()
 
         # Empty AND should either generate no SQL or valid empty condition
 
@@ -348,5 +348,5 @@ class TestEdgeCasesAndErrorHandling:
         )
 
         # Should either filter out None values or handle gracefully
-        sql_where = where_input._to_sql_where()
+        where_input._to_sql_where()
         # Should not raise an exception

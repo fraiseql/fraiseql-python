@@ -585,34 +585,41 @@ async def health_endpoint():
 
 ### Alerting on Degradation
 
+FraiseQL has no Sentry integration; record the degradation with the PostgreSQL error
+tracker (`init_error_tracker`, see [Observability](./observability.md#error-tracking)),
+whose notification rules can alert by email, Slack or webhook:
+
 ```python
-from fraiseql.monitoring import HealthCheck, HealthStatus
-from fraiseql.monitoring.sentry import capture_message
+from fraiseql.monitoring import HealthCheck, get_error_tracker
 
 health = HealthCheck()
 # ... register checks
 
-@app.get("/health")
+@app.get("/health/detailed")
 async def health_with_alerts():
     """Health check with automatic alerting."""
     result = await health.run_checks()
 
     if result["status"] == "degraded":
-        # Alert to Sentry
         failed_checks = {
             name: check
             for name, check in result["checks"].items()
             if check["status"] != "healthy"
         }
 
-        capture_message(
-            f"Health check degraded: {len(failed_checks)} checks failing",
-            level="warning",
-            extra={"failed_checks": failed_checks}
-        )
+        tracker = get_error_tracker()
+        if tracker is not None:
+            await tracker.capture_message(
+                f"Health check degraded: {len(failed_checks)} checks failing",
+                level="warning",
+                context={"application": {"failed_checks": failed_checks}},
+            )
 
     return result
 ```
+
+On an app from `create_fraiseql_app`, `GET /health` and `GET /ready` are FraiseQL's
+own: a route you add on those paths is never reached, so use another path.
 
 ### Response Caching
 

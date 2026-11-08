@@ -9,11 +9,13 @@ extension is available.
 """
 
 import logging
+import time
 from datetime import timedelta
 from typing import Optional
 from uuid import UUID
 
 from psycopg_pool import AsyncConnectionPool
+from pydantic import ValidationError
 
 from fraiseql.caching import PostgresCache
 
@@ -31,14 +33,23 @@ class PermissionCache:
     - Automatic invalidation via domain versioning (requires pg_fraiseql_cache)
     """
 
-    def __init__(self, db_pool: AsyncConnectionPool) -> None:
+    def __init__(
+        self,
+        db_pool: AsyncConnectionPool,
+        request_cache_ttl: timedelta = timedelta(seconds=1),
+    ) -> None:
         """Initialize permission cache.
 
         Args:
             db_pool: PostgreSQL connection pool
+            request_cache_ttl: How long the in-memory layer answers for a user before
+                going back to PostgreSQL. It skips the domain version check, so it is
+                kept short (one request's worth); ``timedelta(0)`` turns it off.
         """
         self.pg_cache = PostgresCache(db_pool, table_name="fraiseql_cache")
-        self._request_cache: dict[str, list[Permission]] = {}
+        # key -> (time.monotonic() deadline, permissions)
+        self._request_cache: dict[str, tuple[float, list[Permission]]] = {}
+        self._request_cache_ttl = request_cache_ttl.total_seconds()
         self._cache_ttl = timedelta(minutes=5)  # 5 minute TTL
 
         # RBAC domains for version checking
@@ -71,9 +82,10 @@ class PermissionCache:
         key = self._make_key(user_id, tenant_id)
 
         # Try request-level cache first (fastest)
-        if key in self._request_cache:
+        in_memory = self._request_cache_get(key)
+        if in_memory is not None:
             logger.debug("Permission cache HIT (request-level): %s", key)
-            return self._request_cache[key]
+            return in_memory
 
         # Try PostgreSQL cache with version checking
         result, cached_versions = await self.pg_cache.get_with_metadata(key)
@@ -103,11 +115,16 @@ class PermissionCache:
                     )
                     return None
 
-        # Deserialize to Permission objects
-        permissions = [Permission(**p) for p in result]
+        # Deserialize to Permission objects. A row that doesn't validate (written by an
+        # older version, or altered) is a miss: the caller recomputes and overwrites it.
+        try:
+            permissions = [Permission.model_validate(p) for p in result]
+        except (ValidationError, TypeError) as e:
+            logger.warning("Ignoring invalid cached permissions for %s: %s", key, e)
+            return None
 
         # Populate request cache
-        self._request_cache[key] = permissions
+        self._request_cache_put(key, permissions)
 
         logger.debug("Permission cache HIT (PostgreSQL): %s", key)
         return permissions
@@ -127,17 +144,8 @@ class PermissionCache:
         """
         key = self._make_key(user_id, tenant_id)
 
-        # Serialize permissions
-        serialized = [
-            {
-                "id": str(p.id),
-                "resource": p.resource,
-                "action": p.action,
-                "description": p.description,
-                "constraints": p.constraints,
-            }
-            for p in permissions
-        ]
+        # Serialize permissions (every field, so get() can validate them back)
+        serialized = [p.model_dump(mode="json") for p in permissions]
 
         # Get current domain versions
         versions = None
@@ -152,9 +160,28 @@ class PermissionCache:
         )
 
         # Store in request cache
-        self._request_cache[key] = permissions
+        self._request_cache_put(key, permissions)
 
         logger.debug("Cached permissions for user %s (versions: %s)", user_id, versions)
+
+    def _request_cache_get(self, key: str) -> Optional[list[Permission]]:
+        entry = self._request_cache.get(key)
+        if entry is None:
+            return None
+        deadline, permissions = entry
+        if time.monotonic() >= deadline:
+            del self._request_cache[key]
+            return None
+        return permissions
+
+    def _request_cache_put(self, key: str, permissions: list[Permission]) -> None:
+        if self._request_cache_ttl <= 0:
+            return
+        now = time.monotonic()
+        # Drop expired entries so a long-lived cache doesn't grow with every user seen.
+        for stale in [k for k, (deadline, _) in self._request_cache.items() if deadline <= now]:
+            del self._request_cache[stale]
+        self._request_cache[key] = (now + self._request_cache_ttl, permissions)
 
     def clear_request_cache(self) -> None:
         """Clear request-level cache (called at end of request)."""

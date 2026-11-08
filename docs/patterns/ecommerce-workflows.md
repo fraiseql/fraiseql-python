@@ -292,7 +292,7 @@ SELECT
     'description',  p.description,
     'price',        p.price,
     'status',       p.status,
-    'inStock',      COALESCE(SUM(inv.quantity_available) > 0, false),
+    'in_stock',      COALESCE(SUM(inv.quantity_available) > 0, false),
     'rating',       COALESCE(AVG(r.rating), 0),
     'variants', (
       SELECT jsonb_agg(jsonb_build_object(
@@ -301,7 +301,7 @@ SELECT
         'sku',               pv.sku,
         'price',             p.price + COALESCE(pv.price_modifier, 0),
         'weight',            pv.weight,
-        'availableQuantity', COALESCE(vinv.quantity_available, 0)
+        'available_quantity', COALESCE(vinv.quantity_available, 0)
       ))
       FROM tb_product_variant pv
       LEFT JOIN tb_inventory vinv ON vinv.fk_product_variant = pv.pk_product_variant
@@ -321,21 +321,21 @@ SELECT
   o.fk_customer,                                   -- kept for filtering / RLS, not in data
   jsonb_build_object(
     'id',             o.id,
-    'orderNumber',    o.order_number,
+    'order_number',    o.order_number,
     'status',         o.status,
     'subtotal',       o.subtotal,
     'tax',            o.tax,
-    'shippingCost',   o.shipping_cost,
+    'shipping_cost',   o.shipping_cost,
     'total',          o.total,
     'currency',       o.currency,
-    'paymentStatus',  o.payment_status,
-    'createdAt',      o.created_at,
-    'shippedAt',      o.shipped_at,
+    'payment_status',  o.payment_status,
+    'created_at',      o.created_at,
+    'shipped_at',      o.shipped_at,
     'items', (
       SELECT jsonb_agg(jsonb_build_object(
         'id',        oi.id,
         'quantity',  oi.quantity,
-        'unitPrice', oi.unit_price,
+        'unit_price', oi.unit_price,
         'total',     oi.total
       ))
       FROM tb_order_item oi
@@ -470,7 +470,7 @@ pattern.
 @fraiseql.query
 async def product(info, id: ID) -> Product | None:
     db = info.context["db"]
-    return await db.find_one("v_product", id=id)
+    return await db.find_one("v_product", mandatory_filters={"id": id})
 
 
 @fraiseql.query
@@ -483,7 +483,13 @@ async def search_products(
     limit: int = 50,
 ) -> list[Product]:
     db = info.context["db"]
-    return await db.find("v_product", search=query, limit=limit)
+    where: dict = {"name": {"icontains": query}}
+    if category:
+        where["category"] = {"eq": category}
+    price = {op: v for op, v in (("gte", min_price), ("lte", max_price)) if v is not None}
+    if price:
+        where["price"] = price
+    return await db.find("v_product", where=where, limit=limit)
 
 
 @fraiseql.query(authorizer=customer_authorizer)
@@ -497,7 +503,7 @@ async def my_orders(info, limit: int = 20) -> list[Order]:
 async def orders(info, status: str | None = None, limit: int = 50) -> list[Order]:
     db = info.context["db"]
     filters = {"status": status} if status else {}
-    return await db.find("v_order", limit=limit, **filters)
+    return await db.find("v_order", limit=limit, mandatory_filters=filters)
 ```
 
 ### Mutations
@@ -844,10 +850,10 @@ SELECT
   DATE_TRUNC('day', o.created_at)::DATE AS id,    -- bucket key, used as the view id
   jsonb_build_object(
     'day',               DATE_TRUNC('day', o.created_at)::DATE,
-    'totalRevenue',      SUM(o.total) FILTER (WHERE o.payment_status = 'completed'),
-    'orderCount',        COUNT(*),
-    'averageOrderValue', AVG(o.total),
-    'cancelledCount',    COUNT(*) FILTER (WHERE o.status = 'cancelled')
+    'total_revenue',      SUM(o.total) FILTER (WHERE o.payment_status = 'completed'),
+    'order_count',        COUNT(*),
+    'average_order_value', AVG(o.total),
+    'cancelled_count',    COUNT(*) FILTER (WHERE o.status = 'cancelled')
   ) AS data
 FROM tb_order o
 GROUP BY DATE_TRUNC('day', o.created_at);
@@ -866,7 +872,7 @@ class OrderMetrics:
 @fraiseql.query(authorizer=admin_authorizer)
 async def order_metrics(info, start_date: date, end_date: date) -> list[OrderMetrics]:
     db = info.context["db"]
-    return await db.find("v_order_metrics", day__gte=start_date, day__lte=end_date)
+    return await db.find("v_order_metrics", where={"day": {"gte": start_date, "lte": end_date}})
 ```
 
 A client query:
@@ -911,7 +917,7 @@ async def test_create_order_reserves_inventory(db, seed_variant):
     )
 
     assert result["success"] is True
-    inv = await db.find_one("v_inventory", variant_id=variant_id)
+    inv = await db.find_one("v_inventory", mandatory_filters={"variant_id": variant_id})
     assert inv["quantity_reserved"] == 10
     assert inv["quantity_available"] == 90
 
@@ -929,7 +935,7 @@ async def test_create_order_prevents_overselling(db, seed_variant):
 
     assert result["success"] is False
     assert "INSUFFICIENT_STOCK" in result["message"]
-    inv = await db.find_one("v_inventory", variant_id=variant_id)
+    inv = await db.find_one("v_inventory", mandatory_filters={"variant_id": variant_id})
     assert inv["quantity_reserved"] == 0   # transaction rolled back
 
 
@@ -937,12 +943,12 @@ async def test_create_order_prevents_overselling(db, seed_variant):
 async def test_cancel_order_releases_inventory(db, seeded_order):
     """Cancelling an order releases its reserved stock."""
     order_id, variant_id = seeded_order
-    before = await db.find_one("v_inventory", variant_id=variant_id)
+    before = await db.find_one("v_inventory", mandatory_filters={"variant_id": variant_id})
 
     result = await db.execute_function("fn_cancel_order", {"order_id": str(order_id)})
 
     assert result["success"] is True
-    after = await db.find_one("v_inventory", variant_id=variant_id)
+    after = await db.find_one("v_inventory", mandatory_filters={"variant_id": variant_id})
     assert after["quantity_reserved"] == before["quantity_reserved"] - 10
 
 
@@ -957,7 +963,7 @@ async def test_outbox_row_enqueued_on_order(db, seed_variant):
          "shipping_address_id": "addr-uuid"},
     )
 
-    rows = await db.find("v_outbox", topic="charge_payment", status="pending")
+    rows = await db.find("v_outbox", mandatory_filters={"topic": "charge_payment", "status": "pending"})
     assert any(r["payload"]["order_id"] == result["order"]["id"] for r in rows)
 ```
 

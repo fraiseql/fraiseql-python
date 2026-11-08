@@ -159,7 +159,7 @@ class TestGlobalDefaultCollationStaysInert:
         assert order_set is not None
         assert (
             order_set.to_sql().as_string(None)
-            == 'ORDER BY (t ->> \'name\') COLLATE "fr_FR.utf8" ASC'
+            == "ORDER BY (t ->> 'name') COLLATE \"fr_FR.utf8\" ASC"
         )
 
     def test_explicit_none_still_beats_the_default(self) -> None:

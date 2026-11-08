@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, List, cast, get_args, get_origin, get_type_hints
@@ -26,6 +27,7 @@ from fraiseql.core.graphql_type import (
     convert_type_to_graphql_output,
 )
 from fraiseql.gql.enum_serializer import wrap_resolver_with_enum_serialization
+from fraiseql.gql.list_arguments import LIST_QUERY_ARGUMENTS, hold_list_arguments
 from fraiseql.security.authorization import enforce_around_async, enforce_around_sync
 from fraiseql.types.coercion import wrap_resolver_with_input_coercion
 from fraiseql.utils.naming import snake_to_camel
@@ -118,65 +120,10 @@ class QueryTypeBuilder:
             # the user declared `where: Any`
             gql_args["where"] = GraphQLArgument(gql_where_type)
 
-    def _has_vector_fields(self, element_type: Any) -> bool:
-        """Check if type has vector/embedding fields that use VectorOrderBy.
-
-        VectorOrderBy uses Union types (list[float] | dict[str, Any]) that cannot
-        be converted to GraphQL input types, so we skip orderBy generation for
-        types containing these fields.
-        """
-        try:
-            type_hints = get_type_hints(element_type)
-        except Exception:
-            type_hints = getattr(element_type, "__annotations__", {})
-
-        # Vector field patterns that trigger VectorOrderBy usage
-        vector_patterns = {
-            "embedding",
-            "vector",
-            "_embedding",
-            "_vector",
-            "embedding_vector",
-            "embeddingvector",
-            "text_embedding",
-            "textembedding",
-            "image_embedding",
-            "imageembedding",
-        }
-
-        # Check for vector field types
-        try:
-            from fraiseql.types.scalars.vector import (
-                HalfVectorField,
-                QuantizedVectorField,
-                SparseVectorField,
-            )
-
-            vector_types = (HalfVectorField, SparseVectorField, QuantizedVectorField)
-        except ImportError:
-            vector_types = ()
-
-        for field_name, field_type in type_hints.items():
-            field_lower = field_name.lower()
-            # Check if field name matches vector patterns
-            if any(pattern in field_lower for pattern in vector_patterns):
-                origin = get_origin(field_type)
-                if origin is list or (vector_types and field_type in vector_types):
-                    return True
-            # Check if field type is a vector type
-            if vector_types and field_type in vector_types:
-                return True
-
-        return False
-
     def _add_order_by_parameter_if_needed(
         self, gql_args: dict[str, GraphQLArgument], return_type: Any
     ) -> None:
-        """Add orderBy parameter to GraphQL args if query returns list of Fraise types.
-
-        Note: Types with vector/embedding fields are skipped because VectorOrderBy
-        uses Union types that cannot be converted to GraphQL input types.
-        """
+        """Add orderBy parameter to GraphQL args if query returns list of Fraise types."""
         from fraiseql.sql.graphql_order_by_generator import create_graphql_order_by_input
 
         # Don't add if already present (check both camelCase and snake_case)
@@ -185,15 +132,6 @@ class QueryTypeBuilder:
 
         should_add, element_type = self._should_add_where_parameter(return_type)
         if should_add and element_type:
-            # Skip types with vector fields - VectorOrderBy uses Union types
-            # that can't be converted to GraphQL input types
-            if self._has_vector_fields(element_type):
-                logger.debug(
-                    "Skipping orderBy generation for type %s (has vector fields)",
-                    element_type.__name__ if hasattr(element_type, "__name__") else element_type,
-                )
-                return
-
             try:
                 order_by_input_type = create_graphql_order_by_input(element_type)
                 self.registry.register_type(order_by_input_type)
@@ -356,8 +294,28 @@ class QueryTypeBuilder:
                 self._add_order_by_parameter_if_needed(gql_args, hints["return"])
                 self._add_pagination_parameters_if_needed(gql_args, hints["return"])
 
+            # Arguments the resolver doesn't take reach db.find on the element
+            # type's view instead (fraiseql.gql.list_arguments)
+            not_accepted = self._arguments_not_accepted(fn, gql_args, is_relay=is_relay)
+            held_view = self._list_element_view(hints["return"]) if not_accepted else None
+            if not_accepted and held_view is None:
+                logger.warning(
+                    "Query '%s' has the arguments %s, but its resolver doesn't take them and "
+                    "its type has no sql_source for db.find to apply them to: a client's "
+                    "value is ignored. Add the parameters (%s) to the resolver to use them.",
+                    name,
+                    ", ".join(not_accepted),
+                    ", ".join(LIST_QUERY_ARGUMENTS[a] for a in not_accepted),
+                )
+
             # Create a wrapper that adapts the GraphQL resolver signature
-            wrapped_resolver = self._create_gql_resolver(fn, arg_name_mapping, name)
+            wrapped_resolver = self._create_gql_resolver(
+                fn,
+                arg_name_mapping,
+                name,
+                held_arguments=not_accepted if held_view else (),
+                held_view=held_view,
+            )
             wrapped_resolver = wrap_resolver_with_enum_serialization(wrapped_resolver)
 
             # Convert field name to camelCase if configured
@@ -378,11 +336,37 @@ class QueryTypeBuilder:
                 fn.__module__ if hasattr(fn, "__module__") else "unknown",
             )
 
+    @staticmethod
+    def _arguments_not_accepted(
+        fn: Callable[..., Any], gql_args: dict[str, GraphQLArgument], *, is_relay: bool
+    ) -> tuple[str, ...]:
+        """The automatic list arguments in ``gql_args`` that ``fn`` has no parameter for.
+
+        The resolver is called with its own parameters only (see
+        ``coerce_input_arguments``), so these never reach it.
+        """
+        if is_relay:
+            return ()
+        parameters = inspect.signature(fn).parameters
+        return tuple(
+            gql_name
+            for gql_name, param_name in LIST_QUERY_ARGUMENTS.items()
+            if gql_name in gql_args and param_name not in parameters
+        )
+
+    def _list_element_view(self, return_type: Any) -> str | None:
+        """The sql_source of ``T`` in a ``list[T]`` return type, if it has one."""
+        _, element_type = self._should_add_where_parameter(return_type)
+        definition = getattr(element_type, "__fraiseql_definition__", None)
+        return getattr(definition, "sql_source", None) or None
+
     def _create_gql_resolver(
         self,
         fn: Callable[..., Any],
         arg_name_mapping: dict[str, str] | None = None,
         field_name: str | None = None,
+        held_arguments: tuple[str, ...] = (),
+        held_view: str | None = None,
     ) -> Callable[..., Any]:
         """Create a GraphQL resolver from a function.
 
@@ -390,6 +374,9 @@ class QueryTypeBuilder:
             fn: The function to wrap as a GraphQL resolver.
             arg_name_mapping: Mapping from GraphQL argument names to Python parameter names.
             field_name: The field name for raw JSON wrapping.
+            held_arguments: Automatic list arguments ``fn`` doesn't take. Their
+                values are held for db.find on ``held_view``.
+            held_view: The view the held arguments apply to.
 
         Returns:
             A GraphQL-compatible resolver function.
@@ -425,6 +412,9 @@ class QueryTypeBuilder:
                 for param in ("limit", "offset", "first", "last"):
                     if param in kwargs and kwargs[param] is not None and kwargs[param] < 0:
                         raise GraphQLError(f"{param} must be non-negative")
+
+                if held_arguments and held_view:
+                    hold_list_arguments(info, held_view, kwargs, held_arguments)
 
                 # Map GraphQL argument names to Python parameter names
                 if arg_name_mapping:
@@ -470,6 +460,9 @@ class QueryTypeBuilder:
             for param in ("limit", "offset", "first", "last"):
                 if param in kwargs and kwargs[param] is not None and kwargs[param] < 0:
                     raise GraphQLError(f"{param} must be non-negative")
+
+            if held_arguments and held_view:
+                hold_list_arguments(info, held_view, kwargs, held_arguments)
 
             # Map GraphQL argument names to Python parameter names
             if arg_name_mapping:

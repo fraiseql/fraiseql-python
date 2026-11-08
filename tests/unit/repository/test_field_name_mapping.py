@@ -92,7 +92,7 @@ class TestFieldNameMapping:
         clause = self.repo._normalize_where(
             where_clause, "test_view", {"ip_address", "status", "device_name", "data"}
         )
-        result, params = clause.to_sql()
+        result, _params = clause.to_sql()
         assert result is not None
 
         sql_str = result.as_string(None)
@@ -125,7 +125,7 @@ class TestFieldNameMapping:
             clause = self.repo._normalize_where(
                 where_clause, "test_view", {expected_snake_case, "data"}
             )
-            result, params = clause.to_sql()
+            result, _params = clause.to_sql()
 
             assert result is not None
             sql_str = result.as_string(None)

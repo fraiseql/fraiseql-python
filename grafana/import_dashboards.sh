@@ -130,7 +130,7 @@ if echo "$DATASOURCE_EXISTS" | grep -q "not found"; then
             -u "$GRAFANA_USER:$GRAFANA_PASSWORD" \
             -d '{
                 "name": "PostgreSQL",
-                "type": "postgres",
+                "type": "grafana-postgresql-datasource",
                 "url": "'"$POSTGRES_HOST"'",
                 "database": "'"$POSTGRES_DB"'",
                 "user": "'"$POSTGRES_USER"'",
@@ -152,6 +152,16 @@ else
 fi
 echo ""
 
+# The performance dashboard reads Prometheus (the /metrics endpoint of setup_metrics)
+echo "Checking Prometheus datasource..."
+if curl -s -u "$GRAFANA_USER:$GRAFANA_PASSWORD" "$GRAFANA_URL/api/datasources" | grep -q '"type":"prometheus"'; then
+    echo -e "${GREEN}✓ Prometheus datasource exists${NC}"
+else
+    echo -e "${YELLOW}No Prometheus datasource: the Performance Metrics dashboard will show no data.${NC}"
+    echo "Add one scraping your app's GET /metrics (fraiseql.monitoring.setup_metrics)."
+fi
+echo ""
+
 # Import all dashboards
 echo "Importing dashboards..."
 echo ""
@@ -159,7 +169,6 @@ echo ""
 DASHBOARD_FILES=(
     "error_monitoring.json"
     "performance_metrics.json"
-    "cache_hit_rate.json"
     "database_pool.json"
     "apq_effectiveness.json"
 )
@@ -171,9 +180,9 @@ for dashboard in "${DASHBOARD_FILES[@]}"; do
     dashboard_path="$DASHBOARD_DIR/$dashboard"
     if [ -f "$dashboard_path" ]; then
         if import_dashboard "$dashboard_path"; then
-            ((IMPORT_COUNT++))
+            IMPORT_COUNT=$((IMPORT_COUNT + 1))
         else
-            ((FAILED_COUNT++))
+            FAILED_COUNT=$((FAILED_COUNT + 1))
         fi
     else
         echo -e "${YELLOW}Warning: Dashboard file not found: $dashboard${NC}"
@@ -194,11 +203,10 @@ if [ $IMPORT_COUNT -gt 0 ]; then
     echo "Access your dashboards at:"
     echo "  $GRAFANA_URL/dashboards"
     echo ""
-    echo "Configure the environment variable in each dashboard:"
-    echo "  1. Open dashboard"
-    echo "  2. Click 'Dashboard settings' (gear icon)"
-    echo "  3. Go to 'Variables'"
-    echo "  4. Update 'environment' variable to match your setup"
+    echo "Each dashboard has a 'datasource' variable (top of the dashboard):"
+    echo "  pick the PostgreSQL database holding the FraiseQL tables, or your Prometheus."
+    echo "Error Monitoring also has an 'environment' variable: the environment"
+    echo "  your PostgreSQLErrorTracker was created with (default: production)."
 fi
 
 exit $FAILED_COUNT

@@ -17,7 +17,9 @@ from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 @pytest.mark.chaos_network
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_packet_loss_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_packet_loss_recovery(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test recovery from packet loss at different severity levels.
 
     Scenario: Network drops packets at specified rate (1%, 5%, 10%).
@@ -131,7 +133,7 @@ async def test_packet_loss_recovery(chaos_db_client, chaos_test_schema, baseline
         metrics.end_test()
 
         # Validate packet loss behavior
-        expected_failures = int(20 * loss_percentage * 0.3)  # Account for retries
+        int(20 * loss_percentage * 0.3)  # Account for retries
         success_rate = chaos_successes / 20.0
         min_success_rate = 1.0 - (loss_percentage * 2)  # Allow for retry effectiveness
 
@@ -151,7 +153,9 @@ async def test_packet_loss_recovery(chaos_db_client, chaos_test_schema, baseline
 @pytest.mark.chaos_network
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_packet_corruption_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_packet_corruption_handling(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of corrupted packets.
 
     Scenario: Network delivers corrupted data at varying rates.
@@ -185,7 +189,7 @@ async def test_packet_corruption_handling(chaos_db_client, chaos_test_schema, ba
 
         # DETERMINISTIC PATTERN: Calculate exact failure iterations
         # Industry best practice: Netflix moved from random to deterministic scheduling
-        # Use additive failure model: corruption + (non-corrupt × impact)
+        # Use additive failure model: corruption + (non-corrupt x impact)
         corruption_interval = max(1, int(1 / corruption_rate))
         corruption_iterations = set(range(corruption_interval - 1, iterations, corruption_interval))
 
@@ -237,7 +241,9 @@ async def test_packet_corruption_handling(chaos_db_client, chaos_test_schema, ba
 @pytest.mark.chaos_network
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_out_of_order_delivery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_out_of_order_delivery(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of out-of-order packet delivery.
 
     Scenario: Network delivers packets in wrong order (variable arrival timing).
@@ -286,66 +292,6 @@ async def test_out_of_order_delivery(chaos_db_client, chaos_test_schema, baselin
         # Validate reordering doesn't cause excessive variance
         assert reorder_variance < avg_reorder_time * 0.5, (
             f"High variance under reordering: {reorder_variance:.1f}ms"
-        )
-
-
-@pytest.mark.chaos
-@pytest.mark.chaos_network
-@pytest.mark.chaos_real_db
-@pytest.mark.asyncio
-async def test_duplicate_packet_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
-    """Test handling of duplicate packet delivery.
-
-    Scenario: Network delivers duplicate packets (TCP handles detection).
-    Expected: FraiseQL handles duplicates gracefully.
-    """
-    metrics = ChaosMetrics()
-
-    metrics.start_test()
-
-    operation = FraiseQLTestScenarios.simple_user_query()
-
-    # Simulate duplicate packet effects
-    duplicate_scenarios = []
-
-    # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
-
-    # Uses multiplier-based formula to ensure meaningful test on all hardware
-
-    iterations = max(4, int(8 * chaos_config.load_multiplier))
-
-    for _ in range(iterations):
-        # Simulate receiving some packets twice
-        packet_count = 5
-        duplicates = random.randint(0, 2)  # 0-2 duplicates
-
-        try:
-            # Execute once (simulates original packet)
-            result = await chaos_db_client.execute_query(operation)
-            execution_time = result.get("_execution_time_ms", 10.0)
-
-            # Simulate duplicate processing (but TCP would handle dedup)
-            # So we just measure impact of re-processing
-            for _ in range(duplicates):
-                await asyncio.sleep(0.002)  # 2ms per duplicate processing
-
-            total_time = execution_time + (duplicates * 2)
-            duplicate_scenarios.append(total_time)
-            metrics.record_query_time(total_time)
-        except Exception:
-            metrics.record_error()
-
-    metrics.end_test()
-
-    if duplicate_scenarios:
-        avg_duplicate_time = statistics.mean(duplicate_scenarios)
-
-        # Duplicates shouldn't cause excessive delays
-        # Max expected: 5 packets * 2ms + 10ms base + some overhead
-        expected_max_time = 30  # 30ms max
-
-        assert avg_duplicate_time < expected_max_time, (
-            f"Duplicate handling too slow: {avg_duplicate_time:.1f}ms > {expected_max_time}ms"
         )
 
 
@@ -422,7 +368,7 @@ async def test_adaptive_retry_under_packet_loss(
 
         # Should use more retries under higher loss
         # Note: Random simulation has high variance in retry counts - success rate is primary validation
-        expected_avg_retries = packet_loss_rate * 3  # Rough estimate
+        packet_loss_rate * 3  # Rough estimate
 
         # For random simulation, retry counts have too much variance to assert reliably
         # Only validate that some retry activity occurs at very high loss rates

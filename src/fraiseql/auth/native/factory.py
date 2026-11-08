@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, FastAPI
+from psycopg import sql
 from psycopg_pool import AsyncConnectionPool
 
 from fraiseql.auth.native.provider import NativeAuthProvider
@@ -62,8 +63,10 @@ async def apply_native_auth_schema(
 ) -> None:
     """Apply the native auth database schema to the given schema.
 
-    This function reads and executes the migration SQL to set up the
-    required tables for native authentication.
+    This function reads and executes ``migrations/001_native_auth_schema.sql``
+    (shipped in this package) to create the tables native authentication uses:
+    ``tb_user``, ``tb_session``, ``tb_used_refresh_token`` and ``tb_password_reset``.
+    It is idempotent.
 
     Args:
         db_pool: PostgreSQL connection pool
@@ -77,28 +80,38 @@ async def apply_native_auth_schema(
 
     migration_sql = migration_path.read_text()
 
-    # Apply migration
-    async with db_pool.connection() as conn:
-        # Set search path to target schema
-        await conn.execute(f"SET search_path TO {schema}, public")
-
-        # Execute migration
+    # Apply migration in one transaction. SET LOCAL keeps the search_path change to
+    # that transaction, so the pooled connection goes back with its own.
+    async with db_pool.connection() as conn, conn.transaction():
+        await conn.execute(
+            sql.SQL("SET LOCAL search_path TO {}, public").format(sql.Identifier(schema))
+        )
         await conn.execute(migration_sql)
-        await conn.commit()
 
 
-def get_native_auth_router() -> APIRouter:
+def get_native_auth_router(auth_provider: NativeAuthProvider | None = None) -> APIRouter:
     """Get the FastAPI router for native auth endpoints.
 
-    This is a convenience function that returns the pre-configured
-    router with all the auth endpoints (register, login, refresh, etc.).
+    The endpoints (register, login, refresh, ...) sign and verify tokens with the
+    provider's token manager, and read users from the provider's pool and schema, so
+    the tokens they issue are the ones the provider accepts on ``/graphql``.
+
+    Args:
+        auth_provider: The ``NativeAuthProvider`` (from ``create_native_auth_provider``)
+            to bind the endpoints to. Without it, the provider given to
+            ``create_fraiseql_app(auth=...)`` is used, else a token manager keyed by
+            the ``JWT_SECRET_KEY`` environment variable.
 
     Returns:
         FastAPI APIRouter with native auth endpoints
-    """
-    from fraiseql.auth.native.router import auth_router
 
-    return auth_router
+    Raises:
+        ValueError: If no provider is given or registered and ``JWT_SECRET_KEY`` is
+            unset: there is no default signing key.
+    """
+    from fraiseql.auth.native.router import build_native_auth_router
+
+    return build_native_auth_router(auth_provider)
 
 
 def add_security_middleware(
@@ -110,6 +123,7 @@ def add_security_middleware(
     rate_limit_requests_per_minute: int = 60,
     rate_limit_auth_requests_per_minute: int = 5,
     csp_policy: Optional[str] = None,
+    trusted_proxies: list[str] | str | None = None,
 ) -> None:
     """Add security middleware to a FastAPI application.
 
@@ -122,6 +136,8 @@ def add_security_middleware(
         rate_limit_requests_per_minute: General rate limit per IP
         rate_limit_auth_requests_per_minute: Auth endpoint rate limit per IP
         csp_policy: Custom Content Security Policy
+        trusted_proxies: Proxy addresses or CIDR networks whose X-Forwarded-For
+            the rate limiter believes. Without it, the client IP is the socket peer.
     """
     if enable_rate_limiting:
         from fraiseql.auth.native.middleware import RateLimitMiddleware
@@ -130,6 +146,7 @@ def add_security_middleware(
             RateLimitMiddleware,
             requests_per_minute=rate_limit_requests_per_minute,
             auth_requests_per_minute=rate_limit_auth_requests_per_minute,
+            trusted_proxies=trusted_proxies,
         )
 
     if enable_security_headers:

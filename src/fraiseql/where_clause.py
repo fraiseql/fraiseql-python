@@ -30,13 +30,22 @@ Known Limitations:
 
 from __future__ import annotations
 
+import warnings
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Literal
 
+from graphql import GraphQLError
 from psycopg.sql import SQL, Composed, Identifier
 from psycopg.sql import Literal as SQLLiteral
 
 from fraiseql.sql.operators import get_default_registry
+from fraiseql.sql.where.operators.vectors import (
+    DEFAULT_DISTANCE_THRESHOLD,
+    warn_missing_threshold,
+)
 
 # Supported operators
 COMPARISON_OPERATORS = {
@@ -72,6 +81,7 @@ VECTOR_OPERATORS = {
     "cosine_distance": "<=>",
     "l2_distance": "<->",
     "l1_distance": "<+>",
+    "inner_product": "<#>",
     "hamming_distance": "<~>",
     "jaccard_distance": "<%>",
 }
@@ -221,6 +231,10 @@ COORDINATE_OPERATORS = {
     "notin": "NOT IN",
 }
 
+# The filters of a field declared Coordinate (temporal_cast "point"); they are
+# written by the coordinate operator strategy (point has ~=, not =)
+COORDINATE_FIELD_OPERATORS = {"eq", "neq", "in", "nin", "notin", "distance_within"}
+
 # Pattern matching operators
 PATTERN_OPERATORS = {
     "imatches": "~*",  # Case-insensitive regex match
@@ -233,12 +247,53 @@ ARRAY_OPERATORS_EXTRA = {
     "len_neq": "!=",
 }
 
-# Path operators (for hierarchical paths)
+# Path operators (for hierarchical paths). depth_* are ltree operators (above).
 PATH_OPERATORS = {
-    "depth_eq": "depth =",
-    "depth_gt": "depth >",
-    "depth_lt": "depth <",
     "isdescendant": "isdescendant",
+}
+
+# ltree depth comparisons: nlevel(path) <comparison> value
+LTREE_DEPTH_COMPARISONS = {
+    "nlevel": "=",
+    "nlevel_eq": "=",
+    "nlevel_neq": "!=",
+    "nlevel_gt": ">",
+    "nlevel_gte": ">=",
+    "nlevel_lt": "<",
+    "nlevel_lte": "<=",
+    "depth_eq": "=",
+    "depth_neq": "!=",
+    "depth_gt": ">",
+    "depth_gte": ">=",
+    "depth_lt": "<",
+    "depth_lte": "<=",
+}
+
+# ltree filters on index(path, label): (label, position) -> index(...) <comparison> position
+LTREE_INDEX_COMPARISONS = {
+    "index_eq": "=",
+    "index_gte": ">=",
+}
+
+# ltree operators that compute a path or a number, not a condition
+LTREE_NON_FILTERS = {
+    "subpath": "it computes a path (subpath(path, offset, len))",
+    "index": "it computes a position; filter with index_eq or index_gte: (label, position)",
+    "concat": "it computes a path (path || value)",
+}
+
+LTREE_FUNCTION_FILTERS = {*LTREE_INDEX_COMPARISONS, "lca", *LTREE_NON_FILTERS}
+
+# ltree hierarchy and pattern filters: path <operator> %s::<value type>. Both
+# sides are typed: a JSONB field's ->> is text, and text <@ unknown is ambiguous
+LTREE_MATCH_OPERATORS = {
+    "ancestor_of": ("@>", "ltree"),
+    "descendant_of": ("<@", "ltree"),
+    "isdescendant": ("<@", "ltree"),
+    "matches_lquery": ("~", "lquery"),
+    "matches_ltxtquery": ("@", "ltxtquery"),
+    "matches_any_lquery": ("?", "lquery[]"),
+    "in_array": ("<@", "ltree[]"),
 }
 
 # List operators (fallback)
@@ -267,6 +322,59 @@ ALL_OPERATORS = {
 }
 
 
+def _is_number(value: Any) -> bool:
+    """True for an int, float or Decimal, not a bool."""
+    return isinstance(value, int | float | Decimal) and not isinstance(value, bool)
+
+
+def _as_numeric(expr: Composed) -> Composed:
+    """Cast a ``->>`` text extraction to numeric: ``(expr)::numeric``."""
+    return Composed([SQL("("), expr, SQL(")::numeric")])
+
+
+# Operators that compare a value with a date or timestamp
+TEMPORAL_CAST_OPERATORS = COMPARISON_OPERATORS.keys() | CONTAINMENT_OPERATORS.keys()
+
+
+def temporal_cast_of_value(value: Any) -> str | None:
+    """``timestamptz`` for a datetime, ``date`` for a date, else None.
+
+    A list (for in/nin) answers for its values when they all agree.
+    """
+    if isinstance(value, list | tuple):
+        casts = {temporal_cast_of_value(v) for v in value}
+        return casts.pop() if len(casts) == 1 else None
+    if isinstance(value, datetime):
+        return "timestamptz"
+    if isinstance(value, date):
+        return "date"
+    return None
+
+
+def _coordinate(value: Any) -> tuple[float, float]:
+    """(latitude, longitude) from a tuple, a list, a ``"lat,lng"`` string or ``{lat, lng}``."""
+    from fraiseql.types.scalars.coordinates import parse_coordinate_value
+
+    if isinstance(value, list):
+        value = tuple(value)
+    return parse_coordinate_value(value)
+
+
+def _coordinate_distance(value: Any) -> tuple[tuple[float, float], float]:
+    """((latitude, longitude), meters) from a tuple or a ``{center, radius}`` input."""
+    if isinstance(value, Mapping) and {"center", "radius"} <= value.keys():
+        center, radius = value["center"], value["radius"]
+    elif hasattr(value, "center") and hasattr(value, "radius"):
+        center, radius = value.center, value.radius  # CoordinateDistanceInput
+    elif isinstance(value, (list, tuple)) and len(value) == 2:
+        center, radius = value
+    else:
+        raise TypeError(f"((lat, lng), meters) or {{center, radius}}, got {value!r}")
+    if not isinstance(radius, int | float | Decimal) or isinstance(radius, bool):
+        raise TypeError(f"a radius in meters, got {radius!r}")
+    return _coordinate(center), float(radius)
+
+
 @dataclass
 class FieldCondition:
     """Single filter condition on a field.
@@ -287,6 +395,13 @@ class FieldCondition:
             - For SQL: "status"
         jsonb_path: For JSONB lookups, the path within the data column
             - e.g., ["machine", "id"] → data->'machine'->>'id'
+        temporal_cast: ``"timestamptz"`` or ``"date"`` when the field is declared
+            as a datetime or date: a JSONB comparison then casts both sides,
+            ``(data->>'created_at')::timestamptz >= %s::timestamptz``, instead
+            of comparing ISO strings as text. A datetime or date value casts
+            without it. ``"ltree"`` for a field declared as ``LTree``: paths
+            compare label by label. ``"point"`` for a field declared as
+            ``Coordinate``: eq, in... compare points (``~=``).
 
     Examples:
         # FK lookup: machine.id = '123'
@@ -326,6 +441,7 @@ class FieldCondition:
     lookup_strategy: Literal["fk_column", "jsonb_path", "sql_column"]
     target_column: str
     jsonb_path: list[str] | None = None
+    temporal_cast: Literal["timestamptz", "date", "ltree", "point"] | None = None
 
     def __post_init__(self):
         """Validate the condition after initialization."""
@@ -403,6 +519,18 @@ class FieldCondition:
                 )
                 return sql, params
 
+            if self._is_coordinate_filter():
+                return self._coordinate_sql(Identifier(self.target_column))
+
+            if self.operator in LTREE_MATCH_OPERATORS:
+                return self._ltree_match_sql(Identifier(self.target_column))
+
+            if self.operator in LTREE_DEPTH_COMPARISONS:
+                return self._ltree_depth_sql(Identifier(self.target_column))
+
+            if self.operator in LTREE_FUNCTION_FILTERS:
+                return self._ltree_function_sql(Identifier(self.target_column))
+
             sql_op = ALL_OPERATORS[self.operator]
 
             if self.operator in CONTAINMENT_OPERATORS:
@@ -468,10 +596,36 @@ class FieldCondition:
                 )
                 return sql, params
 
-            if self.operator in CONTAINMENT_OPERATORS:
+            if self._is_coordinate_filter():
+                return self._coordinate_sql(jsonb_expr)
+
+            if self.operator in LTREE_MATCH_OPERATORS:
+                return self._ltree_match_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
+
+            if self.operator in LTREE_DEPTH_COMPARISONS:
+                # ->> gives text; nlevel() needs an ltree
+                return self._ltree_depth_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
+
+            if self.operator in LTREE_FUNCTION_FILTERS:
+                return self._ltree_function_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
+
+            cast = self.temporal_cast or temporal_cast_of_value(self.value)
+            if cast and self.operator in TEMPORAL_CAST_OPERATORS:
+                # As text, '...00+00:00' < '...00Z': compare dates as dates
+                values_list = self.value if isinstance(self.value, list) else [self.value]
+                if self.operator in CONTAINMENT_OPERATORS:
+                    placeholders = ", ".join([f"%s::{cast}"] * len(values_list))
+                    rhs = SQL(f" {sql_op} ({placeholders})")
+                else:
+                    rhs = SQL(f" {sql_op} %s::{cast}")
+                sql = Composed([SQL("("), jsonb_expr, SQL(f")::{cast}"), rhs])
+                params.extend(values_list)
+            elif self.operator in CONTAINMENT_OPERATORS:
                 # IN/NOT IN: psycopg3 requires individual placeholders
                 values_list = self.value if isinstance(self.value, list) else [self.value]
                 placeholders = ", ".join(["%s"] * len(values_list))
+                if values_list and all(map(_is_number, values_list)):
+                    jsonb_expr = _as_numeric(jsonb_expr)
                 sql = Composed([jsonb_expr, SQL(f" {sql_op} ({placeholders})")])
                 params.extend(values_list)
             elif self.operator == "isnull":
@@ -496,6 +650,10 @@ class FieldCondition:
                     raise ValueError(
                         f"Network operator '{self.operator}' not supported by registry"
                     )
+            elif _is_number(self.value):
+                # As text, '9' > '10' and '10.50' <> '10.5': compare numbers as numeric
+                sql = Composed([_as_numeric(jsonb_expr), SQL(f" {sql_op} "), SQL("%s")])
+                params.append(self.value)
             else:
                 # JSONB text comparison - need to handle boolean conversion
                 sql = Composed([jsonb_expr, SQL(f" {sql_op} "), SQL("%s")])
@@ -538,6 +696,18 @@ class FieldCondition:
                 )
                 return sql, params
 
+            if self._is_coordinate_filter():
+                return self._coordinate_sql(Identifier(self.target_column))
+
+            if self.operator in LTREE_MATCH_OPERATORS:
+                return self._ltree_match_sql(Identifier(self.target_column))
+
+            if self.operator in LTREE_DEPTH_COMPARISONS:
+                return self._ltree_depth_sql(Identifier(self.target_column))
+
+            if self.operator in LTREE_FUNCTION_FILTERS:
+                return self._ltree_function_sql(Identifier(self.target_column))
+
             sql_op = ALL_OPERATORS[self.operator]
 
             # Special case: 'contains' can be both string LIKE or array @>
@@ -566,9 +736,21 @@ class FieldCondition:
                 # Value format: {"vector": [...], "threshold": 0.5, "comparison": "lt"}
                 if isinstance(self.value, dict):
                     vector = self.value.get("vector")
-                    threshold = self.value.get("threshold", 0.5)
+                    threshold = self.value.get("threshold")
+                    if threshold is None:
+                        warn_missing_threshold(
+                            ".".join(self.field_path), self.operator, stacklevel=2
+                        )
+                        threshold = DEFAULT_DISTANCE_THRESHOLD
                     comparison = self.value.get("comparison", "lt")
                 elif isinstance(self.value, (list, tuple)) and len(self.value) == 2:
+                    warnings.warn(
+                        f"where: {self.operator} with a [vector, threshold] pair is "
+                        "deprecated, as it can't be told apart from a 2-dimensional "
+                        'query vector; pass {"vector": ..., "threshold": ...} instead',
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
                     vector, threshold = self.value
                     comparison = "lt"
                 else:
@@ -786,6 +968,110 @@ class FieldCondition:
             raise ValueError(f"Unknown lookup_strategy: {self.lookup_strategy}")
 
         return sql, params
+
+    def _is_coordinate_filter(self) -> bool:
+        """distance_within, or eq / in... on a field declared Coordinate."""
+        return self.operator == "distance_within" or (
+            self.temporal_cast == "point" and self.operator in COORDINATE_FIELD_OPERATORS
+        )
+
+    def _coordinate_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
+        """The coordinate strategy's SQL; values are (latitude, longitude).
+
+        ``distance_within`` takes ``((lat, lng), meters)`` or, from GraphQL,
+        ``{center: [lat, lng], radius: meters}``; a coordinate is a tuple, a
+        ``"lat,lng"`` string or ``{lat, lng}``.
+
+        Raises:
+            ValueError: For a value of the wrong shape.
+        """
+        from fraiseql.sql.operators.advanced.coordinate_operators import (
+            CoordinateOperatorStrategy,
+        )
+
+        operator = "notin" if self.operator == "nin" else self.operator
+        try:
+            if operator == "distance_within":
+                value: Any = _coordinate_distance(self.value)
+            elif operator in ("in", "notin"):
+                if not isinstance(self.value, (list, tuple)):
+                    raise TypeError(f"a list of coordinates, got {self.value!r}")
+                value = [_coordinate(v) for v in self.value]
+            else:
+                value = _coordinate(self.value)
+            sql = CoordinateOperatorStrategy().build_sql(operator, value, path_expr)
+        except (TypeError, GraphQLError) as e:
+            raise ValueError(f"coordinate filter '{self.operator}' takes {e}") from e
+        if sql is None:
+            raise ValueError(f"coordinate filter '{self.operator}' is not supported")
+        return Composed([sql]), []
+
+    def _ltree_match_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
+        """ancestor_of, descendant_of, matches_*, in_array: path @> %s::ltree...
+
+        Raises:
+            ValueError: For matches_any_lquery / in_array without a non-empty
+                list, or another of these operators given a list.
+        """
+        sql_op, value_type = LTREE_MATCH_OPERATORS[self.operator]
+        value = self.value
+        if value_type.endswith("[]"):
+            if not isinstance(value, (list, tuple)) or not value:
+                raise ValueError(
+                    f"ltree operator '{self.operator}' takes a non-empty list, got {value!r}"
+                )
+            param: Any = [str(v) for v in value]
+        else:
+            if isinstance(value, (list, tuple, dict)):
+                raise ValueError(f"ltree operator '{self.operator}' takes one path, got {value!r}")
+            param = str(value)
+        sql = Composed([path_expr, SQL(f" {sql_op} %s::{value_type}")])
+        return sql, [param]
+
+    def _ltree_depth_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
+        """Compare the path's depth with the value: nlevel(path) > %s."""
+        comparison = LTREE_DEPTH_COMPARISONS[self.operator]
+        sql = Composed([SQL("nlevel("), path_expr, SQL(f") {comparison} "), SQL("%s")])
+        return sql, [int(self.value)]
+
+    def _ltree_function_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
+        """index_eq / index_gte: index(path, label) = position; lca: path = lca(paths).
+
+        Raises:
+            ValueError: For subpath, index and concat, which aren't conditions, and
+                for a value of the wrong shape.
+        """
+        if self.operator in LTREE_NON_FILTERS:
+            raise ValueError(
+                f"ltree operator '{self.operator}' is not a filter: "
+                f"{LTREE_NON_FILTERS[self.operator]}"
+            )
+
+        if self.operator == "lca":
+            paths = self.value
+            if not isinstance(paths, (list, tuple)) or not paths:
+                raise ValueError(
+                    "ltree operator 'lca' takes a non-empty list of paths "
+                    f"(the path equals their lowest common ancestor), got {paths!r}"
+                )
+            placeholders = ", ".join(["%s::ltree"] * len(paths))
+            sql = Composed([path_expr, SQL(f" = lca(ARRAY[{placeholders}])")])
+            return sql, [str(path) for path in paths]
+
+        value = self.value
+        if isinstance(value, dict) and {"label", "position"} <= value.keys():
+            value = (value["label"], value["position"])
+        elif hasattr(value, "label") and hasattr(value, "position"):
+            value = (value.label, value.position)  # LTreeIndexInput
+        if not isinstance(value, (list, tuple)) or len(value) != 2:
+            raise ValueError(
+                f"ltree operator '{self.operator}' takes a label and a position "
+                f"((label, position) or {{label, position}}), got {value!r}"
+            )
+        label, position = value
+        comparison = LTREE_INDEX_COMPARISONS[self.operator]
+        sql = Composed([SQL("index("), path_expr, SQL(f", %s::ltree) {comparison} %s")])
+        return sql, [str(label), int(position)]
 
     def _build_like_pattern(self) -> str:
         """Build LIKE pattern from operator and value."""

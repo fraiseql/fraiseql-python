@@ -7,12 +7,9 @@ use pyo3::prelude::*;
 use serde_json::{Value, json};
 
 use crate::{
-    core::{
-        arena::Arena,
-        transform::{ByteBuf, MAX_JSON_DEPTH, TransformConfig, ZeroCopyTransformer},
-    },
+    core::transform::{ByteBuf, MAX_JSON_DEPTH, TransformConfig, ZeroCopyTransformer},
     json_transform,
-    pipeline::projection::FieldSet,
+    pipeline::projection::Projection,
     schema_registry,
 };
 
@@ -47,12 +44,6 @@ type MultiFieldDef = (String, String, Vec<String>, Option<String>, Option<bool>)
 ///        │
 ///        ▼
 /// ┌──────────────┐
-/// │ Arena        │ → Allocate scratch space
-/// │ Setup        │
-/// └──────┬───────┘
-///        │
-///        ▼
-/// ┌──────────────┐
 /// │ Estimate     │ → Size output buffer (eliminate reallocs)
 /// │ Capacity     │
 /// └──────┬───────┘
@@ -70,6 +61,7 @@ type MultiFieldDef = (String, String, Vec<String>, Option<String>, Option<bool>)
 /// │ HTTP Bytes   │ → Return to Python (zero-copy)
 /// │ (Vec<u8>)    │
 /// └──────────────┘
+#[allow(clippy::too_many_arguments)]
 pub fn build_graphql_response(
     json_rows: Vec<String>,
     field_name: &str,
@@ -78,8 +70,11 @@ pub fn build_graphql_response(
     field_selections: Option<Vec<Value>>,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
+    inject_typename: Option<bool>,
 ) -> PyResult<Vec<u8>> {
     let registry = schema_registry::get_registry();
+    // Without a selection, rows are written whole, __typename included
+    let inject_typename = inject_typename.unwrap_or(true) || field_selections.is_none();
 
     if schema_registry::is_initialized() {
         if let Some(type_name_str) = type_name {
@@ -92,11 +87,21 @@ pub fn build_graphql_response(
                 &registry,
                 is_list,
                 include_graphql_wrapper,
+                inject_typename,
             );
         }
     }
 
-    build_zero_copy(json_rows, field_name, type_name, field_paths, is_list, include_graphql_wrapper)
+    build_zero_copy(
+        json_rows,
+        field_name,
+        type_name,
+        field_paths,
+        field_selections,
+        is_list,
+        include_graphql_wrapper,
+        inject_typename,
+    )
 }
 
 /// Transform JSON rows using schema registry and build GraphQL response.
@@ -114,7 +119,9 @@ fn build_with_schema(
     registry: &schema_registry::SchemaRegistry,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
+    inject_typename: bool,
 ) -> PyResult<Vec<u8>> {
+    let projection = field_selections.map(|selections| Projection::from_selections(&selections));
     let transformed_items: Result<Vec<Value>, _> = json_rows
         .iter()
         .map(|row_str| {
@@ -123,9 +130,13 @@ fn build_with_schema(
                     pyo3::exceptions::PyValueError::new_err(format!("Failed to parse JSON: {}", e))
                 })
                 .map(|value| {
-                    if let Some(ref selections) = field_selections {
-                        json_transform::transform_with_selections(
-                            &value, type_name, selections, registry,
+                    if let Some(ref projection) = projection {
+                        json_transform::project_with_schema(
+                            &value,
+                            Some(type_name),
+                            projection,
+                            registry,
+                            inject_typename,
                         )
                     } else {
                         json_transform::transform_with_schema(&value, type_name, registry)
@@ -188,27 +199,38 @@ fn build_with_schema(
     })
 }
 
+/// Build the response by streaming each row through the zero-copy transformer.
+///
+/// The rows are projected on the selection: `field_selections` when given (their
+/// response paths name each key), else `field_paths` (keys camelCased). Without
+/// either, rows are written whole. A row object gets `__typename` when
+/// `inject_typename`; any object gets it where selected.
+#[allow(clippy::too_many_arguments)]
 fn build_zero_copy(
     json_rows: Vec<String>,
     field_name: &str,
     type_name: Option<&str>,
     field_paths: Option<Vec<Vec<String>>>,
+    field_selections: Option<Vec<Value>>,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
+    inject_typename: bool,
 ) -> PyResult<Vec<u8>> {
-    let arena = Arena::with_capacity(estimate_arena_size(&json_rows));
+    let projection = match (field_selections, field_paths) {
+        (Some(selections), _) => Some(Projection::from_selections(&selections)),
+        (None, Some(paths)) => Some(Projection::from_paths(&paths, true)),
+        (None, None) => None,
+    };
 
     let config = TransformConfig {
-        add_typename: type_name.is_some(),
+        add_typename: inject_typename && type_name.is_some(),
         camel_case: true,
-        project_fields: field_paths.is_some(),
+        project_fields: projection.is_some(),
         add_graphql_wrapper: false,
         max_depth: MAX_JSON_DEPTH,
     };
 
-    let field_set = field_paths.map(|paths| FieldSet::from_paths(&paths, &arena));
-
-    let mut transformer = ZeroCopyTransformer::new(&arena, config, type_name, field_set.as_ref());
+    let mut transformer = ZeroCopyTransformer::new(config, type_name, projection.as_ref());
 
     let total_input_size: usize = json_rows.iter().map(|s| s.len()).sum();
 
@@ -293,11 +315,6 @@ fn build_zero_copy(
     Ok(result)
 }
 
-fn estimate_arena_size(json_rows: &[String]) -> usize {
-    let total_input_size: usize = json_rows.iter().map(|s| s.len()).sum();
-    (total_input_size / 4).clamp(8192, 65536)
-}
-
 /// Build complete multi-field GraphQL response from PostgreSQL JSON rows
 ///
 /// This function handles multi-field queries entirely in Rust, bypassing graphql-core
@@ -346,10 +363,10 @@ pub fn build_multi_field_response(fields: Vec<MultiFieldDef>) -> PyResult<Vec<u8
             _ => Vec::new(),
         };
 
-        let selections_opt = if selections_json.is_empty() {
+        let projection = if selections_json.is_empty() {
             None
         } else {
-            Some(selections_json)
+            Some(Projection::from_selections(&selections_json))
         };
 
         // Transform rows for this field
@@ -364,9 +381,15 @@ pub fn build_multi_field_response(fields: Vec<MultiFieldDef>) -> PyResult<Vec<u8
                         ))
                     })
                     .map(|value| {
-                        if let Some(ref selections) = selections_opt {
-                            json_transform::transform_with_selections(
-                                &value, &type_name, selections, &registry,
+                        if let Some(ref projection) = projection {
+                            // The response goes to the client as is: __typename
+                            // where selected only
+                            json_transform::project_with_schema(
+                                &value,
+                                Some(&type_name),
+                                projection,
+                                &registry,
+                                false,
                             )
                         } else {
                             json_transform::transform_with_schema(&value, &type_name, &registry)

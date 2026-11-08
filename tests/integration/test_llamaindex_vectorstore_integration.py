@@ -180,6 +180,33 @@ class TestFraiseQLReader:
 
         assert len(documents) == 2
 
+    @pytest.mark.asyncio
+    async def test_load_data_filter_key_is_not_sql(
+        self, reader: FraiseQLReader, class_db_pool, test_schema
+    ):
+        """A where_clause key is a JSON key or a column name, never SQL."""
+        async with class_db_pool.connection() as conn:
+            await conn.execute(f"SET search_path TO {test_schema}, public")
+            for doc_id, category in (("q1", "A"), ("q2", "B")):
+                await conn.execute(
+                    f"INSERT INTO {reader.table_name} (id, content, metadata) VALUES (%s, %s, %s)",
+                    (doc_id, f"Content {doc_id}", Json({"it's": category, "100%": category})),
+                )
+
+        # The quote and the percent sign are part of the JSON key
+        documents = await reader.aload_data(where_clause={"it's": "A"})
+        assert [d.metadata["id"] for d in documents] == ["q1"]
+        documents = await reader.aload_data(where_clause={"100%": "B"})
+        assert [d.metadata["id"] for d in documents] == ["q2"]
+
+        # Used to end the quoted key and match every row
+        injected = "x' IS NULL OR metadata->>'x"
+        assert await reader.aload_data(where_clause={injected: "zzz"}) == []
+
+        # A column key is quoted as an identifier
+        documents = await reader.aload_data(where_clause={"id": "q2"})
+        assert [d.metadata["id"] for d in documents] == ["q2"]
+
     def test_load_data_sync(self, reader: FraiseQLReader):
         """Test synchronous data loading."""
         # This should work without errors (even if no data)

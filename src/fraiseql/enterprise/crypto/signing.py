@@ -77,8 +77,8 @@ class SigningKeyManager:
         NOTE: In production, PostgreSQL uses audit_signing_keys table.
         This is for verification/testing only.
         """
-        self.current_key = os.getenv("AUDIT_SIGNING_KEY", "test-key-for-testing")
-        # Allow None for testing scenarios where we just verify from DB
+        # No default: without AUDIT_SIGNING_KEY nothing signs and nothing verifies
+        self.current_key = os.getenv("AUDIT_SIGNING_KEY") or None
 
     def sign(self, event_hash: str) -> str:
         """Sign event hash with current key.

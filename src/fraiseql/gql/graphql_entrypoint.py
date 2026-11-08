@@ -11,10 +11,12 @@ from starlette.routing import Route, Router
 
 from fraiseql.core.rust_pipeline import RustResponseBytes
 from fraiseql.fastapi.json_encoder import FraiseQLJSONResponse, clean_unset_values
+from fraiseql.gql.query_limits import QueryLimits
 from fraiseql.gql.schema_builder import SchemaRegistry
 from fraiseql.graphql.execute import execute_graphql
 
 if TYPE_CHECKING:
+    from fraiseql.fastapi.config import FraiseQLConfig
     from fraiseql.security.authorization import Authorizer
 
 
@@ -25,6 +27,9 @@ class GraphNoteRouter(Router):
         self,
         schema: GraphQLSchema,
         context_getter: Callable[[Request], Any] | None = None,
+        *,
+        config: "FraiseQLConfig | None" = None,
+        query_limits: QueryLimits | None = None,
     ) -> None:
         """Initialize the GraphNoteRouter.
 
@@ -32,9 +37,16 @@ class GraphNoteRouter(Router):
             schema: The GraphQL schema to execute queries against.
             context_getter: Optional callable taking a Starlette Request and returning
                 a context object passed to resolvers. Defaults to empty dict.
+            config: Optional ``FraiseQLConfig`` whose ``max_query_depth`` and
+                ``complexity_*`` settings limit each query, as in the FastAPI router.
+            query_limits: Explicit limits; they take precedence over ``config``.
+                With neither, queries are not limited.
         """
         self.schema = schema
         self.context_getter = context_getter or (lambda _: {})
+        if query_limits is None and config is not None:
+            query_limits = QueryLimits.from_config(config)
+        self.query_limits = query_limits
 
         routes = [
             Route("/graphql", self.handle_graphql, methods=["GET", "POST"]),
@@ -76,6 +88,12 @@ class GraphNoteRouter(Router):
             query = data.get("query")
             variables = data.get("variables")
             operation_name = data.get("operationName")
+
+        # Depth and complexity limits, before execution (introspection is not counted).
+        if self.query_limits is not None and query:
+            limit_error = self.query_limits.check(self.schema, query, operation_name, variables)
+            if limit_error is not None:
+                return FraiseQLJSONResponse(limit_error, status_code=400)
 
         context_value = self.context_getter(request)
 

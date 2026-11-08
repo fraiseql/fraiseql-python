@@ -282,9 +282,11 @@ app = create_fraiseql_app(
 ```
 
 ```bash
-# Equivalent toggles via environment variables
+# The same settings from environment variables, which FraiseQLConfig reads
+# when you pass config=FraiseQLConfig() (without config=, the production=
+# argument sets the environment itself)
 export FRAISEQL_DATABASE_URL="postgresql://localhost/mydb"
-export FRAISEQL_PRODUCTION=true
+export FRAISEQL_ENVIRONMENT=production
 ```
 
 See [Performance Optimization](../guides/performance-optimization.md) for the full set of
@@ -355,19 +357,20 @@ configuration — `create_fraiseql_app(...)` kwargs, `FraiseQLConfig`, or `FRAIS
 environment variables — not a standalone config file:
 
 ```bash
-# Pool sizing via environment variables
-export FRAISEQL_DATABASE_POOL_MIN=10
-export FRAISEQL_DATABASE_POOL_MAX=50
+# Pool sizing via environment variables: the pool keeps 2 connections open
+# and grows to DATABASE_POOL_SIZE + DATABASE_MAX_OVERFLOW
+export FRAISEQL_DATABASE_POOL_SIZE=40
+export FRAISEQL_DATABASE_MAX_OVERFLOW=10
 ```
 
-**Guidelines:**
+**Guidelines (maximum connections):**
 
-- Light workload: min=5, max=20
-- Moderate workload: min=10, max=50
-- Heavy workload: min=20, max=100
+- Light workload: 20
+- Moderate workload: 50
+- Heavy workload: 100
 
 A pool that is too small queues requests; one that is too large can overwhelm
-PostgreSQL. Size `pool_max` against your database's connection limit and core count.
+PostgreSQL. Size the maximum against your database's connection limit and core count.
 
 ---
 

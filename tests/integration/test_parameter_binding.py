@@ -101,7 +101,7 @@ class TestParameterBinding:
 
         table_columns = {"status", "machine_id", "name", "created_at", "data"}
         clause = repo._normalize_where(where, "tv_allocation", table_columns)
-        sql, params = clause.to_sql()
+        _sql, params = clause.to_sql()
 
         # Should have 5 parameters (2 IN values individually, eq UUID, contains pattern, gte date)
         expected_param_count = 5

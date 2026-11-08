@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
 from graphql import (
     DocumentNode,
     FieldNode,
+    GraphQLError,
     GraphQLSchema,
     OperationDefinitionNode,
     SelectionSetNode,
@@ -16,6 +18,8 @@ from graphql import (
 )
 
 from fraiseql.utils.casing import to_snake_case
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -126,13 +130,24 @@ class EntityExtractor:
                 max_depth=depth,
             )
 
-        except Exception as e:
+        except GraphQLError as e:
+            # The client's query doesn't parse: a result, not a failure
             return EntityAnalysisResult(
                 entities=[],
                 root_entities=[],
                 nested_entities=[],
                 operation_type="unknown",
                 analysis_errors=[f"Parsing error: {e!s}"],
+            )
+        except Exception as e:
+            # Routing falls back to NORMAL; say why instead of finding no entities
+            logger.warning("Entity analysis failed, no entities extracted: %s", e, exc_info=True)
+            return EntityAnalysisResult(
+                entities=[],
+                root_entities=[],
+                nested_entities=[],
+                operation_type="unknown",
+                analysis_errors=[f"Analysis error: {e!s}"],
             )
 
     def _get_operation(self, document: DocumentNode) -> Optional[OperationDefinitionNode]:
@@ -219,7 +234,8 @@ class EntityExtractor:
                 if selection.selection_set:
                     score += self._calculate_complexity(selection.selection_set) * 2
 
-                score += len(selection.arguments) * 2
+                # graphql-core 3.3 leaves an absent argument list as None
+                score += len(selection.arguments or ()) * 2
 
         return score
 

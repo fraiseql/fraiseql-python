@@ -293,7 +293,11 @@ database `docker compose` starts for you.
 
 ## Changing the schema
 
+`fraiseql migrate` needs the `migrate` extra (its migration engine, confiture,
+depends on the GPL-licensed pglast, so it isn't installed by default):
+
 ```bash
+pip install "fraiseql[migrate]<2"
 fraiseql migrate create add_something   # writes db/migrations/<timestamp>_add_something
 fraiseql migrate up                     # applies pending migrations
 fraiseql migrate status                 # shows what has been applied

@@ -118,7 +118,7 @@ class Customer:
 
 # GraphQL queries using the types with auto-generated descriptions
 @fraiseql.query
-async def get_user(id: ID) -> User | None:
+async def get_user(info, id: ID) -> User | None:
     """Retrieve a user by their unique identifier."""
     # In a real app, this would query your database
     return User(
@@ -131,7 +131,7 @@ async def get_user(id: ID) -> User | None:
 
 
 @fraiseql.query
-async def list_products() -> list[Product]:
+async def list_products(info) -> list[Product]:
     """Get all available products in the catalog."""
     # In a real app, this would query your database
     return [
@@ -146,7 +146,7 @@ async def list_products() -> list[Product]:
 
 
 @fraiseql.mutation
-async def create_user(input: CreateUserInput) -> User:
+async def create_user(info, input: CreateUserInput) -> User:
     """Create a new user account with the provided information."""
     # In a real app, this would validate and save to database
     return User(
@@ -159,21 +159,25 @@ async def create_user(input: CreateUserInput) -> User:
 
 
 if __name__ == "__main__":
-    # Create the FastAPI application with enhanced GraphQL schema
-    app = fraiseql.create_app(
-        title="Auto Field Descriptions Example",
-        description="Demonstration of automatic field description extraction",
-        version="1.0.0"
+    # Build the GraphQL schema; the descriptions are part of it
+    schema = fraiseql.build_fraiseql_schema(
+        query_types=[get_user, list_products],
+        mutation_resolvers=[create_user],
     )
 
-    # The GraphQL schema will now include automatic descriptions for all fields:
+    # The GraphQL schema now includes automatic descriptions for all fields:
     # - Type descriptions from class docstrings
     # - Field descriptions from docstring Fields: sections
-    # - Field descriptions from Annotated type hints (when supported)
     # - Explicit field descriptions from fraise_field() calls
+    print("User:", schema.type_map["User"].description.splitlines()[0])
+    print("User.email:", schema.type_map["User"].fields["email"].description)
+    print("Product.description:", schema.type_map["Product"].fields["description"].description)
 
-    print("🚀 GraphQL API with automatic field descriptions is ready!")
-    print("👀 Visit http://localhost:8000/graphql to see the enhanced documentation")
-    print("📚 All field descriptions are automatically extracted and visible in Apollo Studio")
-
-    # In a real application, you would run: uvicorn auto_field_descriptions:app --reload
+    # To serve it, build the app with the same types and resolvers:
+    #   from fraiseql.fastapi import create_fraiseql_app
+    #   app = create_fraiseql_app(
+    #       database_url="postgresql://localhost/mydb",
+    #       queries=[get_user, list_products],
+    #       mutations=[create_user],
+    #   )
+    # and run it with uvicorn; the descriptions show in GraphiQL and Apollo Studio.

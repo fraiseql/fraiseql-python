@@ -192,7 +192,7 @@ class TestKeyManagerStartup:
             default_key_id="master-key",
         )
         await manager.initialize()
-        old_key = manager.get_cached_data_key()
+        manager.get_cached_data_key()
 
         await manager.rotate_data_key()
 

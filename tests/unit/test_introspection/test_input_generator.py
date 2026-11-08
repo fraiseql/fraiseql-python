@@ -288,7 +288,7 @@ class TestInputGenerator:
         assert "status" in input_cls.__annotations__
 
         # Then: Types are correct
-        assert input_cls.__annotations__["email"] == str
+        assert input_cls.__annotations__["email"] is str
 
     @pytest.mark.asyncio
     async def test_generate_input_from_parameters_legacy(

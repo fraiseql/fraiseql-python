@@ -192,7 +192,7 @@ class TestNetworkOperatorValidation:
         assert condition.value == value
 
     @pytest.mark.parametrize(
-        "operator,value",
+        ("operator", "value"),
         [
             ("isIPv4", True),
             ("isIPv6", True),

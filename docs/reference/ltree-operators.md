@@ -14,15 +14,18 @@ LTree is PostgreSQL's specialized data type for efficiently storing and querying
 | **Hierarchy** | `ancestor_of`, `descendant_of` | Find parent/child relationships |
 | **Pattern Matching** | `matches_lquery`, `matches_ltxtquery` | Query patterns with wildcards |
 | **Path Depth** | `nlevel`, `nlevel_eq`, `nlevel_gt`, `nlevel_gte`, `nlevel_lt`, `nlevel_lte`, `nlevel_neq` | Filter by path depth |
-| **Path Analysis** | `subpath`, `index`, `index_eq`, `index_gte` | Extract and find path components |
-| **Path Manipulation** | `concat`, `lca` | Combine paths or find common ancestor |
+| **Path Analysis** | `index_eq`, `index_gte`, `lca` | Find a label's position; match a common ancestor |
 | **Array Operations** | `in_array`, `array_contains`, `matches_any_lquery` | Work with arrays of paths |
 
 ---
 
 ## Path Comparison Operators
 
-Path comparison operators use **lexicographic ordering** to compare paths as strings, where each label in the path is compared in order.
+Path comparison operators compare paths **label by label**, as `ltree` values, not as
+strings: `top.science.zoology < top.sciences`, since `science < sciences`. A JSONB
+field compares this way when the type declares it `LTree`; a native `ltree` column
+always does. Every operator on this page casts the JSONB text (`data ->> 'path'`) to
+`ltree` and types its value (`::ltree`, `::lquery`, `::ltxtquery`).
 
 ### Equality Operators
 
@@ -271,7 +274,7 @@ query {
 - `"astronomy | geology"` → either "astronomy" OR "geology" present
 - `"!archive"` → does NOT contain "archive"
 
-**PostgreSQL:** `(path)::ltree ? 'science & astronomy'::ltxtquery`
+**PostgreSQL:** `(path)::ltree @ 'science & astronomy'::ltxtquery`
 
 ---
 
@@ -405,68 +408,14 @@ query {
 
 ## Path Analysis Operators
 
-### `subpath` - Extract Subpath
-
-**Use when:** Extract a portion of a path
-
-```graphql
-query {
-  categories(where: {
-    path: { subpath: [0, 2] }
-  }) {
-    id
-    path
-  }
-}
-```
-
-**Parameters:** `[offset, length]`
-
-- `offset` - starting position (0-indexed)
-- `length` - number of labels to extract
-
-**Examples:**
-
-- `path: "science.astronomy.planets"` with `[0, 2]` → `"science.astronomy"`
-- `path: "science.astronomy.planets"` with `[1, 2]` → `"astronomy.planets"`
-- `path: "a.b.c.d"` with `[2, 1]` → `"c"`
-
-**PostgreSQL:** `subpath((path)::ltree, 0, 2)`
-
----
-
-### `index` - Find Label Index
-
-**Use when:** Locate a specific label in a path
-
-```graphql
-query {
-  categories(where: {
-    path: { index: "astronomy" }
-  }) {
-    id
-    path
-  }
-}
-```
-
-**Returns:** Position of label (0-indexed, or -1 if not found)
-
-**Example:**
-
-- `path: "science.astronomy.planets"` → index of `"astronomy"` is 1
-- `path: "science.astronomy.planets"` → index of `"nonexistent"` is -1
-
----
-
 ### `index_eq` - Label at Position
 
-**Use when:** Check if a specific label is at a position
+**Use when:** Check that a label first appears at a given position
 
 ```graphql
 query {
   categories(where: {
-    path: { indexEq: ["astronomy", 1] }
+    path: { indexEq: { label: "astronomy", position: 1 } }
   }) {
     id
     path
@@ -474,9 +423,13 @@ query {
 }
 ```
 
-**Parameters:** `[label, position]`
+**Parameters:** `{ label, position }` (in Python, `{"index_eq": ("astronomy", 1)}`
+or `{"index_eq": {"label": "astronomy", "position": 1}}`)
 
-Returns paths where `label` is at `position`.
+Returns paths where the first `label` is at `position` (0-indexed).
+`label` may itself be a path (`"astronomy.planets"`).
+
+**PostgreSQL:** `index(path, 'astronomy'::ltree) = 1`
 
 ---
 
@@ -487,7 +440,7 @@ Returns paths where `label` is at `position`.
 ```graphql
 query {
   categories(where: {
-    path: { indexGte: ["planets", 1] }
+    path: { indexGte: { label: "planets", position: 1 } }
   }) {
     id
     path
@@ -495,39 +448,17 @@ query {
 }
 ```
 
-Returns paths where `"planets"` first appears at position 1 or later.
+Returns paths where `"planets"` first appears at position 1 or later. `index()`
+is -1 for a path without the label, so `position: 0` keeps every path that
+contains it.
 
----
-
-## Path Manipulation Operators
-
-### `concat` - Concatenate Paths
-
-**Use when:** Combine two paths
-
-```graphql
-query {
-  categories(where: {
-    path: { concat: "planets.terrestrial" }
-  }) {
-    id
-    path
-  }
-}
-```
-
-**Example:**
-
-- `path: "science.astronomy"` concatenated with `"planets.terrestrial"`
-- Result: `"science.astronomy.planets.terrestrial"`
-
-**PostgreSQL:** `(path)::ltree || 'planets.terrestrial'::ltree`
+**PostgreSQL:** `index(path, 'planets'::ltree) >= 1`
 
 ---
 
 ### `lca` - Lowest Common Ancestor
 
-**Use when:** Find common ancestor path
+**Use when:** Find the row whose path is the common ancestor of some paths
 
 ```graphql
 query {
@@ -546,12 +477,20 @@ query {
 }
 ```
 
-**Returns:** The lowest (deepest) common ancestor
+**Returns:** The rows whose path equals the lowest (deepest) common ancestor of
+the paths: here `science.astronomy`.
 
-**Example:**
+**PostgreSQL:** `path = lca(ARRAY['science.astronomy.planets'::ltree, ...])`
 
-- Input paths: `"science.astronomy.planets"`, `"science.astronomy.stars"`
-- LCA result: `"science.astronomy"`
+---
+
+### `subpath`, `index`, `concat`
+
+These compute a path or a number (`subpath(path, offset, len)`, `index(path,
+label)`, `path || other`), not a condition, so they aren't filters: a `where`
+using them is rejected with `ltree operator '<name>' is not a filter`. Filter on
+a label's position with `index_eq` / `index_gte`, and on a prefix with
+`ancestor_of` / `descendant_of`.
 
 ---
 
@@ -559,7 +498,8 @@ query {
 
 ### `in_array` - Path in Array
 
-**Use when:** Check if path is in a list
+**Use when:** Check if path is one of the paths in a list, or below one of them
+(ltree's `ltree <@ ltree[]`; for an exact match, use `in`)
 
 ```graphql
 query {
@@ -627,7 +567,8 @@ query {
 All operators work identically in Python dict-based queries:
 
 ```python
-from fraiseql.sql import create_graphql_where_input, LTreeFilter
+from fraiseql.sql import create_graphql_where_input
+from fraiseql.sql.graphql_where_generator import LTreeFilter
 
 # Using WhereInput (type-safe)
 where = CategoryWhereInput(
@@ -688,7 +629,7 @@ CREATE INDEX idx_path_gist ON categories USING GIST(path);
 | `ancestor_of`, `descendant_of` | ✅ GiST | Hierarchy queries, highly optimized |
 | `matches_lquery`, `matches_ltxtquery` | ✅ GiST | Pattern matching, well-optimized |
 | `nlevel_*` | ⚠️ B-tree only | Index on `nlevel(path)` for optimization |
-| `subpath`, `index` | ⚠️ Function-based | Consider B-tree index on result |
+| `index_eq`, `index_gte`, `lca` | ⚠️ Function-based | Not index-assisted; combine with a hierarchy filter |
 
 ### Query Optimization Tips
 

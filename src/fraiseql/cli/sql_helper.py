@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from datetime import date, datetime
 from decimal import Decimal
+from types import UnionType
 from typing import Any, Union, get_args, get_origin, get_type_hints
 
 from fraiseql.utils.naming import to_snake_case
@@ -266,7 +267,7 @@ class FieldMapping:
 
         # Handle Optional types
         origin = get_origin(python_type)
-        if origin is Union:
+        if origin in (Union, UnionType):
             args = get_args(python_type)
             if len(args) == 2 and type(None) in args:
                 python_type = args[0] if args[1] is type(None) else args[1]
@@ -339,7 +340,7 @@ class SQLHelper:
                 else:
                     # Handle nullability
                     origin = get_origin(field_type)
-                    if origin is Union:
+                    if origin in (Union, UnionType):
                         columns.append(f"    {field_name} {sql_type}")
                     else:
                         columns.append(f"    {field_name} {sql_type} NOT NULL")
@@ -581,7 +582,7 @@ class SQLHelper:
         """
         # Handle Optional types
         origin = get_origin(python_type)
-        if origin is Union:
+        if origin in (Union, UnionType):
             args = get_args(python_type)
             if len(args) == 2 and type(None) in args:
                 python_type = args[0] if args[1] is type(None) else args[1]

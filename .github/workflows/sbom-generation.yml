@@ -5,6 +5,16 @@ name: SBOM Generation
 # Runs on releases and can be manually triggered
 
 on:
+  # release.yml creates the release with GITHUB_TOKEN, and GitHub starts no
+  # workflow for an event made with that token: `release: published` fired only
+  # for the releases a person published (last: v1.22.0). release.yml now calls
+  # this workflow once the release exists.
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to generate SBOM for (e.g., 1.5.0)'
+        required: true
+        type: string
   release:
     types: [published]
   workflow_dispatch:
@@ -35,7 +45,8 @@ jobs:
           # Remove 'v' prefix if present
           VERSION="${VERSION#v}"
         else
-          VERSION="${{ github.event.inputs.version }}"
+          # workflow_call and workflow_dispatch both fill `inputs`
+          VERSION="${{ inputs.version }}"
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Generating SBOM for version: $VERSION"
@@ -148,9 +159,11 @@ jobs:
         retention-days: 90
 
     - name: Attach SBOM to Release
-      if: github.event_name == 'release'
+      # Under workflow_call, github.event_name is the caller's ("push" of the tag)
+      if: github.event_name == 'release' || github.event_name == 'push'
       uses: softprops/action-gh-release@v3
       with:
+        tag_name: v${{ steps.version.outputs.version }}
         files: |
           fraiseql-${{ steps.version.outputs.version }}-sbom.json
           fraiseql-${{ steps.version.outputs.version }}-sbom.json.sig

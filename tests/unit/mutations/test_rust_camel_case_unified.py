@@ -6,6 +6,8 @@ in the Rust build_mutation_response function.
 
 import json
 
+from tests.unit.mutations.selection_document import UNFILTERED, legacy_document
+
 
 def test_rust_build_mutation_response_with_camel_case_true():
     """Verify Rust converts to camelCase when auto_camel_case=True."""
@@ -28,7 +30,10 @@ def test_rust_build_mutation_response_with_camel_case_true():
         "test_server",  # entity_field_name in snake_case
         "TestServer",
         None,  # cascade_selections
-        True,  # auto_camel_case=True
+        True,
+        None,
+        None,
+        legacy_document(None, None, "test_server", None),
     )
 
     result = json.loads(result_bytes.decode("utf-8"))
@@ -74,7 +79,10 @@ def test_rust_build_mutation_response_with_camel_case_false():
         "test_server",  # entity_field_name in snake_case
         "TestServer",
         None,  # cascade_selections
-        False,  # auto_camel_case=False
+        False,
+        None,
+        None,
+        legacy_document(None, None, "test_server", None),
     )
 
     result = json.loads(result_bytes.decode("utf-8"))
@@ -119,6 +127,7 @@ def test_rust_mutation_default_auto_camel_case_is_true():
         "test_server",
         "TestServer",
         None,
+        entity_selections=UNFILTERED,
     )
 
     result = json.loads(result_bytes.decode("utf-8"))

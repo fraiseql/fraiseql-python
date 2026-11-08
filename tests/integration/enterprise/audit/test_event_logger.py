@@ -19,7 +19,7 @@ async def setup_audit_schema(class_db_pool, test_schema) -> None:
             """
                 SELECT EXISTS (
                     SELECT 1 FROM information_schema.tables
-                    WHERE table_name = 'audit_events'
+                    WHERE table_name = 'audit_events' AND table_schema = current_schema()
                 )
             """
         )
@@ -35,11 +35,6 @@ async def setup_audit_schema(class_db_pool, test_schema) -> None:
 
         # Keep PostgreSQL crypto trigger ENABLED (FraiseQL philosophy: "In PostgreSQL Everything")
         # PostgreSQL handles hashing, signing, and chain linking
-
-        # Disable the partition trigger for tests to avoid complexity
-        await conn.execute(
-            "ALTER TABLE audit_events DISABLE TRIGGER create_audit_partition_trigger"
-        )
 
         # Check if test signing key exists
         cur = await conn.execute(

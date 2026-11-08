@@ -100,7 +100,8 @@ FRAISEQL_DATABASE_URL=postgresql://localhost/mydb
 
 - **Type**: `bool`
 - **Default**: `False`
-- **Description**: Enable SQL query logging (development only)
+- **Description**: Deprecated, and has no effect: nothing reads it. Setting it emits a
+  `DeprecationWarning`; it will be removed.
 
 **Examples**:
 
@@ -110,7 +111,6 @@ config = FraiseQLConfig(
     database_pool_size=50,
     database_max_overflow=20,
     database_pool_timeout=60,
-    database_echo=True  # Development only
 )
 ```
 
@@ -257,14 +257,28 @@ config = FraiseQLConfig(
 ### max_query_depth
 
 - **Type**: `int | None`
-- **Default**: `None`
-- **Description**: Maximum allowed query depth (None = unlimited)
+- **Default**: `15` (since 1.31.1; `None` before)
+- **Description**: Reject a query nested deeper than this (`None` = unlimited). `{ users { id } }`
+  has depth 1, `{ users { posts { id } } }` depth 2; fragments add no depth of their own. A
+  deeper query gets a `QUERY_TOO_DEEP` GraphQL error (`extensions.depth`,
+  `extensions.maxDepth`) before any resolver or SQL runs, on `POST` and `GET /graphql`, APQ
+  persisted queries included. Introspection (`__schema`, `__type`) is not counted:
+  `introspection_policy` governs it. Must be at least 1.
 
 ### query_timeout
 
 - **Type**: `int`
 - **Default**: `30`
-- **Description**: Maximum query execution time in seconds
+- **Description**: Statement timeout, in seconds, of every database read (`find`, `find_one`, `count`, ...), `db.run()` and `execute_function`: set as a transaction-local `statement_timeout`; 0 sets none.
+
+### include_execution_metadata
+
+- **Type**: `bool`
+- **Default**: `False`
+- **Description**: Add `extensions.execution` (`mode`, `time_ms`) to GraphQL responses in
+  production too. Outside production it is always added. A response served as raw Rust
+  bytes (a lone `db.find` / `db.find_one` root field, for instance) carries no extensions
+  either way.
 
 ### auto_camel_case
 
@@ -287,150 +301,62 @@ config = FraiseQLConfig(
 
 ## Performance Settings
 
-### enable_query_caching
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable query result caching
-
 ### cache_ttl
 
 - **Type**: `int`
 - **Default**: `300`
-- **Description**: Cache time-to-live in seconds
-
-### enable_turbo_router
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable TurboRouter for registered queries
+- **Description**: Deprecated, and has no effect: nothing reads it. A value other than
+  the default emits a `DeprecationWarning`. APQ responses have `apq_response_cache_ttl`;
+  `CachedRepository.find` takes `cache_ttl=` per call.
 
 ### turbo_router_cache_size
 
 - **Type**: `int`
 - **Default**: `1000`
-- **Description**: Maximum number of queries to cache
+- **Description**: Maximum number of queries the TurboRouter registry holds. The
+  TurboRouter is always on: no setting turns it off.
 
-### turbo_router_auto_register
-
-- **Type**: `bool`
-- **Default**: `False`
-- **Description**: Auto-register queries at startup
-
-### turbo_max_complexity
-
-- **Type**: `int`
-- **Default**: `100`
-- **Description**: Max complexity score for turbo caching
-
-### turbo_max_total_weight
-
-- **Type**: `float`
-- **Default**: `2000.0`
-- **Description**: Max total weight of cached queries
-
-### turbo_enable_adaptive_caching
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable complexity-based admission
+`enable_query_caching`, `enable_turbo_router`, `turbo_router_auto_register`,
+`turbo_max_complexity`, `turbo_max_total_weight` and `turbo_enable_adaptive_caching`
+aren't `FraiseQLConfig` fields, and `FraiseQLConfig` ignores them.
 
 ## JSON Passthrough Settings
 
-### json_passthrough_enabled
+None. Query results go from PostgreSQL through the Rust pipeline to the response on every
+query. `json_passthrough_enabled`, `json_passthrough_in_production`,
+`json_passthrough_cache_nested` and the `passthrough_*` options of earlier releases aren't
+`FraiseQLConfig` fields, and `FraiseQLConfig` ignores them.
 
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable JSON passthrough optimization
-
-### json_passthrough_in_production
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Auto-enable in production mode
-
-### json_passthrough_cache_nested
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Cache wrapped nested objects
-
-### passthrough_complexity_limit
-
-- **Type**: `int`
-- **Default**: `50`
-- **Description**: Max complexity for passthrough mode
-
-### passthrough_max_depth
-
-- **Type**: `int`
-- **Default**: `3`
-- **Description**: Max query depth for passthrough
-
-### passthrough_auto_detect_views
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Auto-detect database views
-
-### passthrough_cache_view_metadata
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Cache view metadata
-
-### passthrough_view_metadata_ttl
-
-- **Type**: `int`
-- **Default**: `3600`
-- **Description**: Metadata cache TTL in seconds
-
-## JSONB Extraction Settings
-
-### jsonb_extraction_enabled
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable automatic JSONB column extraction in production mode
-
-### jsonb_default_columns
-
-- **Type**: `list[str]`
-- **Default**: `["data", "json_data", "jsonb_data"]`
-- **Description**: Default JSONB column names to search for
-
-### jsonb_auto_detect
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Auto-detect JSONB columns by analyzing content
+## JSONB Settings
 
 ### jsonb_field_limit_threshold
 
 - **Type**: `int`
 - **Default**: `20`
-- **Description**: Field count threshold for full data column (default: 20)
+- **Description**: Copied into the request context as
+  `info.context["jsonb_field_limit_threshold"]`, for resolvers that want it. FraiseQL's
+  own queries don't read it.
 
 **Examples**:
 
 ```python
 config = FraiseQLConfig(
     database_url="postgresql://localhost/mydb",
-    jsonb_extraction_enabled=True,
-    jsonb_default_columns=["data", "metadata", "json_data"],
-    jsonb_auto_detect=True,
-    jsonb_field_limit_threshold=30
+    jsonb_field_limit_threshold=30,
 )
 ```
+
+`jsonb_extraction_enabled`, `jsonb_default_columns` and `jsonb_auto_detect` aren't
+`FraiseQLConfig` fields, and `FraiseQLConfig` ignores them. A type reads its JSONB
+column from `jsonb_column=` on `@fraiseql.type` (`data` by default).
 
 ## Rust Pipeline (v1.0.0+)
 
 **v0.11.5 Architectural Change**: FraiseQL now uses an exclusive Rust pipeline for all query execution. No mode detection or conditional logic.
 
-**Configuration Options**:
-
-- `field_projection: bool = True` - Enable Rust-based field filtering
-- `schema_registry: bool = True` - Enable schema-based transformation
+**Configuration Options**: none in `FraiseQLConfig`. Field selection always happens in
+Rust. The Rust schema registry is initialized by `create_fraiseql_app`, which takes
+`enable_schema_registry=False` to skip it.
 
 **Benefits**:
 
@@ -438,7 +364,7 @@ config = FraiseQLConfig(
 - ✅ **7-10x faster JSON transformation** - Zero Python overhead
 - ✅ **Always active** - No configuration needed
 - ✅ **Automatic camelCase** - snake_case → camelCase conversion
-- ✅ **Built-in __typename** - Automatic GraphQL type injection
+- ✅ **Built-in `__typename`** - Written wherever the query selects it (and only there)
 
 **Migration from v0.11.4 and earlier**: Remove all execution mode configuration.
 
@@ -578,44 +504,50 @@ config = FraiseQLConfig(
 ### rate_limit_enabled
 
 - **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable rate limiting
+- **Default**: `False`
+- **Description**: `create_fraiseql_app` installs `RateLimiterMiddleware`, which counts
+  requests per client IP (`request.client.host`) in a sliding window, in each process's
+  memory. A request over the limit gets `429` with `Retry-After` and `X-RateLimit-*`
+  headers; `/health`, `/ready`, `/metrics` and `/` are not counted. See
+  [Rate Limiting](../configuration/rate-limiting.md).
 
 ### rate_limit_requests_per_minute
 
 - **Type**: `int`
 - **Default**: `60`
-- **Description**: Maximum requests per minute
+- **Description**: Requests a client may make in any 60 seconds
 
 ### rate_limit_requests_per_hour
 
 - **Type**: `int`
 - **Default**: `1000`
-- **Description**: Maximum requests per hour
+- **Description**: Requests a client may make in any hour
 
 ### rate_limit_burst_size
 
 - **Type**: `int`
 - **Default**: `10`
-- **Description**: Burst size for rate limiting
+- **Description**: Requests a minute always allowed, even above
+  `rate_limit_requests_per_minute` (the hour limit still applies)
 
 ### rate_limit_window_type
 
 - **Type**: `str`
 - **Default**: `"sliding"`
-- **Description**: Window type ("sliding" or "fixed")
+- **Description**: Only `"sliding"` is implemented; another value logs a warning and
+  counts in a sliding window
 
 ### rate_limit_whitelist
 
 - **Type**: `list[str]`
 - **Default**: `[]`
-- **Description**: IP addresses to whitelist
+- **Description**: Client IPs that are never limited
 
 ### rate_limit_blacklist
 
 - **Type**: `list[str]`
 - **Default**: `[]`
-- **Description**: IP addresses to blacklist
+- **Description**: Client IPs that always get `403`
 
 **Examples**:
 
@@ -635,38 +567,48 @@ config = FraiseQLConfig(
 ### complexity_enabled
 
 - **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable query complexity analysis
+- **Default**: `False`
+- **Description**: Enforce `complexity_max_score` and `complexity_max_depth`. Setting either
+  of them (in code or from the environment) turns it on, unless `complexity_enabled` is set
+  too; `complexity_enabled=False` keeps the limits off.
 
 ### complexity_max_score
 
 - **Type**: `int`
 - **Default**: `1000`
-- **Description**: Maximum allowed complexity score
+- **Description**: Reject a query whose complexity score is higher, with a `QUERY_TOO_COMPLEX`
+  GraphQL error (`extensions.complexity`, `extensions.maxComplexity`), before it runs. A
+  scalar costs 1, an object field 1 plus its selections, a list field 1 plus its selections
+  times its `limit` / `first` argument (literal, variable, or the argument's schema
+  default), else `complexity_default_list_size`. Introspection is not counted. Must be at
+  least 1.
 
 ### complexity_max_depth
 
 - **Type**: `int`
 - **Default**: `10`
-- **Description**: Maximum query depth
+- **Description**: Reject a query nested deeper, like `max_query_depth`, when complexity
+  limits are on. When both apply, the lower one wins.
 
 ### complexity_default_list_size
 
 - **Type**: `int`
 - **Default**: `10`
-- **Description**: Default list size for complexity calculation
+- **Description**: List size assumed for a list field the query passes no `limit` / `first` to
 
 ### complexity_include_in_response
 
 - **Type**: `bool`
 - **Default**: `False`
-- **Description**: Include complexity score in response
+- **Description**: Deprecated, and has no effect: no response carries the complexity score.
+  Setting it emits a `DeprecationWarning`; it will be removed.
 
 ### complexity_field_multipliers
 
 - **Type**: `dict[str, int]`
 - **Default**: `{}`
-- **Description**: Custom field complexity multipliers
+- **Description**: Cost of a field instead of 1, keyed by field name (`"search"`) or
+  `"Type.field"`
 
 **Examples**:
 
@@ -695,8 +637,11 @@ config = FraiseQLConfig(
 | Mode | Behavior |
 |------|----------|
 | `"optional"` | Accept both persisted query hashes and full queries (default) |
-| `"required"` | **Only** accept persisted query hashes, reject arbitrary queries |
+| `"required"` | **Only** run hashes the server already knows (from `apq_queries_dir` or a backend's `register_queries`); a query text is refused, with or without a hash, and nothing is stored |
 | `"disabled"` | Ignore APQ extensions entirely, always require full query |
+
+In `optional` and `required` mode, a query whose text doesn't hash to its `sha256Hash`
+gets HTTP 400 (`provided sha does not match query`).
 
 *New in FraiseQL v1.6.1*
 
@@ -712,7 +657,7 @@ config = FraiseQLConfig(
 - **Default**: `None`
 - **Description**: Directory containing `.graphql` files to auto-register at startup
 
-When set, all `.graphql` and `.gql` files in this directory (recursively) will be loaded and registered as persisted queries at application startup. Useful with `apq_mode="required"` for security-hardened deployments.
+When set, the operations of every `.graphql` and `.gql` file in this directory (recursively) are registered as persisted queries, each under the SHA-256 of its text, when the first APQ request creates the backend. A missing directory makes the app fail at startup; the directory isn't read in `apq_mode="disabled"`. It is how queries get approved in `apq_mode="required"`.
 
 *New in FraiseQL v1.6.1*
 
@@ -720,13 +665,16 @@ When set, all `.graphql` and `.gql` files in this directory (recursively) will b
 
 - **Type**: `bool`
 - **Default**: `False`
-- **Description**: Enable JSON response caching for APQ queries
+- **Description**: Cache the response of APQ queries. Mutations, subscriptions and
+  responses with errors are not cached; the key is the hash, the variables, the tenant and
+  the authenticated user's id (an authenticated request without one is not cached)
 
 ### apq_response_cache_ttl
 
 - **Type**: `int`
 - **Default**: `600`
-- **Description**: Cache TTL for APQ responses in seconds
+- **Description**: Seconds a cached APQ response is served (`memory` and `postgresql`
+  backends); 0 keeps it
 
 ### apq_backend_config
 
@@ -799,25 +747,16 @@ config = FraiseQLConfig(
 
 ## Rust Pipeline Settings
 
-### field_projection
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable Rust-based field filtering
-
-### schema_registry
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable schema-based transformation
-
-**Examples**:
+None. `field_projection` and `schema_registry` aren't `FraiseQLConfig` fields, and
+`FraiseQLConfig` ignores them: field selection always happens in Rust. To skip
+initializing the Rust schema registry, pass `enable_schema_registry=False` to
+`create_fraiseql_app`:
 
 ```python
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    field_projection=True,  # Enable field filtering
-    schema_registry=True    # Enable schema-based transformation
+app = create_fraiseql_app(
+    types=[User],
+    config=FraiseQLConfig(database_url="postgresql://localhost/mydb"),
+    enable_schema_registry=False,
 )
 ```
 
@@ -833,7 +772,9 @@ config = FraiseQLConfig(
 
 - **Type**: `str`
 - **Default**: `"public"`
-- **Description**: Default schema for queries when not specified
+- **Description**: Deprecated, and has no effect: a query reads the view its `sql_source`
+  names, and an unqualified name resolves through the connection's `search_path`. Qualify it
+  (`sql_source="api.v_user"`) to pick a schema. Setting it emits a `DeprecationWarning`.
 
 **Examples**:
 
@@ -841,7 +782,6 @@ config = FraiseQLConfig(
 config = FraiseQLConfig(
     database_url="postgresql://localhost/mydb",
     default_mutation_schema="app",
-    default_query_schema="api"
 )
 ```
 
@@ -918,7 +858,7 @@ config = FraiseQLConfig(
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
     # Uses DEFAULT_ERROR_CONFIG from config
 
 # Mutation overrides global default
@@ -929,7 +869,7 @@ class CreateUser:
 class DeleteUser:
     input: DeleteUserInput
     success: DeleteUserSuccess
-    failure: DeleteUserError
+    error: DeleteUserError
     # Uses STRICT_STATUS_CONFIG (explicit override)
 ```
 
@@ -957,34 +897,9 @@ class DeleteUser:
 
 - **Type**: `EntityRoutingConfig | dict | None`
 - **Default**: `None`
-- **Description**: Configuration for entity-aware query routing (optional)
-
-**Examples**:
-
-```python
-from fraiseql.routing.config import EntityRoutingConfig
-
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    entity_routing=EntityRoutingConfig(
-        enabled=True,
-        default_schema="public",
-        entity_mapping={
-            "User": "users_schema",
-            "Post": "content_schema"
-        }
-    )
-)
-
-# Or using dict
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    entity_routing={
-        "enabled": True,
-        "default_schema": "public"
-    }
-)
-```
+- **Description**: Deprecated, and has no effect. It is validated and stored, but no query
+  is routed by entity: every query runs the same execution path. Setting it emits a
+  `DeprecationWarning`. It will be removed.
 
 ## Properties
 
@@ -1018,12 +933,6 @@ config = FraiseQLConfig(
     enable_playground=False,
     max_query_depth=10,
     query_timeout=15,
-
-    # Performance
-    enable_query_caching=True,
-    cache_ttl=600,
-    enable_turbo_router=True,
-    jsonb_extraction_enabled=True,
 
     # Auth
     auth_enabled=True,

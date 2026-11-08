@@ -117,7 +117,7 @@ async def test_concurrent_throughput_under_load(
 
     # Execute concurrent queries
     tasks = [execute_under_load(i) for i in range(num_concurrent)]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
     elapsed_time = asyncio.get_event_loop().time() - start_time
     metrics.end_test()
@@ -154,8 +154,6 @@ async def test_deadlock_detection_and_recovery(
     metrics.start_test()
 
     num_concurrent = 6
-    deadlock_attempts = 0
-    deadlock_recovered = 0
 
     async def execute_potential_deadlock(op_id: int):
         """Execute operation that might cause deadlock."""

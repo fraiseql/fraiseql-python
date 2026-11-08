@@ -69,11 +69,12 @@ docker-compose down -v
 ### RAG Application
 
 - **Build**: From local Dockerfile
-- **Port**: 8000
+- **Port**: 8001 on the host (8000 in the container, leaving 8000 to a local vLLM)
 - **Endpoints**:
-  - GraphQL Playground: http://localhost:8000/graphql
-  - Health Check: http://localhost:8000/health
-  - REST API: http://localhost:8000/api/...
+  - GraphQL Playground: http://localhost:8001/graphql
+  - Health Check: http://localhost:8001/health
+  - Model status: http://localhost:8001/api/rag/status
+  - REST API: http://localhost:8001/api/...
 
 ## Testing Without OpenAI API Key
 
@@ -85,7 +86,7 @@ unset OPENAI_API_KEY
 docker-compose up -d
 
 # GraphQL operations still work
-curl http://localhost:8000/graphql -H "Content-Type: application/json" \
+curl http://localhost:8001/graphql -H "Content-Type: application/json" \
   -d '{"query":"{ documents(limit: 5) { id title } }"}'
 ```
 
@@ -122,14 +123,14 @@ watch docker-compose ps
 Verify OpenAI API key is set:
 
 ```bash
-# Check health endpoint
-curl http://localhost:8000/health
+# Check which models are available
+curl http://localhost:8001/api/rag/status
 
 # Should show:
 # {
 #   "status": "healthy",
-#   "rag_service": "available",
-#   "openai_configured": true
+#   "embeddings": "available",
+#   "llm": "available"
 # }
 ```
 

@@ -86,9 +86,43 @@ sequenceDiagram
 
 - Concatenate JSON array
 - Transform JSONB to GraphQL JSON
-- Convert field names to camelCase
-- Inject __typename
+- Keep the selected fields only, each under its response key (alias)
+- Write `__typename` where the query selects it
 - Return UTF-8 bytes directly for HTTP
+
+### `__typename` is included where the query selects it
+
+A response built by the Rust pipeline holds exactly the selected fields, as the
+GraphQL spec requires: `__typename` too is written only where the query selects
+it, under its alias if it has one. A mutation selecting `post { id title }`
+returns `{"id": ..., "title": ...}`; `post { __typename id }` returns
+`{"__typename": "Post", "id": ...}`. This applies to query results (`db.find`,
+`db.find_one`, several root fields) and to mutation results, including nested
+entities. Clients that normalize by type (Apollo Client, urql's Graphcache,
+Relay) add `__typename` to the queries they send, so they get it.
+
+Where graphql-core completes the result instead (a `find` below the root, or a
+mutation outside HTTP mode), the data Rust hands it keeps `__typename` on every
+object of a known type: graphql-core reads it to resolve unions and interfaces,
+and leaves it out of the response where it isn't selected. Cascade entities
+(`cascade.updated`, `cascade.deleted`) keep the `__typename` their data has, the
+entity's type, as the GraphQL Cascade format defines it.
+
+A mutation entity's `__typename` comes from the SQL function's `entity_type`, a
+`__typename` key in the entity's data, or the schema type of the success type's
+entity field when that type is concrete (`location: Location`). When none of these
+applies, `__typename` is left out, and a warning names the SQL function once.
+
+For a field whose type is an interface or a union, the object behind it can be
+one of several types. FraiseQL never guesses the type from the schema there:
+`__typename` is included only when the data provides it (a `__typename` key in
+the JSONB).
+
+In a mutation entity, fragments under an interface or union field
+(`owner { ... on Person { name } ... on Org { title } }`) select the union of
+their fields for every object: a `Person` owner keeps `title` too if its data has
+one. Per-type filtering, which would keep only `name` for a `Person`, isn't done
+yet.
 
 ## Code Example
 
@@ -117,28 +151,32 @@ async def users(info) -> list[User]:
 
 ### Under the Hood
 
+`FraiseQLRepository.find()` reads the view's `data` column as JSON text, one string per
+row, and hands the strings to the Rust extension (shipped inside the `fraiseql` package)
+with the selection of the query; it returns the bytes as a `RustResponseBytes`, which
+the `/graphql` route sends as the HTTP response. The call, on its own (applications
+don't make it; `find` does):
+
 ```python
-# In FraiseQLRepository.find():
-async def find(self, source: str):
-    # 1. Execute PostgreSQL query
-    rows = await conn.fetch(f"SELECT data FROM {source}")
+from fraiseql import fraiseql_rs
 
-    # 2. Extract JSONB strings
-    json_strings = [row["data"] for row in rows]
+# What the view's data column holds, one JSON string per row
+json_strings = ['{"id": 1, "first_name": "Ada"}']
 
-    # 3. Call Rust pipeline
-    import fraiseql_rs
-
-    response_bytes = fraiseql_rs.build_graphql_response(
-        json_strings=json_strings,
-        field_name="users",
-        type_name="User",
-        field_paths=None,
-    )
-
-    # 4. Return RustResponseBytes (FastAPI sends as HTTP response)
-    return RustResponseBytes(response_bytes)
+response_bytes = fraiseql_rs.build_graphql_response(
+    json_strings=json_strings,
+    field_name="users",
+    type_name="User",
+    field_paths=None,
+)
+print(response_bytes)
+# b'{"data":{"users":[{"__typename":"User","id":1,"firstName":"Ada"}]}}'
 ```
+
+Without a selection, as here, every key is kept and the row gets its `__typename`.
+`find` passes the query's `field_selections`, and `inject_typename=False` when the
+response goes to the client as is (HTTP mode), so it holds exactly the selected fields,
+`__typename` included only where selected.
 
 ### Rust Side (fraiseql_rs crate)
 

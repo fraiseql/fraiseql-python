@@ -14,7 +14,7 @@ When fetching related data, naive implementations cause N+1 queries:
 async def author(self, info) -> User:
     db = info.context["db"]
     # This runs for EVERY post! (1 + N queries)
-    return await db.find_one("v_user", id=self.author_id)
+    return await db.find_one("v_user", mandatory_filters={"id": self.author_id})
 ```
 
 **Query**:
@@ -261,7 +261,7 @@ async def post_created(info) -> Post:
             post_id = notification.payload
 
             # Fetch the new post
-            post = await db.find_one("v_post", id=post_id)
+            post = await db.find_one("v_post", mandatory_filters={"id": post_id})
             yield post
 ```
 
@@ -316,7 +316,7 @@ async def post_created(info, author_id: ID | None = None) -> Post:
                 continue
 
             post_id = UUID(notification.payload)
-            post = await db.find_one("v_post", id=post_id)
+            post = await db.find_one("v_post", mandatory_filters={"id": post_id})
 
             # Filter by author if specified
             if author_id is None or post.author_id == author_id:
@@ -339,61 +339,76 @@ app = create_fraiseql_app(
 
 ### Automatic Cache Invalidation and Side Effects
 
-GraphQL Cascade tracks mutation side effects and automatically invalidates affected queries.
+GraphQL Cascade sends a mutation's side effects to the client with its result, so the
+client can update or invalidate its cache without refetching.
 
 ### How It Works
 
-1. **Mutation declares side effects**: What data changed
-2. **Cascade tracks dependencies**: Which queries depend on that data
-3. **Automatic invalidation**: Client cache updated automatically
+1. **The SQL function returns the side effects**: the entities it created, updated or
+   deleted, and the queries to invalidate, in the `cascade` field of its result
+2. **FraiseQL passes them on**: with `@mutation(enable_cascade=True)`, the success type
+   gets a `cascade` field
+3. **The client applies them**: Apollo or Relay update or invalidate the cached queries
 
 ### Example
 
 ```python
-@fraiseql.mutation
+import fraiseql
+from fraiseql.types import ID
+
+
+@fraiseql.type
+class Post:
+    id: ID
+    title: str
+    content: str
+
+
+@fraiseql.input
+class CreatePostInput:
+    title: str
+    content: str
+    author_id: ID
+
+
+@fraiseql.success
+class CreatePostSuccess:
+    message: str
+    post: Post
+
+
+@fraiseql.error
+class CreatePostError:
+    message: str
+    code: str
+
+
+@fraiseql.mutation(enable_cascade=True)
 class CreatePost:
     input: CreatePostInput
-    success: PostCreated
-    failure: ValidationError
-
-    # Declare cascade effects
-    cascade_effects = [
-        "posts",           # Invalidate posts query
-        "user.posts",      # Invalidate user's posts field
-    ]
-
-    async def resolve(self, info) -> PostCreated | ValidationError:
-        db = info.context["db"]
-
-        result = await db.execute_function("fn_create_post", {
-            "title": self.input.title,
-            "author_id": self.input.author_id,
-        })
-
-        post = await db.find_one("v_post", id=result["id"])
-
-        # Cascade automatically invalidates affected queries!
-        return PostCreated(post=post)
+    success: CreatePostSuccess
+    error: CreatePostError
 ```
 
-**Result**: Client's `posts` query cache is automatically invalidated and refetched.
+The SQL function `create_post(input jsonb)` declares the effects with the cascade helpers:
 
-### Advanced Cascade Patterns
-
-```python
-@fraiseql.mutation
-class UpdateUser:
-    input: UpdateUserInput
-    success: UserUpdated
-    failure: ValidationError
-
-    # Cascade with parameters
-    cascade_effects = [
-        "user",                          # Invalidate user query
-        "users",                         # Invalidate users list
-        lambda self: f"user:{self.id}",  # Dynamic cascade
-    ]
+```sql
+RETURN mutation_created(
+    'Post created',
+    v_post_data,
+    'Post',
+    cascade_merge(
+        cascade_entity_created('Post', v_post_id, v_post_data),
+        cascade_invalidate_cache(ARRAY['posts', 'user_posts'], 'INVALIDATE')
+    )
+);
 ```
+
+**Result**: the response's `cascade` lists the new `Post` and tells the client to
+invalidate its `posts` and `user_posts` queries.
+
+See [GraphQL Cascade](../features/graphql-cascade.md) for the full function, the cascade
+structure and client integration.
 
 ---
 
@@ -413,31 +428,49 @@ CREATE EXTENSION IF NOT EXISTS vector;
 ALTER TABLE tb_post
 ADD COLUMN embedding vector(1536);  -- OpenAI embedding size
 
--- Create index for fast similarity search
-CREATE INDEX ON tb_post USING ivfflat (embedding vector_cosine_ops);
+-- Create index for fast similarity search (HNSW works from an empty table;
+-- an ivfflat index built before the data is loaded misses rows)
+CREATE INDEX ON tb_post USING hnsw (embedding vector_cosine_ops);
+
+-- Distance ordering runs on view columns: a search view exposes the
+-- post's fields as columns, without a data JSONB column
+CREATE VIEW v_post_search AS
+SELECT id, title, content, embedding
+FROM tb_post;
 ```
 
 ### Query with Vector Similarity
 
 ```python
+import fraiseql
+from fraiseql.types import ID
+
+
+# A type over the flat search view (no JSONB data column)
+@fraiseql.type(sql_source="v_post_search", jsonb_column=None)
+class PostMatch:
+    id: ID
+    title: str
+    content: str | None
+
+
 @fraiseql.query
 async def search_posts(
     info,
     query: str,
     limit: int = 10
-) -> list[Post]:
+) -> list[PostMatch]:
     """Semantic search for posts."""
     db = info.context["db"]
 
     # Get query embedding (e.g., from OpenAI)
     query_embedding = await get_embedding(query)
 
-    # Vector similarity search
+    # Vector similarity search: nearest by cosine distance (embedding <=> query)
     return await db.find(
-        "v_post",
-        order_by=[("embedding <-> %s", "ASC")],  # Cosine distance
+        "v_post_search",
+        order_by={"embedding": {"cosine_distance": query_embedding}},
         limit=limit,
-        params=[query_embedding],
     )
 ```
 
@@ -470,28 +503,20 @@ async def semantic_search(
     info,
     query: str,
     limit: int = 5
-) -> list[Post]:
+) -> list[PostMatch]:
     """Semantic search with vector similarity."""
     db = info.context["db"]
 
     # Get query embedding
     embedding = await get_embedding(query)
 
-    # Find similar posts
-    posts = await db.execute_raw(
-        """
-        SELECT id, title, content,
-               embedding <=> $1::vector AS similarity
-        FROM v_post
-        WHERE embedding IS NOT NULL
-        ORDER BY embedding <=> $1::vector
-        LIMIT $2
-        """,
-        embedding,
-        limit
+    # Nearest posts by cosine distance (embedding <=> query), closest first
+    return await db.find(
+        "v_post_search",
+        where={"embedding": {"isnull": False}},
+        order_by={"embedding": {"cosine_distance": embedding}},
+        limit=limit,
     )
-
-    return posts
 ```
 
 ---
@@ -510,13 +535,11 @@ async def search_posts(
     """Full-text search in posts."""
     db = info.context["db"]
 
+    # tsv @@ websearch_to_tsquery(search)
     return await db.find(
         "v_post",
-        where={
-            "tsv": {"@@": {"to_tsquery": search}}
-        },
-        order_by=[("ts_rank(tsv, to_tsquery($1))", "DESC")],
-        limit=limit
+        where={"tsv": {"websearch_query": search}},
+        limit=limit,
     )
 ```
 
@@ -536,6 +559,20 @@ EXECUTE FUNCTION
 
 -- Index for fast full-text search
 CREATE INDEX ON tb_post USING gin(tsv);
+
+-- Expose tsv as a column of the view, next to data
+CREATE OR REPLACE VIEW v_post AS
+SELECT id, tsv, jsonb_build_object('id', id, 'title', title, 'content', content) AS data
+FROM tb_post;
+```
+
+Register the view's columns, so the `tsv` filter runs on the column rather than on a
+`data` key:
+
+```python
+from fraiseql.db import register_type_for_view
+
+register_type_for_view("v_post", Post, table_columns={"id", "tsv", "data"}, has_jsonb_data=True)
 ```
 
 ### JSONB Queries
@@ -615,13 +652,13 @@ async def author(self) -> User:
 @fraiseql.field
 async def author(self, info) -> User:
     db = info.context["db"]
-    return await db.find_one("v_user", id=self.author_id)  # N+1 queries!
+    return await db.find_one("v_user", mandatory_filters={"id": self.author_id})  # N+1 queries!
 ```
 
 ### 2. Index Vector Columns
 
 ```sql
--- IVFFlat index (faster queries, good for most cases)
+-- IVFFlat index (faster to build; create it after loading the data)
 CREATE INDEX ON tb_post USING ivfflat (embedding vector_cosine_ops);
 
 -- HNSW index (best quality, slower inserts)
@@ -635,12 +672,9 @@ CREATE INDEX ON tb_post USING hnsw (embedding vector_cosine_ops);
 
 ### 4. Batch Cascade Invalidations
 
-```python
-cascade_effects = [
-    "posts",
-    "users",
-    "comments",
-]  # All invalidated in single operation
+```sql
+-- All invalidated in a single operation
+cascade_invalidate_cache(ARRAY['posts', 'users', 'comments'], 'INVALIDATE')
 ```
 
 ---

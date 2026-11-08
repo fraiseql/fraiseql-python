@@ -14,14 +14,6 @@ name = "streaming"
 
 [[bench]]
 harness = false
-name = "pipeline"
-
-[[bench]]
-harness = false
-name = "memory"
-
-[[bench]]
-harness = false
 name = "core_benchmark"
 
 [[bench]]
@@ -53,10 +45,10 @@ jsonwebtoken = "11.0"  # JWT validation with built-in JWK support. Updated from 
 lazy_static = "1.4"  # Static regex
 linked-hash-map = "0.5"  # For LRU implementation
 # Query caching (Phase 8)
-lru = "0.18"  # LRU cache
+lru = "0.19"  # LRU cache
 once_cell = "1.0"
-pyo3 = {version = "0.29.0", features = ["extension-module", "experimental-async"]}
-pyo3-async-runtimes = {version = "0.29", features = ["tokio-runtime"]}
+pyo3 = {version = "0.30.1", features = ["extension-module", "experimental-async"]}
+pyo3-async-runtimes = {version = "0.30", features = ["tokio-runtime"]}
 # Security features (Phase 12)
 rand = "0.10"  # Random number generation for CSRF
 # Query building (Phase 7)
@@ -64,7 +56,7 @@ regex = "1.10"  # Field name transformations
 reqwest = {version = "0.13", features = ["json"]}  # JWKS fetching
 # JSON parsing and serialization (zero-copy where possible)
 serde = {version = "1.0", features = ["derive"]}
-serde_json = "1.0"
+serde_json = {version = "1.0", features = ["arbitrary_precision", "preserve_order"]}  # Keep JSONB number digits (numeric wider than f64); objects keep their key order (a response is ordered like its selection)
 sha2 = "0.11"  # Hashing for signatures
 thiserror = "2.0"
 tokio = {version = "1.35", features = ["full"]}  # Async runtime
@@ -78,22 +70,19 @@ uuid = {version = "1.0", features = ["v4", "serde"]}
 assert_matches = "1.5"  # Pattern matching in assertions
 # Benchmarking infrastructure (Phase 0.3)
 criterion = {version = "0.8", features = ["async_tokio", "html_reports"]}
-# Legacy benchmarking infrastructure
-dhat = "0.3"  # Heap profiling
 # Mocking
 mockall = "0.15"  # Mock objects for unit tests
 pretty_assertions = "1.4"  # Pretty-print assertion failures
 # Property testing
 proptest = "1.0"  # Generate test cases
 # Testing
-pyo3 = {version = "0.29.0", features = ["auto-initialize"]}
+pyo3 = {version = "0.30.1", features = ["auto-initialize"]}
 tokio = {version = "1.0", features = ["full"]}
 # Testing framework
 tokio-test = "0.4"  # Async runtime for tests
 
 [features]
 default = ["simd"]
-dhat-heap = []
 python = []  # Python bindings feature (for PyO3 error conversions)
 simd = []
 
@@ -154,7 +143,7 @@ name = "fraiseql_rs"
 publish = false
 readme = "README.md"
 repository = "https://github.com/fraiseql/fraiseql-python"
-version = "1.26.0"
+version = "1.31.2"
 
 # Benchmark profile for accurate measurements
 [profile.bench]

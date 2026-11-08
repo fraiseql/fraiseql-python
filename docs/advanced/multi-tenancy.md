@@ -170,18 +170,18 @@ CREATE TABLE tb_order (
 );
 
 -- Indexes for tenant filtering
-CREATE INDEX idx_users_tenant_id ON users(tenant_id);
-CREATE INDEX idx_orders_tenant_id ON orders(tenant_id);
+CREATE INDEX idx_users_tenant_id ON tb_user(tenant_id);
+CREATE INDEX idx_orders_tenant_id ON tb_order(tenant_id);
 
--- RLS policies
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+-- RLS policies (app.tenant_id is set by FraiseQL from the request context)
+ALTER TABLE tb_user ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tb_order ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY tenant_isolation_users ON users
-    USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
+CREATE POLICY tenant_isolation_users ON tb_user
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID);
 
-CREATE POLICY tenant_isolation_orders ON orders
-    USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
+CREATE POLICY tenant_isolation_orders ON tb_order
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID);
 ```
 
 **Pros:**
@@ -202,21 +202,23 @@ CREATE POLICY tenant_isolation_orders ON orders
 Separate database for each tenant:
 
 ```python
-from fraiseql.db import DatabasePool
+from psycopg_pool import AsyncConnectionPool
 
 class TenantDatabaseManager:
     """Manage separate database per tenant."""
 
     def __init__(self, base_url: str):
         self.base_url = base_url
-        self.pools: dict[str, DatabasePool] = {}
+        self.pools: dict[str, AsyncConnectionPool] = {}
 
-    async def get_pool(self, tenant_id: str) -> DatabasePool:
+    async def get_pool(self, tenant_id: str) -> AsyncConnectionPool:
         """Get database pool for specific tenant."""
         if tenant_id not in self.pools:
             # Create tenant-specific connection
             db_url = f"{self.base_url.rsplit('/', 1)[0]}/tenant_{tenant_id}"
-            self.pools[tenant_id] = DatabasePool(db_url)
+            pool = AsyncConnectionPool(db_url, open=False)
+            await pool.open()
+            self.pools[tenant_id] = pool
 
         return self.pools[tenant_id]
 
@@ -264,20 +266,33 @@ CREATE TABLE tenant_globex.users (
 ```
 
 ```python
-from fraiseql.db import DatabasePool
+from contextlib import asynccontextmanager
+
+from psycopg import sql
+from psycopg_pool import AsyncConnectionPool
 
 class SchemaPerTenantManager:
     """Manage schema-per-tenant pattern."""
 
-    def __init__(self, db_pool: DatabasePool):
+    def __init__(self, db_pool: AsyncConnectionPool):
         self.db_pool = db_pool
 
-    async def set_search_path(self, tenant_id: str):
-        """Set PostgreSQL search_path to tenant schema."""
+    @asynccontextmanager
+    async def tenant_connection(self, tenant_id: str):
+        """A pool connection whose search_path is the tenant's schema."""
         async with self.db_pool.connection() as conn:
+            # SET LOCAL: reset when the transaction ends, before the
+            # connection goes back to the pool
             await conn.execute(
-                f"SET search_path TO tenant_{tenant_id}, public"
+                sql.SQL("SET LOCAL search_path TO {}, public").format(
+                    sql.Identifier(f"tenant_{tenant_id}")
+                )
             )
+            yield conn
+
+# Usage
+# async with manager.tenant_connection("acme") as conn:
+#     rows = await (await conn.execute("SELECT * FROM users")).fetchall()
 ```
 
 **Pros:**
@@ -297,120 +312,113 @@ class SchemaPerTenantManager:
 
 ### Tenant Context Propagation
 
-Set tenant context in PostgreSQL session:
+Put `tenant_id` in the GraphQL context; the repository in `info.context["db"]` then
+sets `app.tenant_id` (with `set_config(..., true)`, i.e. `SET LOCAL`) in the
+transaction of every query it runs. A session variable set on some other pool
+connection would not reach those queries.
 
 ```python
-from fraiseql.db import get_db_pool
-from graphql import GraphQLResolveInfo
-
-async def set_tenant_context(tenant_id: str):
-    """Set tenant_id in PostgreSQL session variable."""
-    pool = get_db_pool()
-    async with pool.connection() as conn:
-        await conn.execute(
-            "SET LOCAL app.current_tenant_id = $1",
-            tenant_id
-        )
-
-# Middleware to set tenant context
 from starlette.middleware.base import BaseHTTPMiddleware
 
 class TenantContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         # Extract tenant from request (subdomain, header, JWT)
-        tenant_id = await resolve_tenant_id(request)
+        request.state.tenant_id = await resolve_tenant_id(request)
+        return await call_next(request)
 
-        # Store in request state
-        request.state.tenant_id = tenant_id
+async def get_graphql_context(request) -> dict:
+    # FraiseQL sets app.tenant_id from this for each query
+    return {"tenant_id": request.state.tenant_id}
 
-        # Set in database session
-        await set_tenant_context(tenant_id)
-
-        response = await call_next(request)
-        return response
+app = create_fraiseql_app(
+    database_url=DATABASE_URL,
+    types=[Order],
+    queries=[get_orders, get_order],
+    context_getter=get_graphql_context,
+)
+app.add_middleware(TenantContextMiddleware)
 ```
 
-### Automatic Tenant Filtering
+### Tenant Filtering in Queries
 
-FraiseQL automatically adds tenant_id filters when context is set:
+With the RLS policies above, `app.tenant_id` already restricts the rows. Filtering on
+the view's `tenant_id` column as well makes the isolation visible in the code and
+holds even where RLS is not enabled; `mandatory_filters` adds a condition the
+client's `where` can't remove:
 
 ```python
 import fraiseql
 from fraiseql.types import ID
 
-@fraiseql.type_
+# v_order: SELECT id, tenant_id, jsonb_build_object(...) AS data FROM tb_order
+@fraiseql.type(sql_source="v_order", jsonb_column="data")
 class Order:
     id: ID
-    tenant_id: ID  # Automatically filtered
+    tenant_id: ID
     user_id: ID
     total: float
     status: str
 
 @fraiseql.query
-async def get_orders(info: GraphQLResolveInfo) -> list[Order]:
+async def get_orders(info) -> list[Order]:
     """Get orders for current tenant."""
-    tenant_id = info.context["tenant_id"]
-
-    # Explicit tenant filtering (recommended for clarity)
-    async with db.connection() as conn:
-        result = await conn.execute(
-            "SELECT * FROM orders WHERE tenant_id = $1",
-            tenant_id
-        )
-        return [Order(**row) for row in await result.fetchall()]
+    db = info.context["db"]
+    return await db.find(
+        "v_order", mandatory_filters={"tenant_id": info.context["tenant_id"]}
+    )
 
 @fraiseql.query
-async def get_order(info: GraphQLResolveInfo, order_id: ID) -> Order | None:
+async def get_order(info, order_id: ID) -> Order | None:
     """Get specific order - tenant isolation enforced."""
-    tenant_id = info.context["tenant_id"]
-
-    async with db.connection() as conn:
-        result = await conn.execute(
-            "SELECT * FROM orders WHERE id = $1 AND tenant_id = $2",
-            order_id, tenant_id
-        )
-        row = await result.fetchone()
-        return Order(**row) if row else None
+    db = info.context["db"]
+    return await db.find_one(
+        "v_order",
+        mandatory_filters={"id": order_id, "tenant_id": info.context["tenant_id"]},
+    )
 ```
 
 ### RLS Policy Examples
 
 ```sql
--- Basic tenant isolation
-CREATE POLICY tenant_isolation ON orders
-    USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
+-- The session variables FraiseQL sets: app.tenant_id, app.user_id,
+-- app.is_super_admin ('true' / 'false'). NULLIF: an unset variable on a pooled
+-- connection reads as '', not NULL.
 
--- Allow tenant admins to see all data
-CREATE POLICY tenant_admin_all ON orders
+-- Basic tenant isolation
+CREATE POLICY tenant_isolation ON tb_order
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID);
+
+-- Allow super admins to see all data
+CREATE POLICY tenant_admin_all ON tb_order
     USING (
-        tenant_id = current_setting('app.current_tenant_id')::UUID
-        OR current_setting('app.user_role', TRUE) = 'admin'
+        tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID
+        OR current_setting('app.is_super_admin', TRUE) = 'true'
     );
 
 -- User can only see own orders
-CREATE POLICY user_own_orders ON orders
+CREATE POLICY user_own_orders ON tb_order
     USING (
-        tenant_id = current_setting('app.current_tenant_id')::UUID
-        AND user_id = current_setting('app.current_user_id')::UUID
+        tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID
+        AND user_id = NULLIF(current_setting('app.user_id', TRUE), '')::UUID
     );
 
 -- Separate policies for SELECT vs INSERT/UPDATE/DELETE
-CREATE POLICY tenant_select ON orders
+CREATE POLICY tenant_select ON tb_order
     FOR SELECT
-    USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID);
 
-CREATE POLICY tenant_insert ON orders
+CREATE POLICY tenant_insert ON tb_order
     FOR INSERT
-    WITH CHECK (tenant_id = current_setting('app.current_tenant_id')::UUID);
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID);
 
-CREATE POLICY tenant_update ON orders
+CREATE POLICY tenant_update ON tb_order
     FOR UPDATE
-    USING (tenant_id = current_setting('app.current_tenant_id')::UUID)
-    WITH CHECK (tenant_id = current_setting('app.current_tenant_id')::UUID);
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID);
 
-CREATE POLICY tenant_delete ON orders
+CREATE POLICY tenant_delete ON tb_order
     FOR DELETE
-    USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID);
 ```
 
 ## Tenant Context
@@ -434,16 +442,18 @@ def extract_tenant_from_subdomain(request) -> str:
     return subdomain
 
 # Look up tenant ID from subdomain
+from fraiseql.fastapi.dependencies import get_db_pool
+
 async def resolve_tenant_id(subdomain: str) -> str:
-    async with db.connection() as conn:
+    async with get_db_pool().connection() as conn:
         result = await conn.execute(
-            "SELECT id FROM organizations WHERE subdomain = $1",
-            subdomain
+            "SELECT id FROM organizations WHERE subdomain = %s",
+            (subdomain,)
         )
         row = await result.fetchone()
         if not row:
             raise ValueError(f"Unknown tenant: {subdomain}")
-        return row["id"]
+        return str(row[0])
 ```
 
 #### 2. Header-Based
@@ -510,13 +520,11 @@ async def tenant_context_middleware(request: Request, call_next):
         if not tenant_id:
             raise HTTPException(status_code=400, detail="Tenant not identified")
 
-        # 2. Store in request state
+        # 2. Store in request state; the GraphQL context below hands it to the
+        #    repository, which sets app.tenant_id for each query
         request.state.tenant_id = tenant_id
 
-        # 3. Set in database session
-        await set_tenant_context(tenant_id)
-
-        # 4. Continue request
+        # 3. Continue request
         response = await call_next(request)
         return response
 
@@ -531,15 +539,15 @@ async def tenant_context_middleware(request: Request, call_next):
 ```python
 from fraiseql.fastapi import create_fraiseql_app
 
-def get_graphql_context(request: Request) -> dict:
+async def get_graphql_context(request: Request) -> dict:
     """Build GraphQL context with tenant."""
     return {
         "request": request,
-        "tenant_id": request.state.tenant_id,
-        "user": request.state.user,  # From auth middleware
+        "tenant_id": request.state.tenant_id,  # -> app.tenant_id
     }
 
 app = create_fraiseql_app(
+    database_url=DATABASE_URL,
     types=[User, Order, Product],
     context_getter=get_graphql_context
 )
@@ -552,8 +560,9 @@ app = create_fraiseql_app(
 Single connection pool, tenant isolation via RLS:
 
 ```python
+from psycopg_pool import AsyncConnectionPool
+
 from fraiseql.fastapi.config import FraiseQLConfig
-from fraiseql.db import DatabasePool
 
 config = FraiseQLConfig(
     database_url="postgresql://user:pass@localhost/app",
@@ -561,18 +570,24 @@ config = FraiseQLConfig(
     database_max_overflow=10
 )
 
-# Single pool shared by all tenants
-pool = DatabasePool(
+# Single pool shared by all tenants (create_fraiseql_app builds one like it)
+pool = AsyncConnectionPool(
     config.database_url,
     min_size=config.database_pool_size,
-    max_size=config.database_pool_size + config.database_max_overflow
+    max_size=config.database_pool_size + config.database_max_overflow,
+    open=False,
 )
+await pool.open()
 
-# Use set_tenant_context before queries
+# Raw SQL on a pool connection: set the variable in the same transaction
 async with pool.connection() as conn:
-    await conn.execute("SET LOCAL app.current_tenant_id = $1", tenant_id)
-    # All queries now filtered by tenant_id via RLS
+    await conn.execute("SELECT set_config('app.tenant_id', %s, true)", (tenant_id,))
+    # Queries on this connection are now filtered by tenant_id via RLS,
+    # until the transaction ends when the block exits
 ```
+
+Repository queries (`db.find`, `db.run`, ...) do this themselves from the context's
+`tenant_id`.
 
 **Characteristics:**
 
@@ -591,9 +606,9 @@ class TenantPoolManager:
     def __init__(self, base_db_url: str, pool_size: int = 5):
         self.base_db_url = base_db_url
         self.pool_size = pool_size
-        self.pools: dict[str, DatabasePool] = {}
+        self.pools: dict[str, AsyncConnectionPool] = {}
 
-    async def get_pool(self, tenant_id: str) -> DatabasePool:
+    async def get_pool(self, tenant_id: str) -> AsyncConnectionPool:
         """Get or create pool for tenant."""
         if tenant_id not in self.pools:
             # Option 1: Different database per tenant
@@ -603,11 +618,14 @@ class TenantPoolManager:
             # db_url = self.base_db_url
             # Set search_path after connection
 
-            self.pools[tenant_id] = DatabasePool(
+            pool = AsyncConnectionPool(
                 db_url,
                 min_size=self.pool_size,
-                max_size=self.pool_size * 2
+                max_size=self.pool_size * 2,
+                open=False,
             )
+            await pool.open()
+            self.pools[tenant_id] = pool
 
         return self.pools[tenant_id]
 
@@ -650,11 +668,11 @@ class HybridPoolManager:
     """Hybrid pool management based on tenant size."""
 
     def __init__(self, shared_db_url: str):
-        self.shared_pool = DatabasePool(shared_db_url, min_size=20, max_size=50)
-        self.dedicated_pools: dict[str, DatabasePool] = {}
+        self.shared_pool = AsyncConnectionPool(shared_db_url, min_size=20, max_size=50)
+        self.dedicated_pools: dict[str, AsyncConnectionPool] = {}
         self.large_tenants = set()  # Tenants with dedicated pools
 
-    async def get_pool(self, tenant_id: str) -> DatabasePool:
+    async def get_pool(self, tenant_id: str) -> AsyncConnectionPool:
         """Get pool for tenant based on size."""
         if tenant_id in self.large_tenants:
             return self.dedicated_pools[tenant_id]
@@ -664,7 +682,7 @@ class HybridPoolManager:
         """Promote tenant to dedicated pool."""
         if tenant_id not in self.large_tenants:
             db_url = f"postgresql://user:pass@localhost/tenant_{tenant_id}"
-            self.dedicated_pools[tenant_id] = DatabasePool(db_url, min_size=10, max_size=20)
+            self.dedicated_pools[tenant_id] = AsyncConnectionPool(db_url, min_size=10, max_size=20)
             self.large_tenants.add(tenant_id)
 ```
 
@@ -685,52 +703,42 @@ async def get_all_tenants_orders(
     limit: int = 100
 ) -> list[Order]:
     """Admin query: Get orders across tenants."""
-    # Bypass RLS by using superuser connection or disabling RLS
-    async with db.connection() as conn:
-        # Disable RLS for this query (requires appropriate permissions)
-        await conn.execute("SET LOCAL row_security = off")
-
-        if tenant_id:
-            result = await conn.execute(
-                "SELECT * FROM orders WHERE tenant_id = $1 LIMIT $2",
-                tenant_id, limit
-            )
-        else:
-            result = await conn.execute(
-                "SELECT * FROM orders LIMIT $1",
-                limit
-            )
-
-        return [Order(**row) for row in await result.fetchall()]
+    # With `roles` in the context, FraiseQL sets app.is_super_admin = 'true',
+    # which the tenant_admin_all policy above lets through
+    db = info.context["db"]
+    filters = {"tenant_id": tenant_id} if tenant_id else {}
+    return await db.find("v_order", mandatory_filters=filters, limit=limit)
 ```
 
 ### Aggregated Analytics
 
 ```python
+from psycopg.sql import SQL
+
 import fraiseql
+from fraiseql.db import DatabaseQuery
 
 @fraiseql.query
 @requires_role("super_admin")
 async def get_tenant_statistics(info) -> list[TenantStats]:
     """Get statistics across all tenants."""
-    async with db.connection() as conn:
-        await conn.execute("SET LOCAL row_security = off")
+    db = info.context["db"]
+    # db.run sets the session variables (app.is_super_admin) like db.find
+    rows = await db.run(DatabaseQuery(SQL("""
+        SELECT
+            t.id as tenant_id,
+            t.name as tenant_name,
+            COUNT(DISTINCT u.id) as user_count,
+            COUNT(DISTINCT o.id) as order_count,
+            COALESCE(SUM(o.total), 0) as total_revenue
+        FROM organizations t
+        LEFT JOIN tb_user u ON u.tenant_id = t.id
+        LEFT JOIN tb_order o ON o.tenant_id = t.id
+        GROUP BY t.id, t.name
+        ORDER BY total_revenue DESC
+    """), {}))
 
-        result = await conn.execute("""
-            SELECT
-                t.id as tenant_id,
-                t.name as tenant_name,
-                COUNT(DISTINCT u.id) as user_count,
-                COUNT(DISTINCT o.id) as order_count,
-                COALESCE(SUM(o.total), 0) as total_revenue
-            FROM organizations t
-            LEFT JOIN users u ON u.tenant_id = t.id
-            LEFT JOIN orders o ON o.tenant_id = t.id
-            GROUP BY t.id, t.name
-            ORDER BY total_revenue DESC
-        """)
-
-        return [TenantStats(**row) for row in await result.fetchall()]
+    return [TenantStats(**row) for row in rows]
 ```
 
 ## Tenant-Aware Caching
@@ -738,14 +746,16 @@ async def get_tenant_statistics(info) -> list[TenantStats]:
 Cache data per tenant to avoid leakage:
 
 ```python
-import fraiseql
+from psycopg.sql import SQL
 
-from fraiseql.caching import Cache
+import fraiseql
+from fraiseql.caching import PostgresCache
+from fraiseql.db import DatabaseQuery
 
 class TenantCache:
     """Tenant-aware caching wrapper."""
 
-    def __init__(self, cache: Cache):
+    def __init__(self, cache: PostgresCache):
         self.cache = cache
 
     def _tenant_key(self, tenant_id: str, key: str) -> str:
@@ -773,8 +783,8 @@ class TenantCache:
         pattern = f"tenant:{tenant_id}:*"
         await self.cache.delete_pattern(pattern)
 
-# Usage
-tenant_cache = TenantCache(cache)
+# Usage (PostgresCache(pool) stores JSON values in an UNLOGGED table)
+tenant_cache = TenantCache(PostgresCache(cache_pool))
 
 @fraiseql.query
 async def get_products(info) -> list[Product]:
@@ -782,21 +792,22 @@ async def get_products(info) -> list[Product]:
     tenant_id = info.context["tenant_id"]
 
     # Check cache
-    cached = await tenant_cache.get(tenant_id, "products")
-    if cached:
-        return cached
+    rows = await tenant_cache.get(tenant_id, "products")
+    if rows is None:
+        # Fetch from database (JSON-serializable columns: the cache stores JSON)
+        db = info.context["db"]
+        rows = await db.run(DatabaseQuery(
+            SQL(
+                "SELECT id::text AS id, name, price::float AS price"
+                " FROM tb_product WHERE tenant_id = %(tenant_id)s"
+            ),
+            {"tenant_id": tenant_id},
+        ))
 
-    # Fetch from database
-    async with db.connection() as conn:
-        result = await conn.execute(
-            "SELECT * FROM products WHERE tenant_id = $1",
-            tenant_id
-        )
-        products = [Product(**row) for row in await result.fetchall()]
+        # Cache result
+        await tenant_cache.set(tenant_id, "products", rows, ttl=600)
 
-    # Cache result
-    await tenant_cache.set(tenant_id, "products", products, ttl=600)
-    return products
+    return [Product(**row) for row in rows]
 ```
 
 ## Data Export & Import
@@ -804,10 +815,13 @@ async def get_products(info) -> list[Product]:
 ### Tenant Data Export
 
 ```python
-import fraiseql
-
 import json
 from datetime import datetime
+
+from psycopg.sql import SQL, Identifier
+
+import fraiseql
+from fraiseql.db import DatabaseQuery
 
 @fraiseql.mutation
 @requires_permission("tenant:export")
@@ -823,27 +837,16 @@ async def export_tenant_data(info) -> str:
         "products": []
     }
 
-    async with db.connection() as conn:
-        # Export users
-        result = await conn.execute(
-            "SELECT * FROM users WHERE tenant_id = $1",
-            tenant_id
-        )
-        export_data["users"] = [dict(row) for row in await result.fetchall()]
-
-        # Export orders
-        result = await conn.execute(
-            "SELECT * FROM orders WHERE tenant_id = $1",
-            tenant_id
-        )
-        export_data["orders"] = [dict(row) for row in await result.fetchall()]
-
-        # Export products
-        result = await conn.execute(
-            "SELECT * FROM products WHERE tenant_id = $1",
-            tenant_id
-        )
-        export_data["products"] = [dict(row) for row in await result.fetchall()]
+    db = info.context["db"]
+    for key, table in (("users", "tb_user"), ("orders", "tb_order"), ("products", "tb_product")):
+        # to_jsonb: each row as a JSON object (timestamps as ISO strings)
+        rows = await db.run(DatabaseQuery(
+            SQL("SELECT to_jsonb(t) AS row FROM {} t WHERE tenant_id = %(tenant_id)s").format(
+                Identifier(table)
+            ),
+            {"tenant_id": tenant_id},
+        ))
+        export_data[key] = [r["row"] for r in rows]
 
     # Save to file or return JSON
     export_json = json.dumps(export_data, default=str)
@@ -862,32 +865,36 @@ async def import_tenant_data(info, data: str) -> bool:
     tenant_id = info.context["tenant_id"]
     import_data = json.loads(data)
 
-    async with db.connection() as conn:
-        async with conn.transaction():
-            # Import users
-            for user_data in import_data.get("users", []):
-                user_data["tenant_id"] = tenant_id  # Force current tenant
-                await conn.execute("""
-                    INSERT INTO users (id, tenant_id, email, name, created_at)
-                    VALUES ($1, $2, $3, $4, $5)
-                    ON CONFLICT (id) DO UPDATE SET
-                        email = EXCLUDED.email,
-                        name = EXCLUDED.name
-                """, user_data["id"], user_data["tenant_id"],
-                     user_data["email"], user_data["name"], user_data["created_at"])
+    async def import_rows(conn):
+        # run_in_transaction doesn't set session variables: set app.tenant_id
+        # for the RLS policies
+        await conn.execute("SELECT set_config('app.tenant_id', %s, true)", (str(tenant_id),))
 
-            # Import orders
-            for order_data in import_data.get("orders", []):
-                order_data["tenant_id"] = tenant_id
-                await conn.execute("""
-                    INSERT INTO orders (id, tenant_id, user_id, total, status, created_at)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT (id) DO UPDATE SET
-                        total = EXCLUDED.total,
-                        status = EXCLUDED.status
-                """, order_data["id"], order_data["tenant_id"], order_data["user_id"],
-                     order_data["total"], order_data["status"], order_data["created_at"])
+        # Import users
+        for user_data in import_data.get("users", []):
+            user_data["tenant_id"] = tenant_id  # Force current tenant
+            await conn.execute("""
+                INSERT INTO tb_user (id, tenant_id, email, name, created_at)
+                VALUES (%(id)s, %(tenant_id)s, %(email)s, %(name)s, %(created_at)s)
+                ON CONFLICT (id) DO UPDATE SET
+                    email = EXCLUDED.email,
+                    name = EXCLUDED.name
+            """, user_data)
 
+        # Import orders
+        for order_data in import_data.get("orders", []):
+            order_data["tenant_id"] = tenant_id
+            await conn.execute("""
+                INSERT INTO tb_order (id, tenant_id, user_id, total, status, created_at)
+                VALUES (%(id)s, %(tenant_id)s, %(user_id)s, %(total)s, %(status)s,
+                        %(created_at)s)
+                ON CONFLICT (id) DO UPDATE SET
+                    total = EXCLUDED.total,
+                    status = EXCLUDED.status
+            """, order_data)
+
+    # One transaction: all rows or none
+    await info.context["db"].run_in_transaction(import_rows)
     return True
 ```
 
@@ -896,9 +903,11 @@ async def import_tenant_data(info, data: str) -> bool:
 ### New Tenant Workflow
 
 ```python
-import fraiseql
-
 from uuid import uuid4
+
+from psycopg.rows import dict_row
+
+import fraiseql
 
 @fraiseql.mutation
 @requires_role("super_admin")
@@ -912,36 +921,43 @@ async def provision_tenant(
     """Provision new tenant with admin user."""
     tenant_id = str(uuid4())
 
-    async with db.connection() as conn:
-        async with conn.transaction():
-            # 1. Create organization
-            result = await conn.execute("""
-                INSERT INTO organizations (id, name, subdomain, plan, created_at)
-                VALUES ($1, $2, $3, $4, NOW())
-                RETURNING *
-            """, tenant_id, name, subdomain, plan)
+    async def create_tenant(conn):
+        # The new tenant's rows must pass the RLS policies
+        await conn.execute("SELECT set_config('app.tenant_id', %s, true)", (tenant_id,))
 
-            org = await result.fetchone()
+        # 1. Create organization
+        cur = conn.cursor(row_factory=dict_row)
+        await cur.execute("""
+            INSERT INTO organizations (id, name, subdomain, plan, created_at)
+            VALUES (%s, %s, %s, %s, NOW())
+            RETURNING id, name, subdomain, plan
+        """, (tenant_id, name, subdomain, plan))
+        org = await cur.fetchone()
 
-            # 2. Create admin user
-            admin_id = str(uuid4())
-            await conn.execute("""
-                INSERT INTO users (id, tenant_id, email, name, roles, created_at)
-                VALUES ($1, $2, $3, $4, $5, NOW())
-            """, admin_id, tenant_id, admin_email, "Admin User", ["admin"])
+        # 2. Create admin user
+        admin_id = str(uuid4())
+        await conn.execute("""
+            INSERT INTO tb_user (id, tenant_id, email, name, created_at)
+            VALUES (%s, %s, %s, %s, NOW())
+        """, (admin_id, tenant_id, admin_email, "Admin User"))
 
-            # 3. Create default data (optional)
-            await conn.execute("""
-                INSERT INTO settings (tenant_id, key, value)
-                VALUES
-                    ($1, 'theme', 'default'),
-                    ($1, 'timezone', 'UTC'),
-                    ($1, 'locale', 'en-US')
-            """, tenant_id)
+        # 3. Create default data (optional)
+        await conn.execute("""
+            INSERT INTO settings (tenant_id, key, value)
+            VALUES
+                (%(tenant_id)s, 'theme', 'default'),
+                (%(tenant_id)s, 'timezone', 'UTC'),
+                (%(tenant_id)s, 'locale', 'en-US')
+        """, {"tenant_id": tenant_id})
 
-            # 4. Initialize schema (if using schema-per-tenant)
-            # await conn.execute(f"CREATE SCHEMA IF NOT EXISTS tenant_{tenant_id}")
-            # Run migrations for tenant schema
+        # 4. Initialize schema (if using schema-per-tenant)
+        # await conn.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(
+        #     sql.Identifier(f"tenant_{tenant_id}")))
+        # Run migrations for tenant schema
+        return org
+
+    # One transaction: rolled back if any step fails
+    org = await info.context["db"].run_in_transaction(create_tenant)
 
     # 5. Send welcome email
     await send_welcome_email(admin_email, subdomain)
@@ -994,7 +1010,7 @@ config = FraiseQLConfig(
 )
 
 # Large tenant: Dedicated pool
-large_tenant_pool = DatabasePool(
+large_tenant_pool = AsyncConnectionPool(
     "postgresql://user:pass@localhost/tenant_large",
     min_size=10,
     max_size=30

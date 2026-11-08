@@ -1,5 +1,7 @@
 """Tests for APQ protocol handler functionality."""
 
+from fraiseql.storage.apq_store import compute_query_hash
+
 
 def test_apq_protocol_responses() -> None:
     """Test APQ protocol responses for missing/found queries."""
@@ -16,8 +18,8 @@ def test_apq_protocol_responses() -> None:
     assert missing_response["errors"][0]["extensions"]["code"] == "PERSISTED_QUERY_NOT_FOUND"
 
     # Found query should process normally
-    store_persisted_query("abc123", "{ hello }")
-    found_response = handle_apq_request("abc123", None)
+    store_persisted_query(compute_query_hash("{ hello }"), "{ hello }")
+    found_response = handle_apq_request(compute_query_hash("{ hello }"), None)
     assert "data" in found_response
 
 
@@ -50,7 +52,7 @@ def test_apq_protocol_query_execution() -> None:
 
     # Store a simple query
     query = "{ __typename }"
-    hash_value = "test_hash_123"
+    hash_value = compute_query_hash(query)
     store_persisted_query(hash_value, query)
 
     # Should execute the query successfully
@@ -70,7 +72,7 @@ def test_apq_protocol_with_variables() -> None:
 
     # Store a query with variables
     query = "query GetUser($id: ID!) { user(id: $id) { name } }"
-    hash_value = "query_with_vars_hash"
+    hash_value = compute_query_hash(query)
     store_persisted_query(hash_value, query)
 
     variables = {"id": "123"}
@@ -107,7 +109,7 @@ def test_apq_protocol_with_operation_name() -> None:
     query GetUser { user { name } }
     query GetPost { post { title } }
     """
-    hash_value = "multi_op_hash"
+    hash_value = compute_query_hash(query)
     store_persisted_query(hash_value, query)
 
     # Should execute specific operation

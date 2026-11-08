@@ -1,12 +1,12 @@
 """Declarative filtering for subscriptions."""
 
 import ast
-from functools import wraps
 from typing import Any, Callable, ClassVar
 
 from graphql import GraphQLResolveInfo
 
 from fraiseql.core.exceptions import FilterError
+from fraiseql.utils.annotations import wraps
 
 
 class FilterExpressionEvaluator:

@@ -41,20 +41,6 @@ EXAMPLES = {
         ],
         "validation": "python_syntax",
     },
-    "blog_enterprise": {
-        "path": "examples/blog_enterprise",
-        "required_files": [
-            "README.md",
-            "app.py",
-            "requirements.txt",
-            "domain/__init__.py",
-        ],
-        "optional_files": [
-            "docker-compose.yml",
-            "pytest.ini",
-        ],
-        "validation": "python_syntax",
-    },
     "rag-system": {
         "path": "examples/rag-system",
         "required_files": [

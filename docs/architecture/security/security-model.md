@@ -194,11 +194,12 @@ The quickest gate: decorate a resolver with one of the decorators from
 ```python
 import fraiseql
 from fraiseql.auth import (
+    requires_any_permission,
+    requires_any_role,
     requires_auth,
-    requires_role,
     requires_permission,
+    requires_role,
 )
-from fraiseql.auth.decorators import requires_any_role, requires_any_permission
 from fraiseql.types import ID
 
 
@@ -208,7 +209,7 @@ async def me(info) -> "User":
     """Any authenticated user."""
     db = info.context["db"]
     user = info.context["user"]
-    return await db.find_one("v_user", id=user.user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user.user_id})
 
 
 @fraiseql.query
@@ -512,7 +513,7 @@ SELECT
         'id', c.id,
         'name', c.name,
         -- Full card number only for admins; everyone else gets the last 4.
-        'cardNumber',
+        'card_number',
             CASE
                 WHEN current_setting('app.is_super_admin', true)::boolean
                     THEN c.card_number
@@ -688,7 +689,7 @@ async def request_data_deletion(info, user_id: ID) -> "DeletionSuccess":
 async def export_user_data(info, user_id: ID) -> JSON:
     """Export all data for the authenticated owner."""
     db = info.context["db"]
-    return await db.find_one("v_user_export", id=user_id)
+    return await db.find_one("v_user_export", mandatory_filters={"id": user_id})
 ```
 
 ### 7.2 HIPAA
@@ -727,7 +728,7 @@ SELECT
     p.id,
     jsonb_build_object(
         'id', p.id,
-        'cardNumber',
+        'card_number',
             CASE
                 WHEN current_setting('app.is_super_admin', true)::boolean
                     THEN p.card_number

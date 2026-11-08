@@ -1,12 +1,9 @@
 -- FraiseQL Blog Simple - Database Schema with Trinity Pattern
 -- Complete PostgreSQL setup for blog application following FraiseQL v1 patterns
 
--- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-
--- Drop existing tables if they exist (for clean setup)
-DROP TABLE IF EXISTS post_tags;
+-- Drop existing objects if they exist (for clean setup)
+DROP VIEW IF EXISTS v_post, v_comment, v_tag, v_user;
+DROP TABLE IF EXISTS tb_post_tag;
 DROP TABLE IF EXISTS tb_comment;
 DROP TABLE IF EXISTS tb_post;
 DROP TABLE IF EXISTS tb_tag;
@@ -93,7 +90,7 @@ CREATE TABLE tb_comment (
 );
 
 -- Many-to-many relationship between posts and tags (using INT FKs)
-CREATE TABLE post_tags (
+CREATE TABLE tb_post_tag (
     fk_post INT NOT NULL REFERENCES tb_post(pk_post) ON DELETE CASCADE,
     fk_tag INT NOT NULL REFERENCES tb_tag(pk_tag) ON DELETE CASCADE,
     PRIMARY KEY (fk_post, fk_tag)
@@ -131,7 +128,7 @@ CREATE INDEX idx_tb_comment_status ON tb_comment(status);
 CREATE INDEX idx_tb_comment_id ON tb_comment(id);  -- For UUID lookups from GraphQL
 
 -- Post tags indexes
-CREATE INDEX idx_post_tags_fk_tag ON post_tags(fk_tag);
+CREATE INDEX idx_tb_post_tag_fk_tag ON tb_post_tag(fk_tag);
 
 -- ==============================================================================
 -- TRIGGERS: Automated updates
@@ -240,130 +237,286 @@ CREATE TRIGGER tb_tag_auto_generate_slug
     FOR EACH ROW EXECUTE FUNCTION auto_generate_tag_slug();
 
 -- ==============================================================================
--- SECURITY: Row Level Security (RLS) examples
+-- VIEWS (v_*): what the GraphQL types read
 -- ==============================================================================
+--
+-- Each view has an id column (and the columns the queries filter on) plus a
+-- data JSONB column holding the GraphQL object. Related objects are embedded:
+-- a post's data holds its author, tags and approved comments, so one query
+-- returns them without a resolver per field. pk_*/fk_* never leave the database.
 
-ALTER TABLE tb_user ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tb_post ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tb_comment ENABLE ROW LEVEL SECURITY;
-
--- Policy: Users can only see their own data
-CREATE POLICY user_own_data ON tb_user
-    FOR ALL
-    USING (id = current_setting('app.current_user_id', true)::uuid);
-
--- Policy: Published posts are visible to all, drafts only to author
-CREATE POLICY posts_visibility ON tb_post
-    FOR SELECT
-    USING (
-        status = 'published'
-        OR EXISTS (
-            SELECT 1 FROM tb_user
-            WHERE tb_user.pk_user = tb_post.fk_author
-            AND tb_user.id = current_setting('app.current_user_id', true)::uuid
-        )
-    );
-
--- Policy: Users can insert their own posts
-CREATE POLICY posts_insert ON tb_post
-    FOR INSERT
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM tb_user
-            WHERE tb_user.pk_user = fk_author
-            AND tb_user.id = current_setting('app.current_user_id', true)::uuid
-        )
-    );
-
--- Policy: Users can update their own posts
-CREATE POLICY posts_update ON tb_post
-    FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM tb_user
-            WHERE tb_user.pk_user = tb_post.fk_author
-            AND tb_user.id = current_setting('app.current_user_id', true)::uuid
-        )
-    );
-
--- Policy: Approved comments are visible to all
-CREATE POLICY comments_visibility ON tb_comment
-    FOR SELECT
-    USING (status = 'approved');
-
--- ==============================================================================
--- VIEWS: Backward compatibility for GraphQL models
--- ==============================================================================
-
--- Create views that follow Trinity pattern: expose only id (UUID) fields, not pk_/fk_
--- Views with UUID relationships exposed (Trinity pattern compliant)
-CREATE VIEW v_users AS
+CREATE VIEW v_user AS
 SELECT
-    id,
-    identifier,
-    identifier AS username,  -- Use identifier as username since table only has identifier
-    email,
-    password_hash,
-    role,
-    profile_data,
-    created_at,
-    updated_at
-FROM tb_user;
+    u.pk_user,
+    u.id,
+    u.identifier,
+    jsonb_build_object(
+        'id', u.id,
+        'identifier', u.identifier,
+        'username', u.identifier,
+        'email', u.email,
+        'role', u.role,
+        'profile_data', u.profile_data,
+        'full_name', nullif(trim(concat_ws(' ',
+            u.profile_data->>'first_name', u.profile_data->>'last_name')), ''),
+        'created_at', u.created_at,
+        'updated_at', u.updated_at
+    ) AS data
+FROM tb_user u;
 
-CREATE VIEW v_posts AS
+CREATE VIEW v_tag AS
 SELECT
+    t.pk_tag,
+    t.id,
+    t.identifier,
+    jsonb_build_object(
+        'id', t.id,
+        'identifier', t.identifier,
+        'name', t.name,
+        'slug', t.identifier,
+        'color', t.color,
+        'description', t.description
+    ) AS data
+FROM tb_tag t;
+
+CREATE VIEW v_comment AS
+SELECT
+    c.pk_comment,
+    c.id,
+    c.fk_post,
+    jsonb_build_object(
+        'id', c.id,
+        'content', c.content,
+        'status', c.status,
+        'created_at', c.created_at,
+        'updated_at', c.updated_at,
+        'post_id', p.id,
+        'parent_id', parent.id,
+        'author', u.data
+    ) AS data
+FROM tb_comment c
+JOIN tb_post p ON p.pk_post = c.fk_post
+JOIN v_user u ON u.pk_user = c.fk_author
+LEFT JOIN tb_comment parent ON parent.pk_comment = c.fk_parent;
+
+CREATE VIEW v_post AS
+SELECT
+    p.pk_post,
     p.id,
     p.identifier,
-    p.identifier AS slug,  -- Use identifier as slug since table only has identifier
-    p.title,
-    p.content,
-    p.excerpt,
-    p.status,
-    p.published_at,
-    p.created_at,
-    p.updated_at,
-    u.id AS author_id  -- ✅ UUID relationship from JOIN
+    a.id AS author_id,
+    jsonb_build_object(
+        'id', p.id,
+        'identifier', p.identifier,
+        'slug', p.identifier,
+        'title', p.title,
+        'content', p.content,
+        'excerpt', p.excerpt,
+        'status', p.status,
+        'published_at', p.published_at,
+        'created_at', p.created_at,
+        'updated_at', p.updated_at,
+        'author', a.data,
+        'tags', coalesce((
+            SELECT jsonb_agg(t.data ORDER BY t.data->>'name')
+            FROM tb_post_tag pt
+            JOIN v_tag t ON t.pk_tag = pt.fk_tag
+            WHERE pt.fk_post = p.pk_post
+        ), '[]'::jsonb),
+        'comments', coalesce((
+            SELECT jsonb_agg(c.data ORDER BY c.data->>'created_at')
+            FROM v_comment c
+            WHERE c.fk_post = p.pk_post AND c.data->>'status' = 'approved'
+        ), '[]'::jsonb)
+    ) AS data
 FROM tb_post p
-JOIN tb_user u ON p.fk_author = u.pk_user;
-
-CREATE VIEW v_comments AS
-SELECT
-    c.id,
-    c.identifier,
-    c.content,
-    c.status,
-    c.created_at,
-    c.updated_at,
-    p.id AS post_id,       -- ✅ UUID relationship from JOIN
-    u.id AS author_id,     -- ✅ UUID relationship from JOIN
-    pc.id AS parent_id     -- ✅ UUID relationship from JOIN
-FROM tb_comment c
-JOIN tb_post p ON c.fk_post = p.pk_post
-JOIN tb_user u ON c.fk_author = u.pk_user
-LEFT JOIN tb_comment pc ON c.fk_parent = pc.pk_comment;
-
-CREATE VIEW v_tags AS
-SELECT
-    id,
-    identifier,
-    name,
-    identifier AS slug,  -- Use identifier as slug since table only has identifier
-    color,
-    description,
-    created_at
-FROM tb_tag;
+JOIN v_user a ON a.pk_user = p.fk_author;
 
 -- ==============================================================================
--- PERMISSIONS: Grant basic permissions
+-- MUTATIONS: one function per class mutation in models.py
 -- ==============================================================================
+--
+-- fraiseql calls the function named after the mutation (CreatePost calls
+-- create_post) with the context params first (here the caller's user id) and
+-- the GraphQL input as one jsonb. The function returns a mutation_response:
+-- a status such as 'created' or 'updated' selects the success type, and a
+-- prefix such as 'validation:', 'forbidden:', 'not_found:' or 'conflict:' the
+-- error type. The entity is the object the success type's field returns.
 
--- Note: In production, create dedicated roles with minimal permissions
-GRANT USAGE ON SCHEMA public TO PUBLIC;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO PUBLIC;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO PUBLIC;
+DO $$
+BEGIN
+    CREATE TYPE mutation_response AS (
+        status          text,
+        message         text,
+        entity_id       text,
+        entity_type     text,
+        entity          jsonb,
+        updated_fields  text[],
+        cascade         jsonb,
+        metadata        jsonb
+    );
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$$;
+
+-- A mutation_response without an entity, for errors
+CREATE OR REPLACE FUNCTION blog_error(p_status TEXT, p_message TEXT)
+RETURNS mutation_response AS $$
+    SELECT ROW(p_status, p_message, NULL, NULL, NULL, NULL, NULL, NULL)::mutation_response;
+$$ LANGUAGE sql IMMUTABLE;
+
+-- Attach tags (by public id) to a post
+CREATE OR REPLACE FUNCTION set_post_tags(p_pk_post INT, p_tag_ids JSONB)
+RETURNS VOID AS $$
+BEGIN
+    DELETE FROM tb_post_tag WHERE fk_post = p_pk_post;
+    INSERT INTO tb_post_tag (fk_post, fk_tag)
+    SELECT p_pk_post, t.pk_tag
+    FROM tb_tag t
+    WHERE t.id IN (SELECT jsonb_array_elements_text(p_tag_ids)::uuid);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION create_post(p_user_id UUID, input JSONB)
+RETURNS mutation_response AS $$
+DECLARE
+    v_pk_author INT;
+    v_pk_post INT;
+    v_id UUID;
+BEGIN
+    SELECT pk_user INTO v_pk_author FROM tb_user WHERE id = p_user_id;
+    IF v_pk_author IS NULL THEN
+        RETURN blog_error('unauthorized:unknown_user', 'Unknown user');
+    END IF;
+
+    IF coalesce(trim(input->>'title'), '') = '' THEN
+        RETURN blog_error('validation:title', 'Title is required');
+    END IF;
+    IF coalesce(trim(input->>'content'), '') = '' THEN
+        RETURN blog_error('validation:content', 'Content is required');
+    END IF;
+
+    INSERT INTO tb_post (identifier, title, content, excerpt, fk_author)
+    VALUES ('', input->>'title', input->>'content', input->>'excerpt', v_pk_author)
+    RETURNING pk_post, id INTO v_pk_post, v_id;
+
+    IF input ? 'tag_ids' THEN
+        PERFORM set_post_tags(v_pk_post, input->'tag_ids');
+    END IF;
+
+    RETURN ROW(
+        'created', 'Post created', v_id::text, 'Post',
+        (SELECT data FROM v_post WHERE id = v_id), NULL, NULL, NULL
+    )::mutation_response;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_post(p_user_id UUID, input JSONB)
+RETURNS mutation_response AS $$
+DECLARE
+    v_id UUID := (input->>'id')::uuid;
+    v_pk_post INT;
+    v_author UUID;
+BEGIN
+    SELECT p.pk_post, u.id INTO v_pk_post, v_author
+    FROM tb_post p JOIN tb_user u ON u.pk_user = p.fk_author
+    WHERE p.id = v_id;
+
+    IF v_pk_post IS NULL THEN
+        RETURN blog_error('not_found:post', 'Post not found');
+    END IF;
+    IF v_author <> p_user_id THEN
+        RETURN blog_error('forbidden:not_author', 'Only the author can edit this post');
+    END IF;
+
+    UPDATE tb_post
+    SET title = coalesce(input->>'title', title),
+        content = coalesce(input->>'content', content),
+        excerpt = coalesce(input->>'excerpt', excerpt),
+        status = coalesce(input->>'status', status)
+    WHERE pk_post = v_pk_post;
+
+    IF jsonb_typeof(input->'tag_ids') = 'array' THEN
+        PERFORM set_post_tags(v_pk_post, input->'tag_ids');
+    END IF;
+
+    RETURN ROW(
+        'updated', 'Post updated', v_id::text, 'Post',
+        (SELECT data FROM v_post WHERE id = v_id),
+        ARRAY(SELECT jsonb_object_keys(jsonb_strip_nulls(input - 'id'))), NULL, NULL
+    )::mutation_response;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION create_comment(p_user_id UUID, input JSONB)
+RETURNS mutation_response AS $$
+DECLARE
+    v_pk_author INT;
+    v_pk_post INT;
+    v_pk_parent INT;
+    v_id UUID;
+BEGIN
+    SELECT pk_user INTO v_pk_author FROM tb_user WHERE id = p_user_id;
+    IF v_pk_author IS NULL THEN
+        RETURN blog_error('unauthorized:unknown_user', 'Unknown user');
+    END IF;
+
+    SELECT pk_post INTO v_pk_post
+    FROM tb_post WHERE id = (input->>'post_id')::uuid AND status = 'published';
+    IF v_pk_post IS NULL THEN
+        RETURN blog_error('not_found:post', 'Post not found');
+    END IF;
+
+    IF input->>'parent_id' IS NOT NULL THEN
+        SELECT pk_comment INTO v_pk_parent
+        FROM tb_comment WHERE id = (input->>'parent_id')::uuid AND fk_post = v_pk_post;
+        IF v_pk_parent IS NULL THEN
+            RETURN blog_error('not_found:parent_comment', 'Parent comment not found on this post');
+        END IF;
+    END IF;
+
+    IF coalesce(trim(input->>'content'), '') = '' THEN
+        RETURN blog_error('validation:content', 'Content is required');
+    END IF;
+
+    -- New comments wait for moderation (status 'pending')
+    INSERT INTO tb_comment (fk_post, fk_author, fk_parent, content)
+    VALUES (v_pk_post, v_pk_author, v_pk_parent, input->>'content')
+    RETURNING id INTO v_id;
+
+    RETURN ROW(
+        'created', 'Comment created', v_id::text, 'Comment',
+        (SELECT data FROM v_comment WHERE id = v_id), NULL, NULL, NULL
+    )::mutation_response;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION create_tag(input JSONB)
+RETURNS mutation_response AS $$
+DECLARE
+    v_id UUID;
+BEGIN
+    IF coalesce(trim(input->>'name'), '') = '' THEN
+        RETURN blog_error('validation:name', 'Name is required');
+    END IF;
+    IF EXISTS (SELECT 1 FROM tb_tag WHERE lower(name) = lower(input->>'name')) THEN
+        RETURN blog_error('conflict:tag_name', 'A tag with this name already exists');
+    END IF;
+
+    INSERT INTO tb_tag (identifier, name, color, description)
+    VALUES ('', input->>'name', coalesce(input->>'color', '#6366f1'), input->>'description')
+    RETURNING id INTO v_id;
+
+    RETURN ROW(
+        'created', 'Tag created', v_id::text, 'Tag',
+        (SELECT data FROM v_tag WHERE id = v_id), NULL, NULL, NULL
+    )::mutation_response;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ==============================================================================
--- COMMENTS: Documentation for Trinity Pattern
+-- COMMENTS: Documentation for the Trinity pattern
 -- ==============================================================================
 
 COMMENT ON TABLE tb_user IS 'Users table with Trinity pattern: pk_user (INT, internal), id (UUID, public API), identifier (TEXT, username slug)';
@@ -371,10 +524,6 @@ COMMENT ON TABLE tb_post IS 'Posts table with Trinity pattern: pk_post (INT, int
 COMMENT ON TABLE tb_tag IS 'Tags table with Trinity pattern: pk_tag (INT, internal), id (UUID, public API), identifier (TEXT, tag slug)';
 COMMENT ON TABLE tb_comment IS 'Comments table with Trinity pattern: pk_comment (INT, internal), id (UUID, public API), identifier (TEXT, optional)';
 
-COMMENT ON COLUMN tb_user.pk_user IS 'Internal primary key (INT) for fast database joins - NOT exposed in GraphQL';
-COMMENT ON COLUMN tb_user.id IS 'Public UUID identifier for GraphQL API - secure, prevents enumeration';
-COMMENT ON COLUMN tb_user.identifier IS 'Human-readable username slug for SEO-friendly URLs';
-
-COMMENT ON COLUMN tb_post.fk_author IS 'Foreign key to tb_user.pk_user (INT) - 10x faster than UUID joins';
-COMMENT ON COLUMN tb_comment.fk_post IS 'Foreign key to tb_post.pk_post (INT) - 10x faster than UUID joins';
-COMMENT ON COLUMN tb_comment.fk_author IS 'Foreign key to tb_user.pk_user (INT) - 10x faster than UUID joins';
+COMMENT ON COLUMN tb_user.pk_user IS 'Internal primary key (INT) for joins - never exposed in GraphQL';
+COMMENT ON COLUMN tb_user.id IS 'Public UUID identifier for the GraphQL API';
+COMMENT ON COLUMN tb_user.identifier IS 'Human-readable username slug for URLs';

@@ -24,11 +24,11 @@ SELECT
         'email', email,
         'name', name,
         'bio', bio,
-        'isActive', is_active,
-        'createdAt', to_utc_z(created_at),
-        'updatedAt', to_utc_z(updated_at),
-        'lastLoginAt', to_utc_z(last_login_at),
-        'emailVerifiedAt', to_utc_z(email_verified_at)
+        'is_active', is_active,
+        'created_at', to_utc_z(created_at),
+        'updated_at', to_utc_z(updated_at),
+        'last_login_at', to_utc_z(last_login_at),
+        'email_verified_at', to_utc_z(email_verified_at)
     ) AS data
 FROM users;
 
@@ -47,18 +47,18 @@ SELECT
         'content', p.content,
         'excerpt', p.excerpt,
         'tags', p.tags,
-        'isPublished', p.is_published,
-        'viewCount', p.view_count,
-        'createdAt', to_utc_z(p.created_at),
-        'updatedAt', to_utc_z(p.updated_at),
-        'publishedAt', to_utc_z(p.published_at),
+        'is_published', p.is_published,
+        'view_count', p.view_count,
+        'created_at', to_utc_z(p.created_at),
+        'updated_at', to_utc_z(p.updated_at),
+        'published_at', to_utc_z(p.published_at),
         'author', (
             SELECT jsonb_build_object(
                 '__typename', 'User',
                 'id', u.id,
                 'name', u.name,
                 'email', u.email,
-                'createdAt', to_utc_z(u.created_at)
+                'created_at', to_utc_z(u.created_at)
             )
             FROM users u
             WHERE u.id = p.author_id
@@ -77,15 +77,15 @@ SELECT
         '__typename', 'Comment',
         'id', c.id,
         'content', c.content,
-        'isEdited', c.is_edited,
-        'createdAt', to_utc_z(c.created_at),
-        'updatedAt', to_utc_z(c.updated_at),
-        'editedAt', to_utc_z(c.edited_at),
+        'is_edited', c.is_edited,
+        'created_at', to_utc_z(c.created_at),
+        'updated_at', to_utc_z(c.updated_at),
+        'edited_at', to_utc_z(c.edited_at),
         'author', (
             SELECT jsonb_build_object(
                 'id', u.id,
                 'name', u.name,
-                'avatarUrl', u.avatar_url
+                'avatar_url', u.avatar_url
             )
             FROM users u
             WHERE u.id = c.author_id
@@ -96,8 +96,8 @@ SELECT
                     jsonb_build_object(
                         'id', r.id,
                         'content', r.content,
-                        'createdAt', to_utc_z(r.created_at),
-                        'authorName', ru.name
+                        'created_at', to_utc_z(r.created_at),
+                        'author_name', ru.name
                     )
                     ORDER BY r.created_at
                 )
@@ -124,18 +124,18 @@ SELECT
         'type', a.activity_type,
         'description', a.description,
         'metadata', a.metadata,
-        'occurredAt', to_utc_z(a.occurred_at),
+        'occurred_at', to_utc_z(a.occurred_at),
         'user', (
             SELECT jsonb_build_object(
                 'id', u.id,
                 'name', u.name,
-                'avatarUrl', u.avatar_url
+                'avatar_url', u.avatar_url
             )
             FROM users u
             WHERE u.id = a.user_id
         ),
         -- Computed relative time (for reference)
-        'timeAgo', CASE
+        'time_ago', CASE
             WHEN a.occurred_at > NOW() - INTERVAL '1 minute' THEN 'just now'
             WHEN a.occurred_at > NOW() - INTERVAL '1 hour' THEN
                 CONCAT(EXTRACT(MINUTE FROM NOW() - a.occurred_at)::INT, ' minutes ago')
@@ -154,12 +154,12 @@ SELECT
     jsonb_build_object(
         '__typename', 'DailyStats',
         'date', to_char(date_trunc('day', created_at AT TIME ZONE 'UTC'), 'YYYY-MM-DD'),
-        'dayStart', to_utc_z(date_trunc('day', created_at AT TIME ZONE 'UTC')),
-        'dayEnd', to_utc_z(date_trunc('day', created_at AT TIME ZONE 'UTC') + INTERVAL '1 day' - INTERVAL '1 second'),
-        'userCount', COUNT(DISTINCT user_id),
-        'postCount', COUNT(*),
-        'firstPostAt', to_utc_z(MIN(created_at)),
-        'lastPostAt', to_utc_z(MAX(created_at))
+        'day_start', to_utc_z(date_trunc('day', created_at AT TIME ZONE 'UTC')),
+        'day_end', to_utc_z(date_trunc('day', created_at AT TIME ZONE 'UTC') + INTERVAL '1 day' - INTERVAL '1 second'),
+        'user_count', COUNT(DISTINCT user_id),
+        'post_count', COUNT(*),
+        'first_post_at', to_utc_z(MIN(created_at)),
+        'last_post_at', to_utc_z(MAX(created_at))
     ) AS data
 FROM posts
 WHERE created_at >= NOW() - INTERVAL '30 days'

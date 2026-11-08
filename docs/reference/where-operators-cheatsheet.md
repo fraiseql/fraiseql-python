@@ -31,7 +31,7 @@ query {
 }
 
 # SQL: WHERE status = 'active'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### not
@@ -47,7 +47,7 @@ query {
 }
 
 # SQL: WHERE status != 'deleted'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### in
@@ -63,7 +63,7 @@ query {
 }
 
 # SQL: WHERE role IN ('admin', 'moderator', 'user')
-```text
+```
 <!-- Code example in TEXT -->
 
 ### notIn
@@ -79,7 +79,7 @@ query {
 }
 
 # SQL: WHERE status NOT IN ('banned', 'deleted')
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -99,7 +99,7 @@ query {
 }
 
 # SQL: WHERE email ILIKE '%@gmail.com%'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### startsWith
@@ -115,7 +115,7 @@ query {
 }
 
 # SQL: WHERE name LIKE 'John%'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### endsWith
@@ -131,7 +131,7 @@ query {
 }
 
 # SQL: WHERE email LIKE '%@example.com'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### regex
@@ -147,7 +147,7 @@ query {
 }
 
 # SQL: WHERE phone ~ '^\+1-\d{3}-\d{3}-\d{4}$'
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -165,7 +165,7 @@ query {
 }
 
 # SQL: WHERE price > 100
-```text
+```
 <!-- Code example in TEXT -->
 
 ### greaterThanOrEqual
@@ -179,7 +179,7 @@ query {
 }
 
 # SQL: WHERE price >= 100
-```text
+```
 <!-- Code example in TEXT -->
 
 ### lessThan
@@ -193,7 +193,7 @@ query {
 }
 
 # SQL: WHERE price < 50
-```text
+```
 <!-- Code example in TEXT -->
 
 ### lessThanOrEqual
@@ -207,7 +207,7 @@ query {
 }
 
 # SQL: WHERE price <= 50
-```text
+```
 <!-- Code example in TEXT -->
 
 ### between
@@ -221,7 +221,7 @@ query {
 }
 
 # SQL: WHERE price BETWEEN 50 AND 200
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -241,7 +241,7 @@ query {
 }
 
 # SQL: WHERE created_at > '2024-01-01'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### before
@@ -257,7 +257,7 @@ query {
 }
 
 # SQL: WHERE created_at < '2024-12-31'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### betweenDates
@@ -273,7 +273,7 @@ query {
 }
 
 # SQL: WHERE created_at >= '2024-01-01' AND created_at <= '2024-12-31'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### dayOfWeek
@@ -289,7 +289,7 @@ query {
 }
 
 # SQL: WHERE EXTRACT(DOW FROM date) = 5 (Friday)
-```text
+```
 <!-- Code example in TEXT -->
 
 ### dayOfMonth
@@ -305,7 +305,7 @@ query {
 }
 
 # SQL: WHERE EXTRACT(DAY FROM date) = 25
-```text
+```
 <!-- Code example in TEXT -->
 
 ### month
@@ -321,7 +321,7 @@ query {
 }
 
 # SQL: WHERE EXTRACT(MONTH FROM date) = 12
-```text
+```
 <!-- Code example in TEXT -->
 
 ### year
@@ -337,7 +337,7 @@ query {
 }
 
 # SQL: WHERE EXTRACT(YEAR FROM created_at) = 2024
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -362,7 +362,7 @@ query {
 }
 
 # SQL: WHERE age > 18 AND status = 'active'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### OR
@@ -383,7 +383,7 @@ query {
 }
 
 # SQL: WHERE role = 'admin' OR role = 'moderator'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### NOT
@@ -401,7 +401,7 @@ query {
 }
 
 # SQL: WHERE NOT (status = 'deleted')
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -421,7 +421,7 @@ query {
 }
 
 # SQL: WHERE deleted_at IS NULL
-```text
+```
 <!-- Code example in TEXT -->
 
 ### isNotNull
@@ -437,7 +437,7 @@ query {
 }
 
 # SQL: WHERE deleted_at IS NOT NULL
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -463,7 +463,7 @@ query {
 # SQL: WHERE (status IN ('pending', 'processing'))
 #      AND (total > 100)
 #      AND (created_at > '2024-01-01')
-```text
+```
 <!-- Code example in TEXT -->
 
 ### OR Conditions
@@ -485,7 +485,7 @@ query {
 # SQL: WHERE (email LIKE '%@gmail.com%')
 #      OR (email LIKE '%@yahoo.com%')
 #      OR (phone LIKE '+1%')
-```text
+```
 <!-- Code example in TEXT -->
 
 ### NOT with Complex Condition
@@ -506,7 +506,7 @@ query {
 }
 
 # SQL: WHERE NOT (status = 'discontinued' OR stock = 0)
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Nested AND/OR
@@ -533,7 +533,7 @@ query {
 # SQL: WHERE user_id = '123'
 #      AND (status = 'completed' OR status = 'refunded')
 #      AND created_at > '2024-01-01'
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -552,7 +552,7 @@ products(where: { category: { in: ["A", "B"] } })
 
 # Combine with pagination
 users(where: { status: { equals: "active" } }, limit: 100)
-```text
+```
 <!-- Code example in TEXT -->
 
 ### ❌ Bad Practices
@@ -567,7 +567,7 @@ articles(where: { content: { regex: "complex.*pattern" } })
 
 # Avoid very long IN lists (>1000 items)
 users(where: { id: { in: ["id1", "id2", ... "id10000"] } })
-```text
+```
 <!-- Code example in TEXT -->
 
 ---

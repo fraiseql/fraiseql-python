@@ -244,9 +244,7 @@ class TestNestedOrganizationEmbedding:
         await conn.execute(f"SET search_path TO {schema}, public")
         return conn, StubRepository(conn)
 
-    async def test_nested_organization_without_tenant_id(
-        self, class_db_pool, test_schema
-    ) -> None:
+    async def test_nested_organization_without_tenant_id(self, class_db_pool, test_schema) -> None:
         """A query with no tenant_id in context must still return the organization."""
         from graphql import graphql
 
@@ -262,9 +260,7 @@ class TestNestedOrganizationEmbedding:
             ) -> Optional[User]:
                 """Query to get a user by ID."""
                 repo = info.context["db"]
-                result = await repo.find_one(
-                    "v_user", mandatory_filters={"id": user_id or USER_ID}
-                )
+                result = await repo.find_one("v_user", mandatory_filters={"id": user_id or USER_ID})
                 return User.from_dict(result) if result else None
 
             registry = SchemaRegistry()
@@ -331,9 +327,7 @@ class TestNestedOrganizationEmbedding:
         finally:
             await class_db_pool.putconn(conn)
 
-    async def test_comparison_with_and_without_embedded(
-        self, class_db_pool, test_schema
-    ) -> None:
+    async def test_comparison_with_and_without_embedded(self, class_db_pool, test_schema) -> None:
         """Only the embedding view carries the organization; the other has the FK."""
         conn, db = await self._repository(class_db_pool, test_schema)
         try:

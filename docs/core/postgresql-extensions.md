@@ -524,7 +524,6 @@ You'll see a warning in logs:
 
 ## See Also
 
-- Complete CQRS Example (../../examples/complete_cqrs_blog/) - Uses extensions
 - [Explicit Sync Guide](./explicit-sync.md) - How sync uses jsonb_ivm
 - [CASCADE Best Practices](../guides/cascade-best-practices.md) - Cascade patterns
 - [Migrations Guide](./migrations.md) - Setting up databases with confiture

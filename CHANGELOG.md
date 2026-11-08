@@ -5,6 +5,1790 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.31.2] - 2026-11-05
+
+### Changed
+
+- **The Rust extension builds on PyO3 0.30** (`pyo3` and `pyo3-async-runtimes`).
+  No API change.
+
+### Fixed
+
+- **A success type's wrapper fields are returned when its entity field is not
+  selected** (#594). When a mutation's entity was a wrapper
+  (`{"items": [...], "summary": {...}}`), the Rust builder copied `summary` onto
+  the success object only if `items` was selected too, so `summary { created }`
+  alone came back without the field. From Python this affected 1.28.x and 1.29.x
+  only; since 1.30.0 the response is built in full and then projected onto the
+  selection. The field-list path of the Rust builder no longer has the gate either.
+- **Diagnostics showed a field's response path as a `Path(prev=...)` repr.**
+  The N+1 detector joined the fields of graphql-core's `Path` tuple instead of
+  its keys, so a pattern's `field_path` read
+  `Path(prev=..., key=0, typename=None).author.Post` rather than
+  `posts.author`, and a missing path raised `TypeError`. Pattern paths now
+  drop list indices, since a pattern names a field repeated across list items.
+  `profile_resolver` logs and `ResolverError.query_context` now give the path
+  as a list (`["posts", 0, "author"]`, the GraphQL `path` format), and
+  `debug_graphql_info` prints `Path: posts.0.author`.
+
+### Security
+
+- **graphql-core 3.3.0 is excluded: it leaks every aborted validation.** When a
+  document had more validation errors than `max_errors` (100), graphql-core 3.3.0
+  raised one shared exception whose traceback grew with each raise, keeping each
+  document and its validation context alive for the life of the process
+  (GHSA-mpqx-q82w-9x46). Any client could exhaust a worker's memory with small
+  invalid queries, before depth or complexity limits run. The requirement is now
+  `graphql-core>=3.2.12,!=3.3.0`: 3.2 is not affected and stays allowed, and the
+  lock moves to 3.3.1. **Upgrade, or pin `graphql-core!=3.3.0` yourself.**
+- **Locked dependencies moved past their published advisories.** dnspython 2.9.2
+  (`dev`), langgraph 1.2.20 (`langchain`, `llm`, `all`), pyasn1 0.6.5 (transitive)
+  and pypdf 6.21.4 (`llamaindex`, whose floor is raised). The pip-audit gate
+  reports none left.
+
+## [1.31.1] - 2026-10-26
+
+### Changed
+
+- **Queries nested deeper than 15 levels are refused by default.**
+  `FraiseQLConfig.max_query_depth` defaulted to `None`, so `/graphql` answered a
+  query of any depth: a cheap way to make the server do a lot of work. It now
+  defaults to `15`, counted as in 1.31.0 (`{ users { posts { id } } }` has depth
+  2; fragments add none; introspection isn't counted), and a deeper query gets a
+  `QUERY_TOO_DEEP` error before anything executes. Each Relay connection hop
+  (`edges { node { ... } }`) costs 2. **A client nesting deeper must be given a
+  higher limit**: `max_query_depth=25` or `FRAISEQL_MAX_QUERY_DEPTH=25`, or
+  `max_query_depth=None` for none. `GraphNoteRouter` and WebSocket subscriptions
+  apply it only when they are given the config.
+
+### Fixed
+
+- **`examples/native_auth_app.py` no longer falls back to a built-in signing
+  secret.** It passed `"development-secret-change-in-production"` to
+  `add_security_middleware` when `JWT_SECRET_KEY` was unset, so a copy deployed
+  without the variable would have used a key published in this repository.
+  `create_app()` now raises before connecting unless `JWT_SECRET_KEY` holds a
+  non-blank value, and passes that one secret to the auth provider and the
+  middleware.
+
+- **`examples/security/secure_graphql_api.py` no longer falls back to a built-in
+  secret either.** Outside `ENVIRONMENT=development` it now fails at startup
+  without `SECRET_KEY`; in development it uses a random key per process.
+
+- **`user_has_permission()` follows the role hierarchy.** The row-level security
+  helper of `004_rbac_row_level_security.sql` read the permissions of the roles
+  assigned to the user only, so a policy denied a `manager` a permission granted to
+  `viewer`, which `PermissionResolver` gives it. It now counts each assigned role's
+  ancestors through `get_inherited_roles()`, as the resolver does, and raises an
+  error where the resolver does (an assigned role with an ancestor ten levels up).
+  Run the 1.31.1 file again to replace the function. `user_has_role()` is unchanged:
+  like `requires_role`, it checks the roles assigned to the user.
+
+- **The GraphQL limits of `setup_rate_limiting` can be changed.** The per-operation
+  limits (100 queries, 20 mutations, 10 subscriptions a minute) and the per-cost
+  limits (200 / 100 / 20 a minute) on `POST /graphql` were hard-coded in
+  `GraphQLRateLimiter`, and changing them on an instance had no effect on the one
+  the middleware builds. `setup_rate_limiting` and `RateLimitMiddleware` now take
+  `graphql_operation_limits` and `graphql_complexity_limits`, merged over the
+  defaults (an unknown key raises `ValueError`).
+- **`setup_production_security()` and `setup_development_security()` take
+  `trusted_proxies`**, passed on to `setup_security()`, so an app using them
+  behind a reverse proxy can name it for the rate limiter.
+
+- **`RateLimit(strategy=..., burst=...)` now says it is ignored.** Only a fixed window
+  is implemented; `SLIDING_WINDOW`, `TOKEN_BUCKET` and `burst` were silently counted
+  as a fixed window. They still are, but setting one logs a warning, and the
+  docstrings and docs say so.
+- **An array `eq` filter matches an element that holds a quote.** The JSON of
+  `tags: {eq: ["it's"]}` had its quotes escaped and was then quoted again as a
+  literal, so it compared against `["it''s"]` and matched nothing. `neq` wrote the
+  JSON into the SQL template itself; both now pass it as one literal.
+
+### Security
+
+- **`FraiseQLTracer` redacts sensitive GraphQL variables.** `trace_graphql_query`
+  and `trace_graphql_mutation` (and the `trace_graphql_operation` decorator)
+  recorded the variables in a span event as they came, so a `password`, a token
+  or an API key went to the tracing backend. A variable whose name contains
+  `password`, `token`, `secret`, `key`, `auth`, `credential`, `session` or
+  `cookie`, at any depth, is now recorded as `[REDACTED]`, as `GraphQLTracer`
+  already did.
+
+- **`setup_development_security()` has no built-in secret key.** Called without
+  `secret_key`, it used a literal published in this repository. It now makes a
+  random key for each call, so tokens it signs don't survive a restart; pass
+  `secret_key` to keep them.
+
+- **`SigningKeyManager` has no built-in audit signing key.** Without
+  `AUDIT_SIGNING_KEY` it fell back to `"test-key-for-testing"`, so its
+  `verify()` accepted a signature anyone could make with that published key. It
+  now has no key when the variable is unset or empty: `sign()` raises and
+  `verify()` refuses every signature. The PostgreSQL signing functions, which
+  sign the audit events, are not affected.
+
+- **Depth and complexity limits reach `GraphNoteRouter` and WebSocket
+  subscriptions.** Since 1.31.0 the FastAPI router checks `max_query_depth` and
+  the `complexity_*` settings, but `GraphNoteRouter` and the subscription
+  transport (`SubscriptionManager`, `WebSocketConnection`) took no config, so a
+  query or subscription of any depth or cost ran through them. They now take
+  `config=` (a `FraiseQLConfig`) or `query_limits=` (a `QueryLimits`), and answer a
+  query over a limit with the same `QUERY_TOO_DEEP` / `QUERY_TOO_COMPLEX` error,
+  before anything executes; introspection is not counted. Without either argument
+  they apply no limit, as before: pass the config to enforce it.
+
+- **`store_persisted_query` refuses a hash that is not the SHA-256 of its
+  query.** Since 1.31.0 an APQ request whose query does not match its hash is
+  refused, but the operator API only logged a warning and stored the text
+  anyway: `fraiseql.storage.apq_store.store_persisted_query` and the `memory`
+  and `postgresql` backends' `store_persisted_query` could put one query under
+  the hash of another, which every client sending that hash would then run. They
+  now raise `ValueError` and store nothing. `register_queries` and
+  `apq_queries_dir` compute the hashes themselves and are unaffected. A custom
+  backend can call the new `apq_store.check_query_hash(hash_value, query)`.
+
+- **The `postgresql` APQ backend no longer blocks the event loop.** Its lookups
+  use a synchronous connection pool, and the `/graphql` route called them on the
+  event loop: each APQ request for an unknown hash held every other request for
+  the length of a database query, or up to `connection_timeout` (30 seconds) when
+  the database was slow or its pool busy, so a stream of made-up hashes could
+  stall the server. The route now makes the backend's calls (query lookup and
+  registration, response cache read and write) in a worker thread. The backend
+  interface stays synchronous: a backend sets the new class attribute
+  `APQStorageBackend.blocking_io = True` to be called this way (`postgresql`
+  does; `memory` and custom backends are called on the event loop as before). The
+  `postgresql` backend now creates its tables once when first calls race.
+
+- **Locked dependencies moved past their published advisories.** `uv.lock` held
+  64 known vulnerabilities, all in optional extras or development tools: pillow
+  13.0.0, pypdf 6.21.2 and nltk 3.10.4 (`llamaindex`), aiohttp 3.14.5, black
+  26.10.1, filelock 4.2.4 and virtualenv 21.14.13 (`dev`), opentelemetry-api
+  1.45.1 (`tracing`), setuptools 84.2.1 and certifi 2026.10.23 (transitive). The
+  extras' floors are raised to the patched releases (pillow and filelock across a
+  major version), so installing `fraiseql[llamaindex]` or `fraiseql[tracing]`
+  can no longer resolve a vulnerable version. The core dependencies are
+  unchanged.
+- **The audit chain hash covers every column of an event.** `verify_audit_chain()`
+  of `001_audit_tables.sql` recomputed each `event_hash` from `event_data` alone, so
+  changing an event's `event_type`, `user_id`, `tenant_id`, `timestamp` or
+  `ip_address` column still verified as intact; the hash of `002_unified_audit.sql`
+  left out `id`, `user_id`, `ip_address`, `correlation_id` and `created_at`, and
+  depended on the session's `TimeZone` (verifying in another time zone reported
+  valid events invalid). A new `hash_version` column records which hash an event
+  has: version 2, written for every new event, covers all its columns (timestamps
+  in UTC). **Existing installs must run the 1.31.1 `001_audit_tables.sql` (or
+  `002_unified_audit.sql`) again**: it adds `hash_version`, sets it to 1 on the
+  existing rows, which keep verifying as version 1 (with version 1's gaps), and
+  replaces the trigger and `verify_audit_chain()`, which now also returns
+  `hash_version`.
+
+- **A string `order_by` is read as column names, never written into the SQL as
+  is.** `db.find(view, order_by="...")` appended the string after `ORDER BY`
+  unchanged, so a resolver that forwarded a client's sort string let the client
+  run SQL (`"id; DROP TABLE ..."`). The string is now parsed as comma-separated
+  column names, each optionally qualified (`t.col`) and followed by `ASC`/`DESC`
+  and `NULLS FIRST`/`NULLS LAST`; every name is quoted into the query. An
+  unquoted name is folded to lower case as PostgreSQL folds it, so
+  `"createdAt DESC"` sorts on the same column as before; double-quote a
+  mixed-case name (`'"createdAt" DESC'`). **Any other string now raises
+  `ValueError`**: an expression (`lower(name)`), a JSONB path
+  (`data->>'name'`) or a column position (`1`). Sort on a JSONB field with the
+  dict or list form, `order_by={"name": "ASC"}`, which GraphQL `orderBy` input
+  already used and which was never affected; sort on an expression in a view
+  column, or write the query with `db.run()`.
+
+- **`db.pluck()` binds `limit` and `offset` as values.** It wrote them into the
+  SQL with `str()`, so a string `limit` such as `"1; DROP TABLE ..."` ran as
+  SQL. They are now literals, as `db.find()` already wrote them; an integer
+  works as before, and a string that isn't a number is a PostgreSQL error.
+
+- **The `setup_rate_limiting` and native-auth rate limiters no longer believe
+  `X-Forwarded-For` from any client.** `RateLimitMiddleware` (from
+  `setup_rate_limiting` / `setup_security`) and the native-auth limiter (from
+  `add_security_middleware`) keyed each client on the first `X-Forwarded-For`
+  address, else `X-Real-IP`: a client calling the app directly could send a new
+  value on every request and was never limited, including on `/auth/login`. They
+  now key on the socket peer (`request.client.host`), and read the forwarding
+  headers only when the peer is listed in the new `trusted_proxies` argument
+  (addresses or CIDR networks; the client is then the right-most `X-Forwarded-For`
+  address that is not a trusted proxy). **Behind a reverse proxy or load balancer,
+  do one of these, or every client shares the proxy's limit:** run uvicorn with
+  `--proxy-headers --forwarded-allow-ips="<proxy addresses>"` (uvicorn already
+  does this for `127.0.0.1`, so a proxy on the same host needs nothing), or pass
+  `trusted_proxies=["10.0.0.0/8"]` (your proxy addresses) to
+  `setup_rate_limiting`, `setup_security` or `add_security_middleware`. The
+  `FraiseQLConfig` limiter (`rate_limit_enabled`) always keyed on the socket peer
+  and is unchanged.
+
+- **The LlamaIndex `FraiseQLReader` no longer writes `where_clause` keys into its
+  SQL.** `aload_data(where_clause=...)` pasted a JSON key between quotes
+  (`metadata->>'key'`) and a column key as is, so a key holding a `'` (or any
+  SQL, for a column key) ran as SQL. The JSON key is now a query parameter, and a
+  column key, the selected columns and the table name are quoted identifiers, as
+  the LangChain integration already did. A column key is therefore
+  case-sensitive.
+
+- **A database error no longer reaches the client in production.** With
+  `environment="production"`, a resolver that failed on a PostgreSQL error
+  (a missing view, a constraint, a `RAISE` in a function) answered with the
+  error's own message, which carries the failing SQL (`LINE 1: SELECT ...`) and
+  relation names: the default executor and the multi-root-field path returned it
+  verbatim. Such an error is now answered with `"Internal server error"` and
+  `extensions.code` `INTERNAL_SERVER_ERROR`, keeping its `path` and `locations`;
+  the full error is still logged. An exception that escapes execution altogether
+  is answered the same way. A `RAISE EXCEPTION` in a function (SQLSTATE `P0001`)
+  keeps its primary message, which its author wrote for the caller, without the
+  `DETAIL`, `HINT` and `CONTEXT` lines that named the function. Other resolver
+  errors (a `GraphQLError`, a `ValueError` you raise) keep their message, and
+  development is unchanged.
+
+- **The example row-level security policies ignore expired role assignments.**
+  `own_data_update_users`, `own_data_update_orders` and `product_management` of
+  `004_rbac_row_level_security.sql` let a user with the `admin` or `super_admin`
+  role through by reading `user_roles` directly, without its `expires_at`, so a user
+  whose admin assignment had expired still updated other users' rows and orders and
+  managed products. They now call `user_has_role()`, which skips expired
+  assignments; the roles they accept and their tenant scoping are unchanged.
+  **Existing installs must run the 1.31.1 `004_rbac_row_level_security.sql` again**
+  to replace the policies.
+
+- **`CQRSRepository` quotes filter keys and sort fields as SQL literals.**
+  `query()`, `query_interface()`, `list_entities()`, `find_by_view()` and
+  `count()` wrote each filter key and the `order_by` field between quotes in
+  `data->>'key'`, so a key holding a `'` ended the literal and the rest of it
+  ran as SQL (`{"x' IS NULL OR data->>'x": ...}` matched every row). Keys and
+  fields are now bound with `psycopg.sql.Literal`; a key with a quote in it now
+  reads that JSON key.
+
+## [1.31.0] - 2026-10-25
+
+### Changed
+
+- **`__typename` is in the response only where the query selects it.** The Rust
+  pipeline gave every object of a known type a `__typename`, selected or not: a
+  query or mutation selecting `post { id }` got `{"__typename": "Post", "id": ...}`.
+  The GraphQL spec has the response hold exactly the selected fields, and
+  graphql-core (outside HTTP mode) already did. Now `db.find` / `db.find_one`
+  (one root field or several) and mutations in HTTP mode write `__typename` where
+  it is selected, under its alias (`t: __typename`) at any depth, and nowhere
+  else; a mutation selecting only an error fragment gets `{}` on success. **A
+  client reading an unselected `__typename` must select it**: Apollo Client,
+  urql's Graphcache and Relay add it to their queries themselves. Cascade
+  entities keep the `__typename` of their data. `build_graphql_response` takes
+  `inject_typename=False` for this, the mutation selection document
+  `"typename": "selected"`, and `mutation_response_type` gives the type a
+  mutation result answers with. `docs/core/rust-pipeline-integration.md` is
+  updated.
+
+- **`CSRFProtectionMiddleware` classifies a GraphQL request by parsing its
+  document.** It used to look at how the query text starts. Now a document that
+  contains a mutation needs a token whatever precedes the mutation and whichever
+  operation `operationName` selects. A document that doesn't parse needs one too
+  (unless `require_for_mutations` and `require_for_subscriptions` are both off).
+  An APQ hash-only request is classified by its stored document, a batched body
+  by its entries, and a `GET /graphql` whose `query` parameter holds a mutation
+  needs a token like a POST. `"variables": null` no longer fails in the middleware.
+
+- **The `csrf_token` cookie no longer counts as the CSRF token.** Send the token
+  in the `X-CSRF-Token` header (get one from `GET /csrf-token`), or as the
+  `csrf_token` GraphQL variable. This applies to GraphQL mutations and to other
+  `POST`/`PUT`/`PATCH`/`DELETE` routes behind the middleware. A client that sent
+  only the cookie now gets 403.
+
+- **With `check_referrer` and `trusted_origins` set, a GraphQL mutation from an
+  origin outside `trusted_origins` gets 403.** The middleware reads `Origin`, or
+  `Referer` without it; a request with neither header passes on its token.
+  GraphQL requests used to skip this check (`create_production_csrf_config` sets
+  both options).
+
+- **`revoke_all_user_tokens(user_id)` (and `logout_all_sessions`) revokes every
+  token of the user issued before the call.** Both revocation stores record when
+  it happened, and `TokenRevocationService.is_token_revoked` rejects a token
+  whose `sub` is that user and whose `iat` is earlier, whether or not its `jti`
+  was ever seen. After such a call, that user's tokens without an `iat` claim are
+  rejected too, and so are tokens without a `jti`, which `is_token_revoked` used
+  to accept unchecked. The cutoff lasts 24 hours, like a single revocation.
+  Stores gain `revoked_before(user_id)`; a custom store without it gets token-id
+  checks only. `PostgreSQLRevocationStore` keeps its table: the cutoff is the
+  `revoked_at` of the user's `__all__<user_id>` row.
+
+- **The ltree operators `subpath`, `index` and `concat` raise `ValueError` in a
+  `where`.** They compute a path or a number, not a condition, and rendered
+  invalid SQL. The error names the operator and what to use instead.
+
+- **A `Decimal` in a JSON value is written as a string.** `FraiseQLJSONEncoder`
+  wrote it as a `float`, so a `Decimal` inside a JSON scalar lost the digits a
+  float can't hold (`12.345678901234567890123` became `12.345678901234567`), and
+  `1E+400` failed the response. It now writes `"12.345678901234567890123"`, as
+  the `Decimal` scalar does. **This changes the output for clients that read a
+  number there**: a JSON-scalar field holding a `Decimal` now returns a string.
+  `CQRSExecutor.execute_function` sends a `Decimal` in its input as a string
+  too, as the mutation path already does; a SQL function reading it with
+  `(input->>'price')::numeric` is unaffected, one using `(input->'price')::numeric`
+  needs `->>`. `docs/core/types-and-schema.md` and `docs/architecture/type-system.md`
+  map `Decimal` to `Decimal!`, not `Float!`.
+
+- A mutation no longer parses `include`, `exclude` and the `entity` inline
+  fragments of a selected `cascade.updated` into the selections it hands Rust:
+  Rust filters the cascade on field names only and never read them
+  (`Cascade.updated` takes no arguments, and the entity is a JSON scalar).
+  Responses are unchanged.
+- **In development, a view with camelCase JSONB keys is reported.** `where`
+  and `orderBy` look a multi-word field up by its snake_case key
+  (`data ->> 'created_at'`), so a view built with
+  `jsonb_build_object('createdAt', ...)` matched nothing, silently. With
+  `environment="development"`, the first `find` / `find_one` that filters or
+  sorts on such a field reads one row of the view and, if it has the camelCase
+  key but not the snake_case one, logs a warning naming the view and the key.
+  Each key is checked once per process, and never outside development.
+
+- **The docs, the examples and the `fraiseql migrate init` scaffold build views
+  with snake_case JSONB keys** (`'created_at', created_at`, not `'createdAt'`).
+  `where` and `orderBy` look up the snake_case key (`data ->> 'created_at'`), so
+  on a view built the documented way a filter on a multi-word field matched
+  nothing and a sort on it did nothing. The response is camelCase either way.
+  `docs/specs/schema-conventions.md` now prescribes snake_case keys, and the
+  mutation examples that read `input->>'userId'` read `input->>'user_id'`, the key
+  FraiseQL sends.
+
+### Deprecated
+
+- **`FraiseQLConfig.entity_routing`**, which has no effect. It was validated and
+  stored, but nothing built a `QueryRouter` from it and every query runs the
+  same execution path. Setting it now emits a `DeprecationWarning`; it will be
+  removed. The configuration docs no longer present it as working, and no
+  longer list the `json_passthrough_*` / `passthrough_*` settings, which
+  `FraiseQLConfig` doesn't have (it ignores them).
+- **A Python `where` vector filter without `"threshold"`.**
+  `{"embedding": {"cosine_distance": {"vector": [...]}}}` filtered at a
+  distance `< 0.5` without saying so. It still does, and now emits a
+  `DeprecationWarning` naming the field and operator; the default will be
+  removed. Pass `{"vector": ..., "threshold": ...}`. Over GraphQL,
+  `distanceWithin` is already required.
+
+- **`FraiseQLConfig.cache_ttl`**, which has no effect: nothing reads it (APQ
+  responses have `apq_response_cache_ttl`, and `CachedRepository.find` takes
+  `cache_ttl=` per call). Setting it to anything but 300, in code or with
+  `FRAISEQL_CACHE_TTL`, now emits a `DeprecationWarning`; it will be removed.
+
+- **`FraiseQLConfig.database_echo`, `complexity_include_in_response`,
+  `execution_timeout_ms` and `default_query_schema`**, which have no effect:
+  nothing reads them. No SQL is echoed, no response carries the complexity
+  score, the statement timeout is `query_timeout` (seconds), and a query reads
+  the view its `sql_source` names (qualify it to pick a schema). Setting one to
+  anything but its default, in code or from the environment, now emits a
+  `DeprecationWarning`; they will be removed. The docs no longer present them,
+  or `cache_ttl`, as working, and describe `max_query_depth` and the
+  `complexity_*` limits as they now behave.
+
+- **`fraiseql.enterprise.audit.queries.AuditQueries`**, a placeholder that serves no
+  data: its fields were never added to `Query`, `audit_events` returned an empty
+  connection and `verify_audit_chain` returned `true`. Importing the module now emits
+  a `DeprecationWarning`; it will be removed. `docs/enterprise/audit-logging.md`
+  shows a query over `audit_events` returning the `AuditEvent` type.
+
+### Removed
+
+- **`fraiseql.enterprise.audit.mutations` (the `LogAuditEvent` placeholder
+  mutation).** The module couldn't be imported (it imported a `mutation` that
+  `fraiseql.mutations.decorators` doesn't have), and its resolver wrote nothing. Log
+  audit events with `AuditLogger`.
+
+- **`examples/blog_enterprise/`.** It registered no types and one
+  `health_status` query behind a README describing APIs fraiseql doesn't have;
+  `examples/blog_simple/` is the runnable blog example.
+
+- **FraiseQL v2 leftovers:** `docker/docker-compose.{demo,examples,prod-examples,prod,test}.yml`
+  and `docker/README.md` (they served a compiled schema from v2 server images),
+  `migrations/clickhouse/`, `migrations/elasticsearch/`, and the Makefile's
+  `demo-*`, `examples-*` and `prod-*` targets. `make db-up` now starts the
+  PostgreSQL the test suite uses, from the new `docker-compose.test.yml`.
+
+- **`SparseVectorField` and `QuantizedVectorField`** (`fraiseql.types.scalars.vector`),
+  with `SparseVectorScalar` and `QuantizedVectorScalar`. Neither could be used:
+  a type with one failed the schema build. A `sparsevec` column reads back as
+  text (`{1:0.5,3:0.2}/5`), not the `{indices, values}` the scalar serialized,
+  and a sparse operand can't be filtered or sorted on (`where` and `orderBy`
+  refuse it: the literal needs the column's dimension). pgvector has no
+  quantized type.
+
+### Fixed
+
+- **An APQ request whose query doesn't hash to its `sha256Hash` is refused.** The text
+  was stored under the hash anyway (with a logged warning), so any client could replace
+  the query behind a hash other clients send, and hash-only requests then ran its text.
+  In `optional` and `required` mode such a request now gets HTTP 400 `provided sha does
+  not match query` (code `BAD_REQUEST`, as Apollo Server answers) and nothing is stored
+  or run.
+- **Cached APQ responses expire after `apq_response_cache_ttl` seconds** (default 600;
+  0 keeps them). Nothing read the setting, so a cached response was served until the
+  process stopped (`memory`) or forever (`postgresql`). The `memory` and `postgresql`
+  backends take it from the config. A custom backend (`apq_storage_backend="custom"`)
+  still gets `apq_backend_config` as its first argument, and now also gets
+  `response_ttl=` (and `database_url=`) when its constructor has a parameter of that
+  name. A subclass of `MemoryAPQBackend` keeping its `__init__` used to get the config
+  dict as its `response_ttl`, so every cached response failed; it now gets the TTL.
+  A constructor without parameters is called without arguments instead of failing.
+- **`apq_queries_dir` registers the operations of its `.graphql`/`.gql` files.**
+  Nothing read it, so `apq_mode="required"` had no configured way to approve queries.
+  The APQ backend now registers each operation under the SHA-256 of its text when the
+  first APQ request creates the backend, and a missing directory makes the app fail at
+  startup. It isn't read in `apq_mode="disabled"`.
+- **The APQ response cache (`apq_cache_responses=True`) is filled.** The response was
+  stored only at the end of an execution path the `/graphql` route never takes (it
+  answers from the unified executor or with Rust-built bytes first), so the cache
+  stayed empty and every hash-only request ran. Now the response of every APQ query
+  is stored, whichever path built it. Mutations and subscriptions are not cached (a
+  cached mutation would be answered without running), nor are responses with errors
+  or the request's `extensions`. The cache key is the hash, the variables, the tenant
+  and, for an authenticated request, the user's id (`user_id`, `id` or `sub` of
+  `context["user"]`), so one user's cached response is never served to another; an
+  authenticated request without such an id is not cached.
+- **The `postgresql` APQ storage backend stores persisted queries in PostgreSQL.** It had
+  no database connection, so every read missed and every write was dropped: queries
+  registered with it were lost on restart and not shared between instances, and its
+  responses table could not have been created (its `PRIMARY KEY` held an expression).
+  It now opens its own small connection pool to `database_url` (or
+  `apq_backend_config["database_url"]`) on first use, creates `apq_queries` and
+  `apq_responses` if they don't exist, and `register_queries` raises if it can't store
+  them. Passing an async pool as `pool=` raises `TypeError`.
+- **`apq_mode="required"` no longer lets a client register a new query.** A request
+  carrying an unknown hash together with its query text was stored and run, so any
+  client could get any query approved. Now it is refused with
+  `PERSISTED_QUERY_NOT_IN_LIST` and nothing is stored; only hashes the server already
+  knows run, with the text the server stored.
+  `POST /graphql/rust` (opt-in, query text only) refuses every request in this mode
+  with `ARBITRARY_QUERY_NOT_ALLOWED`. `optional` and `disabled` are unchanged.
+- **`max_query_depth` limits the query depth.** It was validated and stored,
+  but no request checked it, so a query of any depth ran. Now `POST` and
+  `GET /graphql` (and `/graphql/rust`) answer a deeper query with a
+  `QUERY_TOO_DEEP` GraphQL error, before any resolver or SQL runs, APQ
+  persisted queries included. `{ users { id } }` has depth 1; fragments add no
+  depth of their own; introspection (`__schema`, `__type`) is not counted. The
+  default stays `None`, no limit.
+
+- **`complexity_max_score` and `complexity_max_depth` limit a query.** Nothing
+  read the `complexity_*` settings, so `complexity_enabled` (documented as on by
+  default) checked nothing. Now a query over either limit gets a
+  `QUERY_TOO_COMPLEX` or `QUERY_TOO_DEEP` GraphQL error and does not run. The
+  score is computed from the schema: a scalar costs 1, an object field 1 plus
+  its selections, a list field 1 plus its selections times its `limit` / `first`
+  argument (or `complexity_default_list_size`); `complexity_field_multipliers`
+  changes a field's cost by name or `"Type.field"`. `complexity_enabled` now
+  defaults to `False`, which is what it always did: setting
+  `complexity_max_score` or `complexity_max_depth` (in code or from the
+  environment) turns it on, unless you also set `complexity_enabled=False`.
+  These limits must be at least 1.
+
+- **`include_execution_metadata=True` adds the execution timing in
+  production.** The router added `extensions.execution` outside production and
+  never read the setting. Outside production the timing is still always there.
+
+- **`FraiseQLConfig(coordinate_distance_method=...)` picks the `distance_within`
+  SQL.** Only the `FRAISEQL_COORDINATE_DISTANCE_METHOD` environment variable was
+  read, so `coordinate_distance_method="postgis"` in code still built Haversine
+  SQL. The app's config now wins when it sets the method; without it, the
+  environment variable is read as before.
+- **The coordinate SQL runs on PostgreSQL.** The Haversine `distance_within`
+  (the default method, "no extension needed") called PostGIS's `ST_Y` / `ST_X`
+  and cast `'location'::point` instead of the field; it now reads the point's
+  latitude and longitude as `p[1]` / `p[0]`, in plain SQL, with the formula's
+  halves in the right place (`sin²(Δ/2)`, not `sin²(Δ)/2`). `earthdistance` used
+  `ST_Y` too and passed `numeric` to `ll_to_earth()`; `postgis` called
+  `ST_DWithin` on `point`s, which PostGIS lacks, and in degrees: it now measures
+  geographies (WGS 84) in meters. `eq` / `neq` / `in` / `notin` compared points
+  with `=`, which `point` lacks; they use `~=`.
+- **`db.find` filters a `Coordinate` field.**
+  `where={"location": {"distance_within": ((37.77, -122.42), 5000)}}` wrote
+  `data ->> 'location' distance_within %s`, a syntax error: the coordinate SQL
+  was never used. `distance_within` (also `{"center": [lat, lng], "radius":
+  meters}`) and, on a field the type declares `Coordinate`, `eq` / `neq` / `in` /
+  `nin` (tuples, `"lat,lng"` strings or `{lat, lng}`) now get it, on a JSONB
+  field or a `point` column. The coordinate is a `point`, `(longitude,
+  latitude)`.
+- **A `Coordinate` field gets a `CoordinateFilter` in the GraphQL `where`,
+  with `distanceWithin`.** It got a `StringFilter`, so the
+  `distanceWithin: {center: [37.77, -122.42], radius: 5000}` the `Coordinate`
+  scalar's description promised didn't exist. `CoordinateFilter` has `eq`,
+  `neq`, `in`, `nin` (`"lat,lng"` strings), `isnull` and `distanceWithin`
+  (`CoordinateDistanceInput`: `center: [Float!]!` as `[latitude, longitude]`,
+  `radius: Float!` in meters).
+- **`BodySizeLimiterMiddleware` passes the request body on to the app.** It
+  read the body to measure it, then gave the app behind it an empty one, so
+  every GraphQL `POST` behind it got a 422. It is now a plain ASGI middleware:
+  a body within `max_body_size` reaches the app unchanged, and a larger one
+  still gets 413, whether `Content-Length` announces it or the body streams in
+  chunks without one. The `dispatch()` method is gone with
+  `BaseHTTPMiddleware`; `app.add_middleware(BodySizeLimiterMiddleware,
+  config=...)` is unchanged.
+
+- **`RateLimiterMiddleware` answers a request over the limit with 429.** It
+  raised `HTTPException`, which a `BaseHTTPMiddleware` passes outside FastAPI's
+  exception handlers, so the client got a 500. Now it returns 429 with
+  `Retry-After` (seconds, at least 1) and the `X-RateLimit-*` headers, and a
+  blacklisted client gets 403 instead of a 500.
+
+- **The `rate_limit_*` settings of `FraiseQLConfig` work, and
+  `rate_limit_enabled` defaults to `False`.** Nothing read them, so no app was
+  ever rate limited, though `rate_limit_enabled` defaulted to `True`. With
+  `rate_limit_enabled=True` (or `FRAISEQL_RATE_LIMIT_ENABLED=true`),
+  `create_fraiseql_app` installs `RateLimiterMiddleware`: requests are counted
+  per client IP (`request.client.host`) in a sliding window, in memory for
+  each process, against `rate_limit_requests_per_minute` and
+  `rate_limit_requests_per_hour`; a request over the limit gets 429 with
+  `Retry-After`. `rate_limit_whitelist` IPs are never limited, and
+  `rate_limit_blacklist` IPs get 403. `/health`, `/ready`, `/metrics` and `/`
+  are not counted. `rate_limit_window_type="fixed"` logs a warning: only the
+  sliding window exists. The default moves to `False` so that upgrading doesn't
+  start limiting apps that never were, at 60 requests a minute per IP (behind a
+  proxy, per proxy, unless the server reads the forwarded address, as uvicorn's
+  `--proxy-headers` does). `RateLimiterMiddleware` also honours
+  `RateLimitConfig(enabled=False)` now, and doesn't count `/ready`.
+  `InMemoryRateLimiter` and `PostgreSQLRateLimiter` hold the hour limit even
+  within `burst_size`: the first `burst_size` requests of each minute used to
+  pass whatever the hour count was.
+- **Without the Rust schema registry, `db.find` / `db.find_one` answer with
+  exactly the selected fields.** With `enable_schema_registry=False`, or for a
+  view no type is registered for, Rust picked the fields to write from a 128-bit
+  map of hashed key names. A key falling on the bit of a selected one was written
+  too, so an unselected field could reach the client (`secret_note` came back
+  when only `author` was selected); every field of a nested object or list was
+  dropped (`author: {}`); and keys were camelCased even with
+  `auto_camel_case=False`. A key is now compared with the selected ones, a nested
+  object keeps its selected fields, keys are the ones the query uses, and a leaf
+  value (a JSON scalar) is written as stored. A view without a registered type is
+  projected as the type its field returns.
+
+- **A nested field answers under its alias.** `db.find` / `db.find_one` honoured
+  a root field's alias only: `{ notes { x: authorInfo { firstName } } }` came back
+  as `{"authorInfo": {...}}`, with either `auto_camel_case`, and two aliases of
+  one field (`a: authorInfo { firstName } b: authorInfo { lastName }`) got one
+  entry. Each field now answers under its response key at any depth, objects and
+  lists alike, with or without the Rust schema registry, and with several root
+  fields in the operation (which also keep snake_case keys with
+  `auto_camel_case=False`). A field selected under two aliases is answered twice,
+  each with its own sub-selection. `FieldPath` gains `names` and `response_keys`
+  (the name and the response key of each segment of `path`), which
+  `extract_flat_paths` fills; both default to `None`.
+
+- **Without the Rust schema registry, a string with an escape comes back as
+  stored.** The zero-copy path escaped the JSON it copied a second time, so
+  `say "hi"` reached the client as `say \"hi\"`, and a string ending in a
+  backslash (`"x\\"`) failed the field (`Expected byte 44`). Strings and keys
+  are now copied with their escapes as they are.
+
+- **`execute_function` and `execute_function_with_context` return the object a
+  `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
+  puts such a result in one column named after the function, so the result was
+  `{"fn_create_note": {"success": true, ...}}` and the documented
+  `result["success"]` raised `KeyError`. Now it is `{"success": true, ...}`.
+  `result["fn_create_note"]` still works, returning the same object, with a
+  `DeprecationWarning`; `"fn_create_note" in result` and
+  `result.get("fn_create_note")` no longer find it. Functions with OUT
+  parameters, `RETURNS TABLE` or a composite result are unchanged, and so is a
+  `jsonb` array or scalar result.
+
+- **`failed:validation`, `failed:not_found` and `failed:duplicate` get the error
+  codes 422, 404 and 409.** The trinity helpers in
+  `migrations/trinity/005_add_mutation_response.sql` (`mutation_validation_error`,
+  `mutation_not_found`, `mutation_conflict`) return these statuses, and the error
+  type's `code` (and each `errors[].code`) was 500 for all of them: only the
+  `validation:`, `not_found:` and `conflict:` prefixes had their codes. A
+  `failed:<reason>` status is now read like `<reason>:` (`unauthorized`,
+  `forbidden`, `timeout` too; `duplicate` is a conflict); any other `failed:`
+  status stays 500. The `status` string is unchanged.
+  `MutationErrorConfig.get_error_code` maps the same way, and now gives
+  `validation:*` 422 as well.
+
+- **A resolver can wrap what `db.find` / `db.find_one` return in another
+  object.** In HTTP mode they return a complete Rust-built response, which
+  only works as a root field's whole result. A function mutation reading its
+  row back (`return CreateNoteSuccess(note=await db.find_one("v_note", ...))`)
+  answered `{"data": {"v_note": ...}}` instead of the mutation field, and a
+  query returning `NotePage(notes=await db.find("v_note"))` failed. Below the
+  root, the field's data is now taken out of the response and completed like
+  any object. When the resolver's `info` describes another type than the view's
+  (here `NotePage`, or the mutation's result union), `find` no longer projects
+  the rows onto that selection: they are read whole.
+
+- **A dict `order_by` sorts by vector distance.**
+  `db.find(..., order_by={"embedding": {"cosine_distance": [...]}})`, the form
+  `docs/features/pgvector.md` shows, was dropped with
+  `UserWarning: order_by: ignoring 'embedding.cosine_distance'`, and only
+  `VectorOrderBy(...)` or `OrderBy("embedding.cosine_distance", value=...)`
+  sorted. A `hamming_distance` / `jaccard_distance` bit string was read as a
+  sort direction. Now `{"<operator>": <vector>}` under a field is a distance sort
+  (nearest first), in a dict or a list of dicts, with snake_case or camelCase
+  operator names; a direction string under a key of that name still sorts on a
+  field of that name.
+
+- **`order_by=[("created_at", "DESC")]` sorts.** A list `order_by` read only
+  dicts and `OrderBy`-like items and skipped anything else, so a
+  `(field, direction)` tuple (the form `fraiseql init` generated) left the
+  query without an ORDER BY and the rows came back unordered. `db.find` now
+  takes `(field, direction)` and `(field,)` tuples, bare field names
+  (ascending), and a single tuple outside a list; field names resolve as dict
+  keys do (camelCase, dotted paths). A list item it can't read, or an
+  `order_by` of another type (not a dict, list, tuple, `OrderBySet` or SQL
+  string), raises `TypeError`. A direction other than ASC / DESC raises
+  `ValueError` in every shape: `"ascending"` or `"DESC NULLS LAST"` used to sort
+  DESC, and an enum whose value is `"ASC"` sorted DESC too.
+
+- **A Django-style `where={"age__gte": 18}` raises instead of matching
+  nothing.** The key was read as an equality filter on a field named
+  `age__gte`, which no row has. A key ending in `__<operator>` now raises
+  `ValueError` naming the supported form, `{"age": {"gte": ...}}`, unless the
+  view has a column or its registered type a field of exactly that name. The
+  `@fraiseql.query` / `@fraiseql.subscription` docstrings and
+  `docs/reference/decorators.md` used the suffix form; they now nest the
+  operator.
+
+- **A generated where type raises on an operator it can't render.**
+  `safe_create_where_type(...)(...).to_sql()` (and `CQRSRepository.query`,
+  `select_from_json_view` and `find_by_view`, which build on the same code)
+  dropped any operator unknown for
+  the field's detected type, while the field's other filters survived:
+  `{"age": {"bogus": 3}, "name": {"eq": "x"}}` filtered on the name only, an
+  ltree `depth_eq` / `isdescendant` on a field not typed `LTree` filtered on
+  nothing, and `like` / `ne` were dropped too (`neq` is the operator). So was
+  `quantized_distance`, whose vector type is removed in this release. It now
+  raises `ValueError` naming the field, the operator and the operators that
+  type has. `db.find` already raised for an unknown operator.
+
+- **A vector distance `orderBy` works on a view with a `data` column.** With
+  the vector as a column beside `data` (a vector inside the JSONB document
+  can't be sorted), `orderBy: {embedding: {cosineDistance: ...}}` and
+  `db.find(order_by={"embedding": {"cosine_distance": [...]}})` rendered
+  `data."embedding"` and failed with `missing FROM-clause entry for table
+  "data"`; only views declared `jsonb_column=None` sorted. They now sort on the
+  column (`"embedding" <=> ...`), through `column_mapping` when the field is
+  mapped. A distance `where` on such a view read `data ->> 'embedding'` (and
+  failed) whenever the registered columns didn't list the vector, which is the
+  case for a plain `@fraiseql.type`; it now reads the column too.
+  `docs/features/pgvector.md` shows both view shapes.
+
+- **A `vector` column of a view without a JSONB column comes back as a list.**
+  `row_to_json` writes a pgvector `vector` through its text output, so a field
+  typed `list[float]` received the string `"[0.1,0.2,0.3]"`. Columns the type
+  reads as `list[float]` are now re-read as JSON in that row.
+
+- **The ltree filters `index_eq`, `index_gte` and `lca` work.** They rendered
+  invalid SQL (`"path" index = %s`, `"path" lca %s`), on a column and on a JSONB
+  field. `index_eq` / `index_gte` take a label and a position and compare
+  `index(path, label)` with it: `{"index_eq": ("astronomy", 1)}` in Python,
+  `indexEq: {label: "astronomy", position: 1}` in GraphQL, where these fields
+  are now typed `LTreeIndexInput` instead of `Int`. `lca` keeps the rows whose
+  path is the lowest common ancestor of the given paths.
+- **The ltree filters `ancestor_of`, `descendant_of`, `isdescendant`,
+  `matches_ltxtquery`, `matches_any_lquery` and `in_array` work on a JSONB
+  field.** `data ->> 'path'` is text and the value went untyped, so `db.find`
+  failed with `operator is not unique: text <@ unknown` (or `text @> unknown`,
+  `text @ unknown`, `text ? unknown`); `in_array` failed on a native `ltree`
+  column too (`ltree syntax error`). Both sides are typed now:
+  `(data ->> 'path')::ltree <@ %s::ltree`, `~ %s::lquery`, `@ %s::ltxtquery`,
+  `? %s::lquery[]`, `<@ %s::ltree[]`. `matches_any_lquery` and `in_array` take a
+  non-empty list. A JSONB field the type declares `LTree` also compares as
+  `ltree` with `eq`, `lt`, `gte`, `in`...: as text, `top.sciences` sorted
+  before `top.science.zoology`. The operator-registry path (`LTreeOperatorStrategy`,
+  `build_matches_ltxtquery_sql`) wrote `matches_ltxtquery` as `ltree ? ltxtquery`,
+  an operator PostgreSQL doesn't have; it writes `@` too.
+
+- **`error: NotFound | Conflict` on a class mutation is reported at schema
+  build.** Decorating it raised
+  `AttributeError: 'types.UnionType' object has no attribute '__name__'` (and a
+  union `success:` a `TypeError` from `get_type_hints`). A class mutation has
+  one success type and one error type; the schema build now names the mutation
+  and the annotation, with its other problems, as for the other member checks
+  (#576).
+
+- **A root query answers under the key the client asked for.** For a lone
+  root field, `db.find` / `db.find_one`'s response is served as is, and its
+  key was the `field_name` argument: `db.find("v_comment", "post_comments", info)`
+  answered `{"post_comments": ...}` to a client asking for `postComments`, and
+  an alias (`x: postComments`, or `x: comments` with `info=info`) came back
+  under the field's name. With a root field's `info`, the key is now its
+  response key (the alias, or the GraphQL field name).
+
+- **`@app.on_event("startup")` and `("shutdown")` handlers run on an app from
+  `create_fraiseql_app`.** It gives the FastAPI app a lifespan, and Starlette
+  ignores `on_event` handlers on an app with a lifespan, so setup registered
+  that way (as several docs pages and examples did) never ran. fraiseql's
+  lifespan now runs them: startup once the database pool is open (and inside
+  your own `lifespan=`), shutdown before the pool closes.
+
+- **Outside HTTP mode, a mutation entity builds from a partial or wider dict.**
+  With graphql-core completing the result (`schema.execute`, `graphql()` in
+  tests, no `create_fraiseql_app`), an entity filtered to the selection failed
+  with `missing a required argument: 'name'`, a JSONB key the type doesn't
+  declare with `unexpected keyword argument 'secret'`, and a field typed as an
+  interface with `Abstract type 'Node' was resolved to a non-object type`.
+  `from_dict` now leaves out keys the type doesn't take, gives unselected
+  required fields `None` (they are never read), and builds an interface-typed
+  field as the type its `__typename` names. HTTP mode was unaffected.
+
+- **A success type's entity field can be optional.** `note: Note | None` wasn't
+  recognised as the entity field: the entity reached it only when the function
+  set `entity_type`, and a success without an entity left the key out of the
+  response. It is now filled like `note: Note`, and a missing entity answers
+  `null` there. For a non-null entity field, a success without an entity is an
+  error under any alias (`n: note` came back `null` without one); unselected,
+  it is still no error.
+
+- **A JSONB number reaches the client with the digits PostgreSQL wrote.** In HTTP
+  mode the Rust pipeline parsed JSONB numbers as 64-bit floats, so a `numeric`
+  such as `12.345678901234567890123` arrived as `12.345678901234567`, and one
+  beyond a float's range (`-1e400`) failed the whole field with `Failed to parse
+  JSON: number out of range`. `fraiseql_rs` now enables `serde_json`'s
+  `arbitrary_precision`, so numbers pass through as written, and still as JSON
+  numbers. A mutation's entity loses no digits either: the mutation executor
+  reads the SQL function's result as JSON text and hands that text to Rust,
+  instead of loading it into Python floats first. (A result in the legacy
+  `object_data` format is still converted through Python.) Emitting
+  `'price', price::text` in a view is no longer needed to keep the digits; it
+  still makes the client receive a string. A client that parses the response
+  with a float-based JSON parser still rounds; the `Decimal` scalar's string
+  form avoids that.
+
+- **Vector search works over GraphQL.** A list query over a type with a vector
+  field (`embedding: list[float]`) had no `orderBy` argument: the query builder
+  skipped it because `VectorOrderBy` couldn't become a GraphQL type. Its float
+  operators now take a `VectorDistanceInput`, the operand a vector `where`
+  takes, so `documents(orderBy: {embedding: {cosineDistance: {dense: [...]}}},
+  limit: 10)` sorts by distance, auto-wired or declared as
+  `order_by: <Type>OrderByInput`, for all six operators (`hammingDistance` and
+  `jaccardDistance` take a bit string). In Python, `VectorOrderBy` and a dict
+  `order_by` still take the bare list. A `sparse` operand raises an error in
+  `orderBy`, as in `where`: the `sparsevec` literal guessed the column's
+  dimension from the indices. A vector `where` (`{embedding: {cosineDistance:
+  {dense: [...]}, distanceWithin: 0.5}}`) failed in `db.find` with `Invalid
+  operator 'dense'`; it now filters, `innerProduct` included. `distanceWithin`
+  is required: without it a `where` filtered at `< 0.5`, and now fails with an
+  error naming the field. On a type declared `jsonb_column=None`, a `where`
+  looked for every field in a `data` column the view doesn't have; it now uses
+  the view's columns. A `bit` column on a `list[float]` field no longer fails
+  the query with `invalid input syntax for type json`. In a Python `where`, the
+  `(vector, threshold)` pair (`{"cosine_distance": [vec, 0.5]}`) emits a
+  `DeprecationWarning`: a 2-dimensional query vector reads the same. Use
+  `{"vector": ..., "threshold": ...}`.
+
+- `docs/features/pgvector.md`: GraphQL names are camelCase, a vector `orderBy`
+  and `where` both take `{dense: [...]}`, `where` needs `distanceWithin`, a
+  Python `where` takes `{"vector": ..., "threshold": ...}`, and the FastAPI
+  example uses `create_fraiseql_app`.
+
+- **`EntityExtractor` finds entities again.** With graphql-core 3.3, a field
+  without arguments has `arguments=None`, and the complexity count's
+  `len(selection.arguments)` raised. A broad `except` turned that into "no
+  entities", so `QueryRouter` answered `NORMAL` for every query. An
+  unexpected failure in the extractor or the router now logs a warning; a
+  query that doesn't parse is still reported in `analysis_errors` only.
+  Note: `FraiseQLConfig(entity_routing=...)` is validated but not used by
+  the request path (no `QueryRouter` is built, and `ModeSelector.select_mode`
+  is never called), so this changes nothing for a served app yet.
+
+- **`fraiseql turbo register` registers a query whose root field takes no
+  arguments.** `query GetUsers { users { id name } }` failed with
+  `Registration failed: 'NoneType' object is not iterable`: graphql-core 3.3
+  leaves an absent argument list as `None`, and the SQL compiler iterated it.
+
+- **`VectorField` and `HalfVectorField` work.** A type with either failed the
+  schema build (`Unsupported output type: VectorField`), and a `where` gave
+  them a `StringFilter`. They now behave as `list[float]`: `[Float]` in and
+  out, the vector `where` and `orderBy` operators whatever the field is named,
+  and a flat view's `vector`/`halfvec` column read back as a list. A nullable
+  vector field (`embedding: list[float] | None`) got an `OrderDirection` in
+  `orderBy` instead of `VectorOrderBy`.
+
+- A multi-field query with a bare `@skip` or `@include` (no `if`) no longer
+  logs a `TypeError` traceback before validation reports the missing argument.
+
+- **`create_fraiseql_app(app=existing_app)` opens the database pool.** An app
+  passed in kept its own lifespan, so fraiseql's never ran: no pool was opened,
+  and every GraphQL request failed with "Database pool not initialized" (the
+  `lifespan=` argument was ignored too). fraiseql's lifespan now wraps the app's
+  own lifespan, or its `@app.on_event` handlers, which still run once.
+
+- Tests: the example database manager connects where `TEST_DATABASE_URL`
+  points (host, port, user, password) instead of `fraiseql:fraiseql@localhost:5432`,
+  so the 16 blog_simple tests run instead of skipping against any other server.
+
+- **`where` and `orderBy` on a datetime or date field compare dates, not text.** A JSONB
+  field holds an ISO string, and `"2025-01-01T00:00:00+00:00"` is smaller than
+  `"2025-01-01T00:00:00Z"` as text, so `where: {createdAt: {gte:
+  "2025-01-01T00:00:00Z"}}` left that row out, `"2025-01-01T01:00:00+01:00"`
+  (the same instant) compared by its digits, and `eq` / `in` with a datetime
+  matched nothing or failed (`operator does not exist: text = timestamp with
+  time zone`). On a field the view's type declares as `datetime` or `date`
+  (`| None` and nested fields like `author.createdAt` too), and for any
+  `datetime` / `date` value, `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in` and
+  `nin` now cast both sides: `(data ->> 'created_at')::timestamptz >= %s::timestamptz`.
+  This covers GraphQL and `db.find(where={...})`; a real `timestamptz` column
+  already compared correctly. `orderBy` on such a field sorted the strings too
+  (`data -> 'created_at'`), so `"2025-01-01T00:30:00+01:00"` (23:30Z the day
+  before) came after `"2025-01-01T00:00:00+00:00"`; it now sorts on
+  `(data ->> 'created_at')::timestamptz` (or `::date`), for GraphQL `orderBy`
+  and every `db.find(order_by=...)` shape (dict, list, `OrderBySet`). A JSON
+  `null` now sorts with the missing values, as on a `timestamptz` column (last
+  ascending, first descending); a key with an explicit collation, a vector
+  distance and a flat column keep their SQL.
+
+- Docs: examples no longer call repository methods fraiseql doesn't have
+  (`update_one`, `create_one`, `delete_one`, `transaction()`, `fetchrow`,
+  `fetchval`, `delete`): they use `execute_function`, `find_one`, `count` and
+  `run_in_transaction`. The configuration pages no longer list settings
+  `FraiseQLConfig` doesn't have (`jsonb_extraction_enabled`, `jsonb_default_columns`,
+  `jsonb_auto_detect`, `field_projection`, `schema_registry`, `enable_query_caching`,
+  `enable_turbo_router`, the `turbo_*` admission options), and `register_type_for_view`
+  and `UNSET` are imported from where they live. The remaining pages followed:
+  `execute_raw`, `paginate`, `execute`, `fetch`, `query`, `save`, `connection()`, a
+  `PsycopgRepository` / `QueryOptions` API, a `FraiseQL()` / `Schema` app class,
+  `MutationResponse` and other made-up classes are replaced by `run(DatabaseQuery)`,
+  `get_pool()`, `find(limit=, offset=)`, `count`, `create_fraiseql_app` and the real
+  security and KMS APIs (the production runbooks, database-api, kms, api
+  index, authentication, multi-tenancy, event-sourcing pages among them); config
+  examples drop fields `FraiseQLConfig` doesn't have; `order_by` uses
+  `[{"field": "DESC"}]` and `where` uses `{"field": {"gte": …}}`
+  (not `field__gte`); the OLAP page shows the real auto-aggregation shape; vector search
+  queries a flat view; first-hour's timestamp step matches the quickstart table; and the
+  bulk-operations SQL example runs. The rate-limiting pages (configuration,
+  runbooks, deployment checklist, security spec) describe the two rate limiters as
+  they behave: which one the `rate_limit_*` settings install, the real 429 bodies
+  and headers, fixed windows in `setup_rate_limiting` (`strategy` and `burst` are
+  ignored), which client address each one keys on, and 429s counted in
+  `fraiseql_http_requests_total` (there is no `fraiseql_rate_limit_exceeded_total`);
+  the rate-limit checks no longer target `/health`, which is never limited; the
+  deployment checklist no longer passes `security_profile=` to
+  `create_fraiseql_app`; and `examples/security_features_example.py` adds its rate
+  limiter before the app starts, not in the lifespan, where Starlette refuses it.
+  The caching spec and the server-side cache invalidation page describe the cache
+  as it is: no `FRAISEQL_CACHE_*` settings, `create_fraiseql_app` (not `create_app`),
+  no `CacheInvalidationRule` / `invalidate_lazy` / `get_cascade_stats`, CASCADE
+  rules that need the `pg_fraiseql_cache` extension and invalidate no `ResultCache`
+  entry, and how `CachedRepository` keys and invalidates its entries. The
+  observability page uses the error tracker's real tables (`tb_error_log`,
+  `tb_error_occurrence`; there is no `monitoring.errors` / `traces` / `metrics` and
+  no `PostgreSQLSpanExporter`), notification rules and channels, partition
+  maintenance and `setup_tracing`. The result caching guide and the monitoring page
+  keep only samples that run: no `DatabasePool`, `enable_stats`, `cache_result`,
+  `ResultCache.get` / `set`, `set_many` / `get_many`, notifier classes,
+  `ignore_error` / `assign_error`, cost or benchmark tables; the cache is wired
+  through a `context_getter`, alert rules use the exported `fraiseql_*` metrics,
+  and the tracker runs on the app's pool. The production runbooks query only the Prometheus metrics
+  `setup_metrics` exports (no `fraiseql_auth_failures_total`,
+  `fraiseql_graphql_query_complexity_*`, `fraiseql_cache_size_bytes`; `process_*`
+  needs a `ProcessCollector`) and the security events fraiseql logs, and no longer
+  point to a Grafana dashboard JSON that doesn't exist. `db.paginate()` is
+  documented with its real signature, `@fraiseql.connection`'s `jsonb_extraction`
+  / `jsonb_column` are marked as having no effect, pages no longer set the unread
+  `cache_ttl`, and the glossary imports `authorize_field` and the rate limit
+  settings from where they live. The configuration pages describe the settings as
+  this release has them: `rate_limit_enabled` off by default and what it installs,
+  `complexity_*` and `max_query_depth` enforced, the APQ modes, `apq_queries_dir` and
+  response cache, `query_timeout` on every read, `include_execution_metadata`, and the
+  deprecated settings as having no effect (no `FRAISEQL_DATABASE_ECHO` /
+  `FRAISEQL_CACHE_TTL` in the deployment examples). Pages no longer say `__typename`
+  is injected everywhere. The philosophy and monitoring pages query the error
+  tracker's real tables and the exported Prometheus metrics (no `monitoring.errors`,
+  `fraiseql_cache_hit_rate`, `fraiseql_error_rate`). Samples no longer use
+  `db.listen()`, `find_required()`, `FraiseQLRouter`, `fraiseql.build_schema()`,
+  `fraiseql.Schema`, `fraiseql.filters`, `fraiseql.types.postgres`, `FraiseQLApp`,
+  `repo.execute()`, `fraiseql.get_db`, `fraiseql.testing.GraphQLClient`, a top-level
+  `fraiseql_rs` module or a `build_mutation_response` without its selection
+  document; nested dict filters are not limited to two levels, and a malformed one
+  raises. The migration guides, the semantic search example and the examples under
+  `examples/` (APQ multi-tenant, pattern comparison, coordinate distance, field
+  descriptions, complex where) run as written. The authentication, audit-logging and
+  RBAC pages describe the APIs that exist (the auth errors in `fraiseql.auth.base`,
+  `TokenManager`, `AuditLogger`, `PermissionResolver`, `RoleHierarchy`) instead of
+  `NativeAuthFactory`, `CustomJWTProvider`, `AuditEventLogger` and similar, and the
+  glossary's filter samples validate (camelCase ltree operators; a `Coordinate` field
+  has no GraphQL distance filter).
+
+- **With `auto_camel_case=False`, a nested object answers under its own key.**
+  `{ notes { author_info { first_name } } }` came back as
+  `{"authorInfo": {...}}`, a key the client didn't request, with `author_info`
+  missing: the response key of a nested object was always its camelCase name.
+  It is now the field's name in the schema.
+
+- **`@fraiseql.connection` pages its view.** It called `db.paginate`, which
+  `FraiseQLRepository` didn't have, so every connection query answered with an
+  error; over `@fraiseql.query` (the order the docs show) the field resolved
+  with the undecorated function and returned null, and on Python 3.14 the
+  other order lost the return annotation. `FraiseQLRepository.paginate` now
+  pages with `find` and `count`: `first`/`after` and `last`/`before`, opaque
+  cursors from `cursor_field`, `pageInfo` and `totalCount`, filtered by
+  `where`, which is now the node type's `WhereInput` (it was `JSON` on
+  Python 3.13). `pageInfo` and `totalCount`
+  (and `hasNextPage`, `startCursor`, ...) resolve from the `page_info`,
+  `total_count`, ... that `create_connection` sets, which a hand-written
+  connection resolver returned as null too.
+
+- **`fraiseql generate crud` writes mutations that run.** The module it wrote
+  didn't import: it decorated a class with `@fraiseql.result`, which takes the
+  success and error classes, used `UUID` without importing it, and took a
+  `CQRSRepository` parameter nothing passes to call `repository.update(table,
+  id, input)`. It now writes `Create`/`Update`/`Delete` class mutations with
+  their inputs, a `{Type}Success` and a `{Type}Error`, plus
+  `migrations/{timestamp}_create_{table}_mutations.sql` with the
+  `create_`/`update_`/`delete_` functions they call, for the table
+  `fraiseql generate migration` creates. The file is named in snake_case
+  (`blog_post_mutations.py`, was `blogpost_mutations.py`); `--table` and
+  `--types-module` are new. `fraiseql generate migration` no longer fails with
+  `AttributeError` building its timestamp.
+
+- **The `@fraiseql.mutation` docstring calls repository methods that exist.**
+  Its examples used `db.update_one`, `db.create_one` and `db.transaction()`;
+  they now use `execute_function`, `find_one` and `run_in_transaction`. The
+  `src/fraiseql/fastapi.pyi` stub is removed: the `fraiseql/fastapi/` package
+  is what type checkers read (ty and pyright both), and the stub listed
+  settings `FraiseQLConfig` doesn't have (`enable_turbo_router`,
+  `enable_query_caching`, `production_mode`, `enable_introspection`,
+  `hide_error_details`, `enable_subscriptions`, `enable_dataloader`,
+  `enable_rate_limiting`) and functions `fraiseql.fastapi` doesn't export.
+
+- **A nested object no longer gets its parent's `__typename`.** Without the
+  Rust schema registry (the repository used before or without
+  `create_fraiseql_app`, as in docs/examples/dict-based-nested-filtering.md),
+  `find`/`find_one` wrote the row type's name into every object of the row:
+  an `Assignment`'s `device` came back as `"__typename": "Assignment"`. Only
+  the row objects get it now; a nested object keeps the `__typename` its
+  JSONB holds, if any (no longer dropped, nor camelCased to `Typename`).
+  With the registry (any app) nested objects were and are named after their
+  own type.
+
+- **`db.find` / `db.find_one` answer with the keys in selection order.** The
+  GraphQL spec orders a response map like the selection set; with the Rust
+  schema registry (any app), the fields of each object, and the root fields of
+  a query with several, came back sorted alphabetically: `{ users { name id
+  email } }` answered `{"email", "id", "name"}`. They now follow the query, at
+  any depth. (serde_json keeps object keys in insertion order; projecting is
+  also faster, 3.7 ms instead of 5.9 ms for 1,000 rows of eight fields.)
+  Without the registry (`enable_schema_registry=False`, or a view without a
+  registered type), Rust wrote the fields in the row's order, which jsonb
+  sorts by key length; they follow the query there too.
+
+- **Field resolvers run on `db.find` / `db.find_one` results.** `find` and
+  `find_one` answer with the rows Rust builds from the view, which don't go
+  through graphql-core field by field, so a `@fraiseql.field` or
+  `@fraiseql.dataloader_field` method on the type they return (the docs'
+  `post_count`), or on a type nested in it, was never called and its field
+  was left out of the response. When the query selects one, at any depth
+  (through aliases, fragments, several root fields, or a find wrapped in
+  another object), `find` now returns the rows as typed objects, built from
+  the whole JSONB row, and graphql-core runs the resolver with the row as
+  `self`. A query selecting only plain fields still goes out as Rust bytes; a
+  query that selects a resolver costs what graphql-core does (about 0.2 ms
+  per row of five fields, against 0.01 ms). With no type registered for the
+  view or the field's type, the resolver can't run, and a warning says so.
+
+- **A nested-array `where` filters the elements.** A list field declared with
+  `fraise_field(supports_where_filtering=True)` returned every element for
+  `devices(where: {status: {eq: "active"}})`: graphql-core passes the argument to
+  its resolver as a dict, and the resolver only read where objects, so a dict
+  matched everything. It now reads the dict (GraphQL or Python field names, `AND`
+  / `OR` / `NOT`, an enum field compared by its value). An operator the Python
+  filter lacks (the filter types also offer `ilike`, `matches`...) is a GraphQL
+  error naming the supported ones; it used to match every element. Through
+  `db.find` / `db.find_one` (over HTTP) the resolver didn't run at all, since
+  the rows Rust builds skip it: a query that passes such a field a `where` now
+  gets typed rows, as for a field resolver; without a `where` the rows still go
+  out as Rust bytes.
+- **A `resolve_nested=True` field is read from its type's view.** The docs'
+  `department: Department | None` with `department_id` on the row was left out
+  of a `db.find` response: Rust skipped its resolver, and the resolver called
+  `db.find_one(view, id=...)`, which raises for a bare filter (the error was
+  logged as a warning). `find` now returns typed rows when the query selects
+  such a field, and the resolver reads the row whose `id` is the parent's
+  `<field>_id` (and whose `tenant_id` is the context's, when it has one).
+
+- **`db.aggregate()` with more than one expression runs.** It wrote the
+  expressions one after the other without commas
+  (`SELECT SUM(amount) AS totalCOUNT(*) AS n`), a syntax error. They are now
+  comma-separated, and each result name is quoted, so it comes back as written.
+
+- **`db.sum`, `avg`, `min`, `max`, `distinct` and `pluck` apply `where` and
+  `mandatory_filters`.** They built the condition but ran the query without its
+  values, so any filter failed with a syntax error at the `%s` placeholder.
+
+- **`db.count(where=...)`, and the other read helpers' `where`, work on a view
+  no type is registered for.** On an `id` + `data` view they filtered
+  `"status" = ...` as if every field were a column, so they failed unless a
+  `@fraiseql.type` named the view. `count`, `exists`, `sum`, `avg`, `min`,
+  `max`, `distinct`, `pluck` and `aggregate` now read the columns of an
+  unregistered view from the catalog (once per repository, only when a `where`
+  needs them); when it has a `jsonb` `data` column, a field that isn't a column
+  is looked up in `data`, as on a registered view.
+
+- **`db.sum`, `avg`, `min`, `max`, `distinct` and `pluck` read a field that
+  lives in a view's JSONB column.** They read the column named after the
+  field, so on an `id` + `data` view they failed with `column "amount" does
+  not exist`. A field that isn't a column of the view is now read from its
+  JSONB column (the registered one, or `data` on an unregistered view):
+  `sum`/`avg` as `(data ->> 'amount')::numeric`; `min`/`max` return the
+  smallest/largest JSON value in jsonb order, leaving out JSON nulls;
+  `distinct` and `pluck` return the JSON values. A column is read as before.
+
+- **`query_timeout` applies to every read.** It was the statement timeout of
+  `db.run()` and `execute_function` only, so a slow `find`, `find_one`,
+  `count`, `sum`... ran unbounded. They now set `statement_timeout`
+  (transaction-local) before the query: in the same statement as the session
+  variables when the context has some, otherwise as one `set_config` call
+  before the read. `query_timeout=0` sets none.
+
+- **The loaders of `fraiseql.optimization` (`UserLoader`, `ProjectLoader`,
+  `TasksByProjectLoader`, `GenericForeignKeyLoader`) load.** They called
+  `db.fetch_all`, which the repository doesn't have, so every `load` failed.
+  They now run one query per batch through `db.run`. `UserLoader`,
+  `ProjectLoader` and `TasksByProjectLoader` take a `table=` (default `users`,
+  `projects`, `tasks`; a schema-qualified name works).
+
+- **An app's lifespan can run more than once.** On shutdown it closed its
+  database pool but left it set as the global pool, and the next startup (a
+  second `with TestClient(app)`, say) kept that closed pool, so every query
+  failed with "the pool is already closed". Shutdown now unsets the pool it
+  opened (when it is still the global one), the next startup opens a new one,
+  and a closed pool found at startup is replaced. The pool and the auth
+  provider are also closed when startup or the app's own lifespan raises.
+  `set_db_pool(None)` unsets the pool.
+
+- **The view `fraiseql generate migration` writes has `id` in `data`.** `find`
+  reads a type's fields from the view's `data` column, and the generated view
+  passed the table's `data` through, which has no `id` (nor `created_at` /
+  `updated_at`), so a type's `id: ID` came back null. The view's `data` is now
+  `data || jsonb_build_object('id', id, 'created_at', created_at, 'updated_at',
+  updated_at)`. The functions `generate crud` writes still add `id` to the
+  entity they return themselves: they return the table's row, which the view's
+  `data` doesn't reach (a deleted row isn't in the view).
+- **On Python 3.14, a decorator over `@fraiseql.field` no longer drops the
+  field.** 3.14's `functools.wraps` copies `__annotate__` instead of
+  `__annotations__`, so a wrapper around a function whose annotations were
+  assigned (`@fraiseql.field`, `@fraiseql.dataloader_field`, `@fraiseql.connection`,
+  the mutation resolvers) reported none: `@requires_auth` over `@fraiseql.field`
+  left the field out of the schema. Every fraiseql wrapper now uses
+  `fraiseql.utils.annotations.wraps`, and the decorators that assign annotations
+  give them an `__annotate__` too, so a `functools.wraps` decorator from your own
+  code keeps them as well.
+
+- **`T | None` is read as optional `T` on Python 3.13 too.** Three places
+  unwrapped `Optional[T]` but not `T | None`, which are one type only on 3.14,
+  so they behaved differently on 3.13 and 3.14: `SQLHelper` (`fraiseql sql`)
+  wrote a `created_at: datetime | None` field as `created_at TEXT NOT NULL`
+  (3.14: `TIMESTAMP`, nullable) and `FieldMapping.is_compatible` rejected it;
+  `wrap_resolver` passed a dict argument annotated `Input | None` through
+  instead of building the input; and `where_generator.unwrap_type` returned
+  `T | None` unchanged.
+
+- **Type checkers see fraiseql's actual API.** The hand-written stubs they read
+  instead of the code had drifted: `fraiseql/__init__.pyi` lacked `connection`,
+  `Error`, `LTree`, `PaginatedResponse`, `MutationResultBase`,
+  `validate_mutation_return`, `DecisionCache`, `AuthorizationCacheConfig`,
+  `fraiseql_rs`, and declared `DateTime`, `IpAddress`, `MacAddress`, `Port` and
+  `Hostname`, which `fraiseql` doesn't export, and wrong signatures for
+  `build_fraiseql_schema`, `dataloader_field`, `create_connection`,
+  `CQRSRepository` and others. `cqrs/repository.pyi` described methods
+  `CQRSRepository` doesn't have (`find`, `stream`, `execute_function`, ...) and
+  hid twenty that it has (`create`, `update`, `paginate`, `query`, ...). The
+  `__init__.pyi` stub now re-exports every name from the module that defines it
+  (it still types `fraiseql.type`, `fraiseql.input` and `fraiseql_rs`, which the
+  package serves through `__getattr__`); `cqrs/repository.pyi` and
+  `mutations/error_config.pyi` are removed, so checkers read the annotated
+  modules. `@fraiseql.type`, `input`, `interface`, `success` and `error` declare
+  keyword-only construction (`kw_only_default=True`, as at runtime) and
+  `fraiseql.result` is marked `@deprecated` in the code itself. A test compares
+  each remaining stub's names with its module.
+
+- Tests: order-dependent and flaky tests are deterministic. Test modules left
+  queries in the schema registry (`meta_test_schema` and the nested-array `where`
+  tests didn't clear it), and the health, lifespan and CORS app tests didn't
+  clear the queries other modules register at import; under `-n 8` the workers
+  raced on one database (`CREATE EXTENSION` on a fresh database, the cascade
+  functions in `public`, and the audit and RBAC fixtures finding another class's
+  tables); three chaos tests drew their failures with an unseeded `random` or
+  timed `time.sleep` against a tight bound; and the memory-pressure chaos test
+  and the Rust auth provider timing tests held a single run of a sub-10ms
+  operation to a bound that one scheduler delay on a loaded machine exceeded.
+- **`PostgresCache` detects `pg_fraiseql_cache` before its first operation, whichever
+  it is, and `auto_initialize=False` works.** `register_cascade_rule`,
+  `clear_cascade_rules`, `setup_table_trigger` and `get_domain_versions` checked for the
+  extension before the cache had looked, so called first they skipped their work with
+  the extension installed; they now look first, and so does `ping()`.
+  `auto_initialize` had no effect: with `False` the first operation no longer creates
+  the table (call the new `initialize()`, or create it yourself). A schema-qualified
+  `table_name` (`"app.fraiseql_cache"`) no longer makes the table setup fail on the
+  index name. `register_cascade_rule` returns whether it registered the rule, and
+  `setup_auto_cascade_rules` counts only the registered rules (0 without the
+  extension, not the number of rules found).
+- **`CachedRepository` caches `find` / `find_one` results, and its writes invalidate
+  them.** The `RustResponseBytes` they return isn't JSON, so `PostgresCache` refused
+  it: every call read the database and counted a miss and an error. It is now stored
+  as its JSON text and a hit returns a `RustResponseBytes` with the same bytes. The
+  key covers the arguments and the GraphQL selection (fields, aliases, fragments,
+  variables), so queries selecting different fields of a view don't share
+  an entry. `find(view, field_name, info)` takes its arguments in the wrapped
+  repository's order: `field_name` went to `skip_cache`, so the documented
+  positional call never cached. `execute_function("fn_update_user", ...)`
+  invalidated `fraiseql:user:*`, which matched none of the keys
+  (`fraiseql:<tenant>:v_user:...`); it now invalidates the entity's views
+  (`user(s)`, `v_user(s)`, `tv_user(s)`, schema-qualified or not) for every tenant,
+  and the new `invalidate_view()` does it for one view.
+- **Error notifications are delivered, and logged.** The notification manager built
+  each channel with the rule's whole `channel_config` as keyword arguments, which
+  `SlackChannel` and `WebhookChannel` (no arguments) and `EmailChannel` (no `to`)
+  refuse, so every notification failed with a `TypeError`. A channel class now gets
+  only the keys its constructor takes, and `register_channel` also accepts an
+  instance. The tracker created a new `NotificationManager` for each error, so
+  channels registered on one were never used: `PostgreSQLErrorTracker` and
+  `init_error_tracker` take `notification_manager=`, and keep a reference to the
+  background task. `schema.sql` created no partition for `tb_error_notification_log`,
+  `otel_traces` or `otel_metrics` (only `tb_error_occurrence` had some), so every
+  write to them failed; it now creates them for the current and next two months,
+  and the new `ensure_monitoring_partitions(months_ahead)` creates them for all four
+  tables (run it monthly). Their partitions are monthly (the comments of
+  `otel_traces` and `otel_metrics` said daily).
+- **`fraiseql.tracing` works with the `tracing` extra.** It imported the Jaeger
+  exporter with everything else, and the extra doesn't install it (its last
+  release, 1.21, needs `protobuf<5`), so `OPENTELEMETRY_AVAILABLE` was False and
+  `setup_tracing` created no span. Each exporter and the psycopg instrumentation
+  are now optional on their own; `setup_tracing` opens a span per HTTP request.
+  `export_format="jaeger"` without the exporter raises an `ImportError` that points
+  to OTLP (Jaeger accepts it), and so does a missing Zipkin exporter instead of
+  silently exporting nothing. New `export_format="console"`. The request span is the
+  child of an incoming `traceparent` (the middleware attached the extracted context
+  without ever detaching it), and the OTLP exporter gets `export_timeout_ms` in
+  seconds, as it expects (30000 ms meant 30000 s).
+- **The Grafana dashboards in `grafana/` query tables and metrics that exist.** They
+  read `monitoring.errors`, `monitoring.traces` and other tables nothing creates. Error
+  monitoring now reads `tb_error_log` / `tb_error_occurrence` (and the notification
+  log); the database dashboard reads PostgreSQL's `pg_stat_activity`,
+  `pg_stat_database`, `pg_stat_user_tables` and `v_query_stats`; the APQ dashboard
+  (now "FraiseQL APQ Storage") reads the PostgreSQL APQ backend's `apq_queries` /
+  `apq_responses`; performance metrics uses the Prometheus metrics `setup_metrics`
+  exports (`fraiseql_http_requests_total`, `fraiseql_http_request_duration_seconds`,
+  `fraiseql_response_time_seconds`, `fraiseql_errors_total`). Panels with no data
+  source (APQ hit rates, history of pool sizes) are gone, and so is
+  `cache_hit_rate.json`: nothing records cache hits. Every panel takes a `datasource`
+  variable; `import_dashboards.sh` no longer stops after the first import (`set -e`
+  and `((count++))`). A test runs each SQL query against `schema.sql`, and another
+  checks each PromQL expression's metrics and labels against the exported ones.
+- **`find()` on a view without a registered type no longer logs an error.** It looked
+  up the view's type on each call and logged `Type registry state: {...}` (the whole
+  registry) at ERROR level when there was none, which is a normal case. That lookup
+  now logs `No type registered for view ...` at DEBUG.
+- **The error tracker and its notifications work on the app's own pool.** The pool
+  `create_fraiseql_app` creates loads timestamps as raw text (a `memoryview`), so
+  `get_error`, `get_unresolved_errors` and every notification failed on
+  `.isoformat()`. PostgreSQL now returns `first_seen`, `last_seen` and `resolved_at`
+  as ISO 8601 text, whatever the pool's loaders.
+- **`AuditLogger` records an event's time in UTC whatever the session's time zone.**
+  It sent `datetime.utcnow()` as a string without an offset, which PostgreSQL reads
+  in the connection's `TimeZone`, so on a non-UTC session the stored `timestamp` was
+  off by that zone's offset. It now sends an aware UTC time.
+- **Inserts into the enterprise `audit_events` table work.**
+  `enterprise/migrations/001_audit_tables.sql` installed a `BEFORE INSERT` trigger
+  that created a monthly partition of `audit_events`, which isn't a partitioned
+  table, so every insert failed with `cannot CREATE TABLE .. PARTITION OF`. The
+  trigger and its `create_audit_partition()` function are gone, and running the file
+  again drops them from an existing database. `docs/enterprise/audit-logging.md`
+  says how to partition the table yourself.
+- **`verify_audit_chain()` checks each tenant's chain on its own.** The insert trigger
+  links each event to the latest event of the same tenant, but the function walked
+  every tenant's events as one chain, so with two tenants valid events were reported
+  invalid, and so were the first events of a range given a `start_timestamp`. It now
+  walks each tenant's events in time order, starting a range from the tenant's event
+  before it, and returns a new `tenant_id` column (in `001_audit_tables.sql`; run the
+  file again to replace the function). `002_unified_audit.sql`'s
+  `verify_audit_chain(p_tenant_id, ...)` gets the same fix.
+- **`AND` and `OR` of a generated `WhereInput` have their descriptions in the
+  schema.** The generator replaced both fields with self-referencing ones after the
+  descriptions were applied, and dropped them; only `NOT` kept its description. They
+  now read "Logical AND - all conditions in the list must be true" and "Logical OR -
+  at least one condition in the list must be true".
+- **The native auth router no longer has a built-in signing key.** Without the
+  `JWT_SECRET_KEY` environment variable, its endpoints signed and accepted tokens
+  with a fixed key published in the source, so a deployment that relied on the
+  provider's `secret_key` accepted tokens anyone could make. **Upgrade if you
+  mount `get_native_auth_router()`.** The router now signs and verifies with the
+  `NativeAuthProvider`'s token manager, and reads users from its pool and schema,
+  so the router and `/graphql` share one key: pass the provider
+  (`get_native_auth_router(auth_provider)`), or give it to
+  `create_fraiseql_app(auth=...)` first. Without a provider it uses
+  `JWT_SECRET_KEY`; with neither, `get_native_auth_router()` raises `ValueError`
+  at startup, and the bare `router.auth_router` answers 500 wherever it would sign
+  or check a token. `TokenManager` refuses an empty `secret_key`. The router's
+  schema is the provider's (it was `public`, whatever the provider's `schema`).
+- **`apply_native_auth_schema()` creates the native auth tables.** It read
+  `fraiseql/auth/native/migrations/001_native_auth_schema.sql`, which didn't exist,
+  and raised `FileNotFoundError`. The file is now in the package (and the wheel): it
+  creates `tb_user`, `tb_session`, `tb_used_refresh_token` and `tb_password_reset`
+  with `IF NOT EXISTS`, so it can be applied at every startup. It now runs in one
+  transaction with `SET LOCAL search_path`, so the pooled connection no longer keeps
+  the schema in its `search_path` afterwards.
+- **The native auth router's endpoints get a connection from a psycopg pool.** They
+  called `app.state.db_pool.acquire()`, which `AsyncConnectionPool` doesn't have, so
+  `POST /auth/register`, `/auth/login` and every other endpoint answered 500. They
+  now use `pool.connection()`, on `app.state.db_pool` or else on the pool
+  `create_fraiseql_app` opens (503 when there is none).
+- **The RBAC system roles inherit from the less privileged ones.**
+  `002_rbac_tables.sql` seeded `viewer` with `user` as its parent, `user` with
+  `manager`, and so on up to `super_admin`; since a role inherits its parent's
+  permissions, `viewer` had every permission granted to `admin` and `super_admin`.
+  The seed is now `super_admin` → `admin` → `manager` → `user` → `viewer` (each
+  role's parent first), so `admin` inherits `viewer`'s permissions and not the
+  reverse. **Apply the file again** to fix an existing database: it rewires the five
+  system roles when they still have exactly the old seed, and leaves a hierarchy you
+  changed alone (check it then).
+- **`RoleHierarchy.get_role_descendants(role_id)` returns the roles that inherit
+  from the role.** It looked for each role among its own ancestors, so it always
+  returned `[]`.
+- **`PermissionResolver(repo)` works without a `cache` argument.** It built its
+  default `PermissionCache` from `repo.pool`, which `FraiseQLRepository` doesn't have,
+  so it raised `AttributeError` (and so did `RbacMiddleware` and the RBAC directives,
+  which build one that way). It now uses `repo.get_pool()`.
+- **Permissions cached in PostgreSQL are read back.** `PermissionCache` stored them
+  without `created_at`, so reading the `fraiseql_cache` row (from another resolver,
+  request or process) failed with a pydantic `ValidationError`. Every field is now
+  stored, and a row that doesn't validate (such as one an earlier version wrote) is a
+  cache miss: the permissions are computed again and the row replaced.
+- **The in-memory layer of `PermissionCache` expires.** Nothing cleared it outside
+  the Strawberry `RbacMiddleware`, so a `PermissionResolver` kept for the app's
+  lifetime answered each user with the permissions it first computed: a role or
+  permission taken away from a user kept working in that process until it
+  restarted, whatever the `fraiseql_cache` table or its version triggers said. (It
+  is keyed by user and tenant: one user never got another's permissions.) An
+  entry now answers for `request_cache_ttl` (new `PermissionCache` argument,
+  default 1 second, `timedelta(0)` turns the layer off), then the next call reads
+  PostgreSQL again; expired entries are dropped.
+- **`PermissionResolver.get_role_permissions(role_id)` returns the role's
+  permissions.** Its query had a positional `%s` placeholder with named parameters,
+  so it raised `TypeError: positional placeholders (%s) require a sequence of
+  parameters`.
+- **`004_rbac_row_level_security.sql` applies to any database with the RBAC
+  tables.** It created policies on `users`, `orders` and `products` unconditionally,
+  so it failed with `relation "users" does not exist` unless all three existed. It
+  now creates `user_has_role()` and `user_has_permission()` first, and applies each
+  table's example policies only if that table exists (a `NOTICE` names the ones
+  skipped); run it again after creating a table.
+- **A type's fields whose name starts with `_` are not in the GraphQL schema.** An
+  annotated `_email: str | None` became a field `Email` of the object type (and of
+  input and interface types), so a value kept there for a resolver guarded by
+  `@authorize_field` could be read by selecting `Email`, without the check. The
+  `where` and `orderBy` inputs already left such fields out; the object, input and
+  interface types now do too. They stay constructor arguments and attributes, and
+  `fraise_field(graphql_name=...)` still exposes one under that name. **A client
+  selecting such a field (`Email`) now gets a validation error.**
+
+## [1.30.0] - 2026-10-22
+
+### Added
+
+- **A `Decimal` scalar for `decimal.Decimal`** (#575). A `decimal.Decimal`
+  field failed the schema build (`Unsupported output type`) as an output field,
+  an input field or an argument, and so did every where input of a type with a
+  `Decimal` field (`DecimalFilter`). It now maps to the `Decimal` scalar,
+  serialized as a string (`"12.30"`, every digit kept) and parsed to
+  `decimal.Decimal` from a string, an int or a number literal.
+
+  A `Decimal` input field reaches your SQL function as a JSON string; read it
+  with `(input->>'price')::numeric`. In HTTP mode the Rust pipeline parses JSONB
+  numbers as 64-bit floats, so emit the column as text in your view
+  (`'price', price::text`) to keep every digit; a JSONB number keeps about 17
+  significant digits and reaches the client as a number.
+
+- **`requires_any_role` and `requires_any_permission` are exported from
+  `fraiseql.auth` and `fraiseql`** (#577). They were importable only from
+  `fraiseql.auth.decorators`, so the documented
+  `from fraiseql.auth import requires_any_role` failed with `ImportError`.
+  `requires_role` and `requires_permission` take one role or permission; use
+  these for "any of":
+
+  ```python
+  from fraiseql.auth import requires_any_role
+
+  @requires_any_role("owner", "admin")
+  async def delete_project(info, project_id: UUID) -> Project: ...
+  ```
+
+### Changed
+
+- **The schema build rejects class mutations with members fraiseql doesn't
+  read** (#576, #587). A class mutation reads only `input:`, `success:`,
+  `error:` and `prepare_input`. Anything else was ignored without a word:
+  `failure:` or `noop:` left the error type unreachable (the field returned the
+  success type alone), and an `async def resolve()` method never ran. The build
+  now raises one `TypeError` listing every faulty mutation:
+
+  ```text
+  Invalid class mutations:
+  - Mutation CreateThing has `failure`, which fraiseql doesn't read: a class mutation reads only `input:`, `success:`, `error:` and `prepare_input`. For the error type, use `error:`.
+  ```
+
+  Members inherited from base classes and mixins count, and names starting
+  with `_` (private helpers) are allowed. To upgrade: rename `failure:` (or
+  `errors:`) to `error:`; remove `noop:` (a `noop:*` status already returns the
+  error type); move the code of a `resolve()` method into a function mutation,
+  `@fraiseql.mutation async def create_thing(info, input: CreateThingInput) -> CreateThingSuccess | CreateThingError`.
+
+- **A mutation response holds only what the query selected, under its response
+  keys** (#581, #573). In HTTP mode the response Rust builds goes to the client as
+  is, and it didn't apply GraphQL selections faithfully. Now:
+  - every alias is kept: on the mutation field (`m: createUser`), on fields of the
+    success and error types (`msg: message`), and in the entity (`other: owner { id }`);
+    one field under two aliases gets each its own sub-selection;
+  - lists are filtered element by element at any depth (`tags { id }` returned
+    every key of every tag);
+  - with no fields selected on the success type (`{ __typename }`, or only a
+    fragment on the error type), the result is `{"__typename": ...}` alone. It
+    was the whole entity, every key of its JSONB included;
+  - under a field typed as an interface or union, an object keeps the fields of
+    the fragments on its own type, picked by its `__typename` (`... on Person
+    { name } ... on Org { title }` gave a `Person` its `title` too). The view must
+    emit `__typename` in the nested JSONB; without it, the fields of every
+    fragment are kept, as before;
+  - the error type's `code` appears only when selected; it was always written.
+
+  Objects keep their `__typename` whether or not it is selected, as before.
+  Outside HTTP mode graphql-core already applied the selection; it now receives
+  the same filtered data.
+
+  `fraiseql._fraiseql_rs.build_mutation_response` takes a selection document
+  (format 2) in `entity_selections` and raises `ValueError` without one; its
+  `success_type_fields` and `error_type_fields` arguments are ignored. The
+  extension exports `MUTATION_SELECTION_FORMAT`, and fraiseql refuses an
+  extension built for another format (a stale build in a development checkout)
+  with a `RuntimeError` asking to rebuild it. `execute_mutation_rust` takes
+  `selections=` in place of `success_type_fields=`, `error_type_fields=` and
+  `entity_selections=`; without it, the response is unfiltered.
+
+- **The Rust extension no longer exports `Arena` or `test_snake_to_camel`**
+  (#579). They were test helpers registered in the production module. The
+  zero-copy response path (used when there is no schema registry or type name)
+  converts keys into a buffer it reuses instead of a bump arena, which also
+  removes the arena's `unsafe` code. Its `core_benchmark` transforms run 8 to
+  14% faster.
+
+### Removed
+
+- **Unused Rust modules** (#580): `db::query`, `db::where_builder`,
+  `security::{config, csrf, validators}` and `response`. Nothing called them, and
+  none was reachable from Python.
+
+### Fixed
+
+- **`SchemaRegistry.clear()` now clears registered scalars** (#589). It left
+  them in place, so a schema built after `clear()` (or after
+  `fraiseql.testing.clear_fraiseql_state()`) still held every scalar registered
+  before it, and a later type with the same name, such as an enum called `Color`,
+  failed with `Schema must contain uniquely named types`. Types registered after
+  `clear()` register the scalars they use again, as they do on first
+  registration. A scalar you registered by hand with `register_scalar()` must be
+  registered again after `clear()`.
+
+- **The type stub declared an `optional=` keyword on `requires_auth`,
+  `requires_role` and `requires_permission`** that they don't accept (#577).
+  `fraiseql/__init__.pyi` now matches the runtime signatures, so a type checker
+  flags `requires_role("admin", optional=True)`, which fails at runtime.
+
+- **A class mutation without `input:` failed with an error naming neither the
+  mutation nor the annotation** (#576): `Invalid type passed to
+  convert_type_to_graphql_input: <class 'NoneType'>`. The schema build now says
+  `Mutation ClearCart has no `input:` annotation` and points to function
+  mutations for mutations without arguments. A class with neither `success:` nor
+  `error:` gets a similar message instead of `Unsupported output type`.
+
+- **Number filters on JSONB fields compared text** (#575). A filter such as
+  `where: {quantity: {gt: 9}}` on a field of the JSONB data compared
+  `data->>'quantity'` with the text `'9'`: `10` didn't match (as text,
+  `'10' < '9'`), and `{price: {eq: 10.5}}` missed `10.50`. A number is now
+  compared as `numeric`, `(data->>'quantity')::numeric > 9`, for `eq`, `neq`,
+  `gt`, `gte`, `lt`, `lte`, `in` and `nin`. If the field holds something that
+  isn't a number in a row the filter reaches, PostgreSQL now raises
+  `invalid input syntax for type numeric` instead of comparing text. Strings and
+  booleans are compared as before.
+
+- **On CPUs without AVX2 (ARM64 included), the zero-copy path upper-cased the
+  letter after a digit that follows an underscore** (#579): `a_1b` became `a1B`.
+  It is now `a1b` everywhere, as with AVX2 and in the other camelCase paths.
+
+- **The query plan cache shared one plan between queries that differ only in an
+  argument value, and a cache hit returned no parameters** (#580).
+  `RustQueryBuilder.build_cached` (`build_sql_query_cached`) keyed plans by
+  argument names, so `users(where: {email: {eq: "a@x"}})` and `... "b@x"}}` got
+  the first one's SQL, with an empty parameter list. Plans are now keyed by
+  argument values too and keep their parameters.
+
+- **A mutation result returned as plain JSON with status `new`, `completed`, `ok`
+  or `validation:*` was read as an entity** (#580). Format detection didn't know
+  these statuses (`new` is what `mutation_created()` returns), so the whole
+  object became the entity of a success. Results of the 8-field
+  `mutation_response` type were not affected.
+
+- **An error status with an empty reason (`failed:`) gave an empty `identifier`
+  in the `errors` array** (#580); it is `general_error`, as for `failed`.
+
+- **The opt-in `/graphql/rust` endpoint's complexity limit truncated the depth
+  multiplier** (#580): a field at depth 1 cost 1 × its cost instead of 1.5 ×. A
+  fractional cost now rounds up. Fragment cycles are reported as a closed path
+  (`FragA -> FragB -> FragA`), the same one on every run.
+
+- **`Auth0ProviderWithRevocation` validates tokens.** Its `validate_token`
+  recursed until `RecursionError` on every call, so an app using it
+  authenticated no one: `super().validate_token` resolves to the revocation
+  mixin's own method, which called back into it. It now runs Auth0's validation,
+  then rejects a revoked token with `InvalidTokenError`. The class docstring
+  showed `RedisRevocationStore`, which fraiseql doesn't have; it shows
+  `PostgreSQLRevocationStore`.
+
+- **Auth decorators work when a query has several root fields.** A query
+  selecting two or more root fields (`{ me { id } projects { id } }`) runs on
+  fraiseql's multi-field path, which passes each resolver its own resolve info
+  rather than graphql-core's `GraphQLResolveInfo`. `requires_auth`,
+  `requires_role`, `requires_permission`, `requires_any_role` and
+  `requires_any_permission` checked the class and answered every decorated field
+  in such a query with "First argument must be GraphQLResolveInfo", although
+  each field queried alone worked. They now accept either; the checks they make
+  on the user are unchanged.
+
+- **ltree depth filters render valid SQL.** `nlevel`, `nlevel_eq`, `nlevel_neq`,
+  `nlevel_gt`, `nlevel_gte`, `nlevel_lt`, `nlevel_lte` and their `depth_*` aliases
+  (GraphQL `depthGt`, `nlevelLte`, ...) failed with a PostgreSQL syntax error on a
+  `db.find` where, on an `ltree` column and on a JSONB field alike: `depth_gt`
+  rendered `"path" depth > %s` and `nlevel_gt` rendered `"path" nlevel({}) > %s`.
+  They now render `nlevel(path) > %s`, with the JSONB value cast to `ltree`.
+
+- **`order_by` works on a view without a JSONB column.** For a type declared
+  with `jsonb_column=None` (or a view registered with `has_jsonb_data=False`),
+  `db.find(..., order_by=...)` and GraphQL `orderBy` sorted on `t -> 'field'`, a
+  JSONB extraction from the row itself, and failed with `operator does not exist:
+  <view> -> unknown` unless the field was listed in `column_mapping` or
+  `native_dimensions`. Top-level sort fields on such a view now sort on the
+  column, `t."field"`. A `column_mapping={"field": "field"}` added as a
+  workaround still works and can be removed.
+
+- **An operation with several mutations answers each of them.** In HTTP mode
+  `mutation { a: createTag(...) {...} b: createTag(...) {...} }` ran both
+  mutations but returned one result, the last, under the field's name rather
+  than its alias: fraiseql passed the response Rust built for one field through
+  as the whole HTTP body. The fields' results are now merged into one response,
+  each under its response key, with the errors of any field that failed. An
+  operation with one root field still gets Rust's response as is.
+
+- **A list query's automatic `where`, `orderBy`, `limit` and `offset` arguments
+  apply even when the resolver doesn't declare them.** fraiseql adds them to every
+  query returning `list[T]`, and the docs show
+  `async def users(info) -> list[User]: return await db.find("v_user", info=info)`
+  using them. But a resolver only receives the arguments it declares, so for one
+  like this a client's filter, sort and page were silently dropped and it got
+  every row. Now the values the resolver doesn't take are applied by `db.find` on
+  `T`'s `sql_source` view in that resolver, with or without `info=`. Arguments
+  the resolver declares are its own, as before, and a `where=`/`order_by=`/
+  `limit=`/`offset=` the resolver passes to `db.find` itself wins over the
+  client's. For a `T` without `sql_source` there is no view to apply them to:
+  fraiseql logs a warning at schema build naming the query, and a client's value
+  is still ignored. `Connection[T]` queries are unchanged.
+
+## [1.29.1] - 2026-10-19
+
+### Fixed
+
+- **The mutation naming warnings promised renames in a 2.0.0 release.** That
+  version exists on PyPI: fraiseql 2.x is the separate FraiseQL v2 project, so
+  there is no 1.x major release to rename in. fraiseql 1.x keeps the names it
+  has. The `FutureWarning` now lists each mutation still named after its
+  `function=` or success type with its preferred name, and promises no rename:
+
+  ```text
+  These mutations are named by fraiseql's legacy rule (a field after its function=, a result union after its success type):
+    field 'fnCreatePost' (preferred: 'createPost')
+    result union 'PostResult' (preferred: 'UpdatePostTitleResult')
+  fraiseql 1.x keeps these names. To choose a name and silence this warning, pass name="..." (field) or result_name="..." (union) to @mutation.
+  ```
+
+  `fraiseql.result()` stays deprecated, with no removal version. The docs, the
+  decorator docstrings and the 1.29.0 notes below are corrected the same way.
+  A `warnings.filterwarnings(message="These mutation names will change")` written
+  for 1.29.0 no longer matches; filter on the new text, or on `FutureWarning`
+  and your module. Filters on the category or module alone are unaffected.
+
+## [1.29.0] - 2026-10-18
+
+Corrected in 1.29.1: these notes first said the legacy names would change in a
+2.0.0 release. fraiseql 2.x is the separate FraiseQL v2 project; 1.x keeps the
+names.
+
+### Upgrading
+
+- **Mutation names.** A class mutation is named after its class
+  (`CreatePost` -> `createPost`), and its result union after its field
+  (`updatePostTitle` -> `UpdatePostTitleResult`). fraiseql 1.x keeps the
+  current names of a mutation that works today, so nothing is renamed by
+  upgrading. Where a name comes from the legacy rule (`function="fn_create_post"`,
+  or a union named after its success type such as `PostResult`), the schema
+  build emits one `FutureWarning` listing each one with its preferred name (the
+  1.29.1 wording is shown under 1.29.1 above).
+
+  Pass `name=` / `result_name=` with the current name to keep it, or with the
+  preferred one to switch; either removes the mutation from the warning. The
+  warning points at your `build_fraiseql_schema()` / `create_fraiseql_app()`
+  call, so it can be filtered by module.
+- **Mutations that clashed** (two classes sharing `function=`, or two mutations
+  sharing a success type) used to lose a field or fail the build. They get the
+  preferred names straight away, with no warning.
+- **`fraiseql.result()`** is deprecated; annotate `Success | Error` instead.
+- **Rust-built mutation responses are stricter.** Nested entities under an
+  interface or union field are filtered to the fields their fragments select,
+  and `"__typename": "Entity"` becomes the real type name or is left out. See
+  Fixed below.
+
+### Added
+
+- **`@mutation(name=...)` sets a mutation's GraphQL field name.** The name is
+  used as given. It works on class and function mutations.
+- **`@mutation(result_name=...)` sets the name of a mutation's result union.**
+  An auto-discovered mutation takes `result_name:` in its `@fraiseql:mutation`
+  comment.
+
+### Fixed
+
+- **Two class mutations with the same `function=` left one field.** The field
+  was named after the SQL function, so `CreateThing` and `CreateThingEnriched`,
+  both with `function="create_thing"`, gave one `createThing` field served by
+  whichever class was registered last. Each class now gets its own field, named
+  after the class (`createThing`, `createThingEnriched`), and both call the
+  shared function. Two mutations that end up with the same field name make the
+  schema build raise a `ValueError` naming both.
+- **Two mutations sharing a success type failed the schema build.** The result
+  union was named after the success type, so both got `CreateThingResult` and
+  graphql-core raised `Schema must contain uniquely named types but contains
+  multiple types named 'CreateThingResult'`. Each mutation now gets its own union,
+  named after its field (`CreateThingResult`, `CreateThingAgainResult`), with the
+  same or different error types. Two mutations with the same union name make the
+  schema build raise a `ValueError` naming both. A success type shared by a
+  cascade mutation and a non-cascade one shows the `cascade` field on both
+  (`null` on the latter).
+- **A function mutation could replace a class mutation calling a function of
+  the same name, or the other way round.** A function `create_thing` and a class
+  `MakeThing` with `function="create_thing"` shared a registry entry, so the one
+  registered last was the only one in the schema. Both are kept now:
+  `createThing` (the function) and `makeThing` (the class).
+- **A schema with auto-discovered mutations failed to build.** The input class
+  generated for a discovered function was a plain class, so the build raised
+  `Invalid type passed to convert_type_to_graphql_input`. This hit both kinds of
+  function: plain `p_` parameters and an `input_payload JSONB` described by a
+  composite type. The class is now made an input type the way `@fraiseql.input`
+  does it, and descriptions from the composite type's column comments reach the
+  schema.
+- **A mutation entity behind an interface got the interface's name as its
+  `__typename`.** For a nested field typed as an interface (`owner: Node`), the
+  Rust pipeline filled `__typename` from the schema, so the response said
+  `"__typename": "Node"`, which is not a type an object can have. It now comes only
+  from the data. Responses from the Rust pipeline keep including `__typename` on
+  objects of a known type even when it was not selected; this is now documented
+  as deliberate (see "Python ↔ Rust Integration").
+- **A mutation entity selected through a named fragment came back empty.**
+  `location { ...LocationFields }` returned only `__typename`, and a fragment
+  spread inside `... on XSuccess` dropped the entity. The spread's name was read
+  as a field name. Spreads are now expanded.
+- **Fields selected through fragments under a nested interface or union field
+  were ignored.** With `owner { ... on Person { name } }` in a mutation entity,
+  the nested object came back with every column of its view, so a mutation could
+  return fields nobody selected; with `owner { id ... on Person { name } }`,
+  `name` was dropped. They are now selected, and `owner { __typename }` returns
+  only `__typename`. Responses get stricter: a client that read an unselected
+  field there no longer gets it. Until per-type filtering lands, each object keeps
+  the fields of every fragment under that field.
+- **A mutation entity whose SQL function returned no `entity_type` was given
+  `"__typename": "Entity"`**, a type not in the schema. It is now named after the
+  success type's entity field (`Location`), or left without `__typename` when that
+  field is an interface or union and the data has none; a warning names the SQL
+  function, once. The 8-field `mutation_response` path now uses the type Python
+  passes, which it used to drop. Response bytes change: a client that keyed on
+  `"Entity"` gets the real type name, or no `__typename`.
+
+### Deprecated
+
+- **Mutation field names taken from `function=`.** A class mutation is named
+  after its class: `CreatePost` -> `createPost`. In fraiseql 1.x, one whose
+  `function=` differs (`fn_create_post`) keeps the name it has today
+  (`fnCreatePost`), and the schema build emits one `FutureWarning` listing every
+  such field. Pass `name=` to keep the current name or switch to the preferred
+  one. For an auto-discovered mutation, the preferred name is the `name:` in
+  its `@fraiseql:mutation` comment, which was ignored until now.
+- **Result union names taken from the success type.** A mutation's union is
+  named after its field: `updatePostTitle` -> `UpdatePostTitleResult`. In
+  fraiseql 1.x, a working mutation whose union was named after its success type
+  (`PostSuccess` -> `PostResult`) keeps that name and is listed in the same
+  `FutureWarning`. Pass `result_name=` to keep the current name or switch to the
+  preferred one. The warning is reported at your `build_fraiseql_schema()` or
+  `create_fraiseql_app()` call, not inside fraiseql, so you can filter it by
+  module.
+- **`fraiseql.result()`.** It emits a `DeprecationWarning` and keeps working in
+  fraiseql 1.x. Annotate `Success | Error` instead. Its type stub now has the
+  real signature, `result(success_cls, error_cls)`, and is marked `@deprecated`,
+  so type checkers flag calls too.
+
+### Removed
+
+- **Examples `compliance-demo`, `multi-tenant-saas`, `ecommerce_api`, `admin-panel`
+  and `real_time_chat`.** They were written against APIs fraiseql doesn't have.
+  `blog_api` and `context_parameters` build on the current API;
+  `saas-starter` and `ecommerce` are being fixed (#565). For subscriptions, see
+  `websocket_fastapi.py`.
+
+## [1.28.0] - 2026-10-17
+
+### Added
+
+- **A mutation's `prepare_input` hook can be `async`, and can take `info`** (#557).
+  An async hook is awaited, so it can enrich the input with I/O (an outbound
+  HTTP call, say) before the PostgreSQL function runs. A hook that takes a
+  second positional parameter receives the resolver's `info`, so a client can
+  come from `info.context`. The hook runs before a pool connection is
+  acquired. Existing one-argument sync hooks behave as before.
+
+### Fixed
+
+- **`fraise_field` fields failed in modules using `from __future__ import
+  annotations`.** There every annotation is a string, and a field assigned
+  `fraise_field(...)` -- such as `items: list[Item] = fraise_field(default_factory=list)`
+  -- took the string as its type, so building the schema raised `Unsupported
+  output type: list[Item]`. Plain annotations and `Annotated[..., fraise_field()]`
+  were not affected. Annotations are now resolved first, for `@fraiseql.type`,
+  `@fraiseql.input`, `@fraiseql.interface` and the mutation result types.
+- **A query with several root fields lost a field that used a named fragment
+  spread.** `query { products { ...ProductFields } productsCount }` returned
+  `products: []` with `Fragment 'ProductFields' not found` (#554). The
+  multi-field path built each resolver's `info` with no fragments, so
+  `db.find()` could not expand the spread. The resolvers now get the
+  document's fragments, the executed operation and a real `path`, and the
+  request's `operationName` selects the operation when the document holds
+  several.
+- **The error for an annotation naming an undefined type suggested a fix that
+  doesn't work.** It said to use `from __future__ import annotations`, but the
+  decorator resolves annotations as it runs, so that raises the same error.
+  It now says to define the type first at module level, or import it there.
+
+## [1.27.1] - 2026-10-17
+
+### Security
+
+- **Field-level authorization on the resolver-bypass paths lost arguments given
+  as variables, on graphql-core 3.3.** The Rust merge, passthrough,
+  TurboRouter, `POST /graphql/rust` and APQ-cache paths re-check
+  `authorize_fields` before serving data, passing each gated field's arguments
+  to the authorizer. graphql-core 3.3 (what `graphql-core>=3.2.12` resolves to)
+  changed `get_argument_values` to take a `VariableValues` instead of a dict,
+  so with any argument given as a variable the call raised and the arguments
+  became `{}`. A policy that denies on an argument value -- such as a `where`
+  filter on a gated list field -- then allowed the request, and two selections
+  that differed only in their variables were checked once. Variables are now
+  coerced against each operation's definitions first, as execution does, and
+  variables that don't coerce are rejected. graphql-core 3.2 was not affected.
+  Affects 1.23.6 through 1.27.0. (GHSA-f94w-r8x8-c3mx)
+
+### Fixed
+
+- `debug_graphql_info` raised `AttributeError` on graphql-core 3.3 when the
+  operation had variables. (#550)
+
+### Internal
+
+- CI installs from `uv.lock`, with ruff 0.17.1 and ty 0.0.89, and `pytest -n
+  auto` no longer fails tests that depend on what ran before them. (#550)
+
+## [1.27.0] - 2026-10-17
+
+### Added
+
+- **Python 3.14 support**, alongside 3.13 (`requires-python = ">=3.13,<3.15"`).
+  Each platform now gets cp313 and cp314 wheels, so 3.14 users don't need a
+  Rust toolchain, and CI runs the unit tests on both interpreters. confiture
+  supports 3.14 only from 1.30.0, which in turn requires 3.14, so the
+  `migrate` extra is split by interpreter: `fraiseql-confiture>=0.44.0,<1.30`
+  on 3.13 and `fraiseql-confiture>=1.30.0` on 3.14. (#546)
+- **`fraiseql migrate` runs `.up.sql` / `.down.sql` migrations**, alongside the
+  `.py` migrations `migrate create` writes, in one directory. (#548)
+
+### Fixed
+
+- **`fraiseql migrate` failed at import on a fresh 1.26.0 install.** 1.26.0
+  allowed any `fraiseql-confiture>=0.44.0`, and from confiture 1.16.0 the
+  migration loader it imported is private, so on 3.13 (which resolves
+  confiture 1.29.0) every `fraiseql` CLI command raised `ImportError: cannot
+  import name 'get_migration_class'`. `up`, `down` and `status` now go through
+  confiture's public `MigratorSession`, and nothing fraiseql imports from
+  confiture is private. confiture's contract tests now pin that surface, from
+  1.38.0. (#546, #548, fraiseql/confiture#737)
+- **A pending `.up.sql` migration crashed `migrate up` and `migrate down`,**
+  which loaded it as Python. `status` also listed only `.py` files. (#548)
+- **`migrate up` skipped confiture's safety checks**: the migration lock (two
+  concurrent runs could both apply a migration), checksum verification, and
+  the superuser, destructive and non-transactional gates. The session runs
+  all of them. (#548)
+- **A failed `migrate up` or `migrate down` exits non-zero** with confiture's
+  error message, printed once. (#548)
+- **On Python 3.14, `to_dict()` on an `@fraiseql.input` object returned `{}`**,
+  and mutations raised serializing input objects: both read
+  `__annotations__` from the instance, which PEP 749 no longer allows. (#546)
+
+### Changed
+
+- **Breaking: `fraiseql migrate` needs the new `migrate` extra.** confiture
+  moved from the runtime dependencies to `fraiseql[migrate]`, because since
+  confiture 1.16.0 it depends on [pglast](https://github.com/lelit/pglast),
+  which is GPL-3.0-or-later. Every 3.14 install would have pulled it in, as
+  fresh 3.13 installs of 1.26.0 already did. A plain `pip install "fraiseql<2"`
+  now installs no GPL code. If you use `fraiseql migrate`, install
+  `pip install "fraiseql[migrate]<2"`. Without the extra, `migrate up` and
+  `down` exit with that command, `status` prints it and lists the files, and
+  `init` and `create` work as before. `fraiseql[all]` and `fraiseql[dev]`
+  include the extra.
+- **`fraiseql migrate init` writes `database_url:`** in
+  `db/environments/local.yaml` instead of a `database:` mapping, since
+  confiture's `Environment` accepts only the URL. Existing files with a
+  `database:` mapping keep working: fraiseql converts the mapping to a URL with
+  the same defaults as before (localhost, 5432, user and database `postgres`,
+  empty password). (#548)
+- **`migrate up` / `migrate down` report what was applied or rolled back**
+  (`Applied <version>_<name>`, `Rolled back ...`, `Skipped ...`) after the run,
+  instead of printing before each step. (#548)
+- **Dependency floors raised.** Runtime: `graphql-core>=3.2.12` (fresh installs
+  get 3.3), `starlette>=1.6.0`, `uvicorn>=0.53.0`, `python-dateutil>=2.9.0.post0`.
+  Development: `langchain-core>=1.6.3`. (#545)
+
+### Security
+
+- **Floors raised past 41 advisories in 11 packages.** Runtime: `urllib3>=2.8.0`,
+  `pyjwt>=2.15.0` (also in the `auth0` extra), and `anyio>=4.14.2` through a
+  constraint. Extras: `werkzeug>=3.1.9`, `banks>=2.5.1`, `pypdf>=6.19.0`, and
+  constraints on `multidict`, `fsspec`, `tinytag` and `langgraph-sdk`.
+  Development: `virtualenv`. (#545)
+- **A pyjwt advisory has no fixed release.** PYSEC-2026-4146: `jwt.decode()`
+  mutates a caller-supplied `options` dict when `verify_signature` is falsy,
+  so a dict reused across calls carries the change into later decodes.
+  fraiseql's only unverified decode passes a fresh dict on every call, so the
+  dependency audit ignores the advisory until a fixed release exists. (#545)
+
+### Documentation
+
+- **The `fraiseql migrate` reference matches the CLI.** `docs/core/migrations.md`
+  documented options that never existed (`up --steps`, `up --dry-run`,
+  `down --force`, `init --path`) and `001_name.sql` files under `migrations/`.
+  It now documents the `db/` layout `init` creates, timestamped `.py` and
+  `.up.sql` migrations, and the real options.
+
+### Internal
+
+- `uv.lock` pins confiture 1.38.0 on 3.14, the first release whose contract
+  tests cover fraiseql, and 1.29.0 on 3.13, the release a fresh 3.13 install
+  resolves. It pinned 0.45.0 before, which is why CI missed the 1.26.0 import
+  failure.
+- Tests no longer mock graphql-core AST nodes with `MagicMock(spec=...)`,
+  which stopped working in graphql-core 3.3. (#545)
+- pre-commit pins `toml-sort==0.24.4`, so pre-commit.ci stops reformatting
+  `uv.lock`. (#545)
+- ruff 0.17 conventions: `import datetime as dt`, combined `async with`. (#545)
+
 ## [1.26.0] - 2026-09-15
 
 ### Fixed

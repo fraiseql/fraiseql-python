@@ -166,12 +166,12 @@ class TestLTreeHierarchicalOperators:
         assert result.as_string(None) == expected
 
     def test_ltree_matches_ltxtquery(self) -> None:
-        """Test ? operator (path matches ltxtquery text search)."""
-        # "top.science.physics" ? "science & physics" = true
+        """Test @ operator (path matches ltxtquery text search)."""
+        # "top.science.physics" @ "science & physics" = true
         result = self.strategy.build_sql(
             "matches_ltxtquery", "science & physics", self.path_sql, LTree
         )
-        expected = "(data->>'path')::ltree ? 'science & physics'::ltxtquery"
+        expected = "(data->>'path')::ltree @ 'science & physics'::ltxtquery"
         assert result.as_string(None) == expected
 
     def test_hierarchical_operators_complex_paths(self) -> None:
@@ -222,7 +222,7 @@ class TestLTreeHierarchicalDirectFunctions:
         path_sql = SQL("data->>'path'")
         result = build_matches_ltxtquery_sql(path_sql, "science & physics")
         sql_str = result.as_string(None)
-        assert sql_str == "(data->>'path')::ltree ? 'science & physics'::ltxtquery"
+        assert sql_str == "(data->>'path')::ltree @ 'science & physics'::ltxtquery"
 
 
 # ============================================================================
@@ -865,9 +865,7 @@ class TestLTreeIndexOperatorsGraphQL:
 
     def test_index_gte_operator_graphql_integration(self) -> None:
         """Test index_gte operator generates correct SQL."""
-        result = self.strategy.build_sql(
-            "index_gte", ("physics", self.path_sql, 2), LTree
-        )
+        result = self.strategy.build_sql("index_gte", ("physics", self.path_sql, 2), LTree)
         sql_str = result.as_string(None)
         assert "index(" in sql_str
         assert "physics" in sql_str

@@ -9,6 +9,7 @@ from fraiseql.middleware.apq_caching import (
     handle_apq_request_with_cache,
     store_response_in_cache,
 )
+from fraiseql.storage.apq_store import compute_query_hash
 from fraiseql.storage.backends.factory import create_apq_backend
 from fraiseql.storage.backends.memory import MemoryAPQBackend
 from fraiseql.storage.backends.postgresql import PostgreSQLAPQBackend
@@ -37,8 +38,8 @@ def test_end_to_end_memory_backend() -> None:
     assert isinstance(backend, MemoryAPQBackend)
 
     # Store a persisted query
-    hash_value = "test_end_to_end_hash"
     query = "{ users { id name email } }"
+    hash_value = compute_query_hash(query)
     backend.store_persisted_query(hash_value, query)
 
     # Verify query retrieval
@@ -246,8 +247,8 @@ def test_backward_compatibility() -> None:
     clear_storage()
 
     # Test original functions still work
-    hash_value = "backward_compatibility_test"
     query = "{ backward_compatibility }"
+    hash_value = compute_query_hash(query)
 
     store_persisted_query(hash_value, query)
     retrieved = get_persisted_query(hash_value)
@@ -277,8 +278,8 @@ def test_comprehensive_flow() -> None:
     assert isinstance(backend, MemoryAPQBackend)
 
     # Step 2: Store persisted query (would happen during APQ registration)
-    hash_value = "comprehensive_flow_test"
     query = "{ users(limit: 10) { id name email roles } }"
+    hash_value = compute_query_hash(query)
     backend.store_persisted_query(hash_value, query)
 
     # Step 3: Create APQ request

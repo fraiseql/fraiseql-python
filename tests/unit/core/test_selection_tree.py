@@ -285,3 +285,58 @@ class TestBuildSelectionTreeEdgeCases:
         # First occurrence should be kept for equipment
         equipment_sel = next(s for s in selections if s.path == ["equipment"])
         assert equipment_sel.alias == "device"  # First alias
+
+
+def _object_registry():
+    from unittest.mock import Mock
+
+    def field_type(type_name, field_name):
+        if field_name == "equipment":
+            return Mock(type_name="Equipment", is_nested_object=True, graphql_name="equipment")
+        return Mock(type_name="String", is_nested_object=False, graphql_name=field_name)
+
+    registry = Mock()
+    registry.get_field_type.side_effect = field_type
+    return registry
+
+
+class TestBuildSelectionTreeResponseKeys:
+    """A FieldPath from extract_flat_paths names each segment: aliases above the leaf count."""
+
+    # { d: equipment { id } e: equipment { n: name } }
+    PATHS = [
+        FieldPath("id", ["equipment", "id"], ("equipment", "id"), ("d", "id")),
+        FieldPath("n", ["equipment", "name"], ("equipment", "name"), ("e", "n")),
+    ]
+
+    def test_by_alias_names_each_segment_by_its_response_key(self) -> None:
+        selections = build_selection_tree(self.PATHS, _object_registry(), parent_type="Assignment")
+
+        assert [(s.path, s.alias, s.response_path) for s in selections] == [
+            (["equipment"], "d", ["d"]),
+            (["equipment", "id"], "id", ["d", "id"]),
+            (["equipment"], "e", ["e"]),
+            (["equipment", "name"], "n", ["e", "n"]),
+        ]
+
+    def test_without_aliases_fields_are_named_and_merged(self) -> None:
+        selections = build_selection_tree(
+            self.PATHS, _object_registry(), parent_type="Assignment", by_alias=False
+        )
+
+        assert [(s.path, s.response_path) for s in selections] == [
+            (["equipment"], ["equipment"]),
+            (["equipment", "id"], ["equipment", "id"]),
+            (["equipment", "name"], ["equipment", "name"]),
+        ]
+
+    def test_typename_is_typed_as_the_object_it_is_selected_on(self) -> None:
+        paths = [
+            FieldPath(
+                "t", ["equipment", "__typename"], ("equipment", "__typename"), ("equipment", "t")
+            )
+        ]
+        selections = build_selection_tree(paths, _object_registry(), parent_type="Assignment")
+
+        assert selections[-1].type_name == "Equipment"
+        assert selections[-1].response_path == ["equipment", "t"]

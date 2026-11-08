@@ -97,9 +97,8 @@ class TestNumericCastingConsistency:
             if op in ("eq", "neq"):
                 assert "true" in sql_str, "Should convert True to 'true'"
             elif op in ("in", "notin"):
-                assert "true" in sql_str and "false" in sql_str, (
-                    "Should convert boolean list items to strings"
-                )
+                assert "true" in sql_str, "Should convert boolean list items to strings"
+                assert "false" in sql_str, "Should convert boolean list items to strings"
 
     def test_mixed_operations_production_scenario(self) -> None:
         """Test the realistic scenario that caused the original confusion."""
@@ -172,9 +171,8 @@ class TestCastingEdgeCases:
         has_casting = "::numeric" in sql_str
         print(f"List operations use ::numeric casting: {has_casting}")
         # Values should remain as integers
-        assert "80" in sql_str and "443" in sql_str and "8080" in sql_str, (
-            "Integer values should be present"
-        )
+        for port in ("80", "443", "8080"):
+            assert port in sql_str, "Integer values should be present"
 
 
 if __name__ == "__main__":

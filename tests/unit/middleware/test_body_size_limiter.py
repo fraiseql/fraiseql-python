@@ -1,9 +1,12 @@
 """Tests for request body size limiting middleware."""
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.gql.schema_builder import SchemaRegistry
 from fraiseql.middleware.body_size_limiter import (
     BodySizeConfig,
     BodySizeLimiterMiddleware,
@@ -166,3 +169,86 @@ class TestRequestTooLargeError:
         """Error should have HTTP 413 status code."""
         error = RequestTooLargeError(max_size=1000, actual_size=2000)
         assert error.status_code == 413
+
+
+class TestBodyReachesTheApp:
+    """The limiter passes the request body on, intact, to the app behind it."""
+
+    @pytest.fixture
+    def client(self):
+        """Client for an app whose endpoint returns the body it received."""
+        app = FastAPI()
+        app.add_middleware(BodySizeLimiterMiddleware, config=BodySizeConfig(max_body_size=100))
+
+        @app.post("/echo")
+        async def echo(request: Request):
+            return {"body": (await request.body()).decode()}
+
+        return TestClient(app)
+
+    def test_body_under_limit_reaches_endpoint(self, client):
+        response = client.post("/echo", content=b'{"query": "{ hello }"}')
+        assert response.status_code == 200
+        assert response.json() == {"body": '{"query": "{ hello }"}'}
+
+    def test_body_at_limit_reaches_endpoint(self, client):
+        response = client.post("/echo", content=b"x" * 100)
+        assert response.status_code == 200
+        assert response.json() == {"body": "x" * 100}
+
+    def test_streamed_body_under_limit_reaches_endpoint(self, client):
+        def chunks():
+            yield b"abc"
+            yield b"def"
+
+        response = client.post("/echo", content=chunks())
+        assert response.status_code == 200
+        assert response.json() == {"body": "abcdef"}
+
+    def test_streamed_body_over_limit_without_content_length_is_413(self, client):
+        def chunks():
+            yield b"x" * 60
+            yield b"x" * 60
+
+        response = client.post("/echo", content=chunks())
+        assert response.status_code == 413
+        assert response.json()["max_size"] == 100
+
+    def test_content_length_over_limit_is_413(self, client):
+        response = client.post("/echo", content=b"x" * 101)
+        assert response.status_code == 413
+
+
+class TestGraphQLThroughLimiter:
+    """A GraphQL POST through the limiter, on a FraiseQL app."""
+
+    @pytest.fixture
+    def client(self):
+        SchemaRegistry.get_instance().clear()
+
+        @fraiseql.query
+        async def greeting(info, name: str) -> str:
+            return f"hello {name}"
+
+        app = create_fraiseql_app(
+            database_url="postgresql://localhost/unused",
+            queries=[greeting],
+            production=False,
+        )
+        app.add_middleware(BodySizeLimiterMiddleware, config=BodySizeConfig(max_body_size=500))
+        with TestClient(app) as client:
+            yield client
+        SchemaRegistry.get_instance().clear()
+
+    def test_graphql_post_succeeds(self, client):
+        response = client.post(
+            "/graphql",
+            json={"query": "query($n: String!) { greeting(name: $n) }", "variables": {"n": "bob"}},
+        )
+        assert response.status_code == 200
+        assert response.json()["data"] == {"greeting": "hello bob"}
+
+    def test_oversize_graphql_post_is_413(self, client):
+        query = '{ greeting(name: "' + "x" * 600 + '") }'
+        response = client.post("/graphql", json={"query": query})
+        assert response.status_code == 413

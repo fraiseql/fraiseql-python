@@ -24,24 +24,17 @@ class TestPostgresExporterQueries:
         for name, config in data.items():
             assert "query" in config, f"{name}: missing 'query' field"
             assert "metrics" in config, f"{name}: missing 'metrics' field"
-            assert isinstance(config["metrics"], list), (
-                f"{name}: 'metrics' must be a list"
-            )
+            assert isinstance(config["metrics"], list), f"{name}: 'metrics' must be a list"
 
     def test_metrics_have_usage_and_description(self) -> None:
         data = yaml.safe_load(QUERIES_PATH.read_text())
         for name, config in data.items():
             for metric in config["metrics"]:
-                assert isinstance(metric, dict), (
-                    f"{name}: each metric must be a dict"
-                )
+                assert isinstance(metric, dict), f"{name}: each metric must be a dict"
                 for metric_name, metric_config in metric.items():
-                    assert "usage" in metric_config, (
-                        f"{name}.{metric_name}: missing 'usage'"
-                    )
+                    assert "usage" in metric_config, f"{name}.{metric_name}: missing 'usage'"
                     assert metric_config["usage"] in VALID_USAGES, (
-                        f"{name}.{metric_name}: invalid usage "
-                        f"'{metric_config['usage']}'"
+                        f"{name}.{metric_name}: invalid usage '{metric_config['usage']}'"
                     )
                     assert "description" in metric_config, (
                         f"{name}.{metric_name}: missing 'description'"
@@ -61,9 +54,7 @@ class TestPostgresExporterQueries:
             assert name.startswith("fraiseql_pg_"), (
                 f"Query group '{name}' should start with 'fraiseql_pg_'"
             )
-            assert name == name.lower(), (
-                f"Query group '{name}' should be lowercase"
-            )
+            assert name == name.lower(), f"Query group '{name}' should be lowercase"
 
     def test_expected_query_groups_present(self) -> None:
         data = yaml.safe_load(QUERIES_PATH.read_text())

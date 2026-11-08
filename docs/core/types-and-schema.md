@@ -59,7 +59,14 @@ class TypeName:
 | list[T] | [T!]! | Non-null list of non-null items |
 | list[T] \| None | [T!] | Nullable list of non-null items |
 | list[T \| None] | [T]! | Non-null list of nullable items |
-| Decimal | Float! | High precision numbers |
+| Decimal | Decimal! | High precision numbers, serialized as a string |
+
+**Private fields**: an annotated field whose name starts with `_` (`_email: str | None =
+None`) is a constructor argument and an attribute, but not a GraphQL field, and not in
+the `where` / `orderBy` inputs; this holds for `@fraiseql.input` and
+`@fraiseql.interface` too. Use one for a value a field resolver exposes after a check
+(see [Field-Level Authorization](../advanced/authentication.md#field-level-authorization)).
+`fraise_field(graphql_name="_id")` exposes it under that name.
 
 ## Type Mapping Flow
 
@@ -718,20 +725,6 @@ async def users_connection(
     pass  # Implementation handled by decorator
 ```
 
-**Manual usage**:
-
-```python
-import fraiseql
-
-from fraiseql.types import create_connection
-
-@fraiseql.query
-async def users_connection(info, first: int = 20) -> Connection[User]:
-    db = info.context["db"]
-    result = await db.paginate("v_user", first=first)
-    return create_connection(result, User)
-```
-
 ### PaginatedResponse (Offset Pagination)
 
 **Alias**: `PaginatedResponse = Connection`
@@ -772,14 +765,14 @@ async def users_paginated(
 **Import**:
 
 ```python
-from fraiseql.types import UNSET
+from fraiseql import UNSET
 ```
 
 **Usage in Input Types**:
 
 ```python
 import fraiseql
-from fraiseql.types import UNSET
+from fraiseql import UNSET
 from fraiseql.types import ID
 
 @fraiseql.input
@@ -798,7 +791,7 @@ import fraiseql
 @fraiseql.mutation
 async def update_user(info, input: UpdateUserInput) -> User:
     db = info.context["db"]
-    updates = {}
+    updates = {"id": str(input.id)}
 
     # Only include fields that were explicitly provided
     if input.name is not UNSET:
@@ -808,7 +801,10 @@ async def update_user(info, input: UpdateUserInput) -> User:
     if input.bio is not UNSET:
         updates["bio"] = input.bio
 
-    return await db.update_one("v_user", {"id": input.id}, updates)
+    # fn_update_user sets only the keys present in its input: a null clears a column,
+    # an absent key leaves it alone. (input.to_dict() builds the same dict: it skips UNSET.)
+    await db.execute_function("fn_update_user", updates)
+    return await db.find_one("v_user", "updateUser", info, mandatory_filters={"id": input.id})
 ```
 
 **GraphQL Example**:

@@ -1,7 +1,13 @@
 """Docstring extraction for GraphQL query and mutation descriptions."""
 
+import pytest
+
 import fraiseql
 from fraiseql.gql.schema_builder import build_fraiseql_schema
+
+# These tests build schemas from the global SchemaRegistry, which other tests in the
+# same process leave types in; start each one from an empty registry.
+pytestmark = pytest.mark.usefixtures("clear_registry")
 
 
 class TestQueryDescriptions:
@@ -115,9 +121,6 @@ class TestMutationDescriptions:
             success: CreateUserSuccess
             error: CreateUserError
 
-            async def resolve(self, info) -> None:
-                return CreateUserSuccess(message="User created")
-
         @fraiseql.query
         async def dummy_query(info) -> str:
             return "dummy"
@@ -151,9 +154,6 @@ class TestMutationDescriptions:
             input: UpdateDataInput
             success: UpdateDataSuccess
             error: UpdateDataError
-
-            async def resolve(self, info) -> None:
-                return UpdateDataSuccess(message="Data updated")
 
         @fraiseql.query
         async def dummy_query2(info) -> str:
@@ -194,9 +194,6 @@ class TestMutationDescriptions:
             input: ProcessOrderInput
             success: ProcessOrderSuccess
             error: ProcessOrderError
-
-            async def resolve(self, info) -> None:
-                return ProcessOrderSuccess(message="Order processed")
 
         @fraiseql.query
         async def dummy_query3(info) -> str:

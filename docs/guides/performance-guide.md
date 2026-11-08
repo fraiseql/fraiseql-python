@@ -124,7 +124,7 @@ FraiseQL delivers **sub-10ms response times** for typical GraphQL queries throug
 - **Table view lookup**: 0.05-0.5ms
 - **Traditional JOIN**: 5-50ms (depends on data size)
 - **Speedup**: 10-100x faster for complex nested queries
-- **Rust pipeline**: Automatic camelCase transformation and __typename injection
+- **Rust pipeline**: Automatic camelCase transformation, and `__typename` where the query selects it
 
 **When this applies**:
 
@@ -149,9 +149,8 @@ FraiseQL delivers **sub-10ms response times** for typical GraphQL queries throug
 ```python
 # Standard production setup
 config = FraiseQLConfig(
-    apq_enabled=True,
-    apq_storage_backend="postgresql",
-    field_projection=True,
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="postgresql",  # APQ is on by default (apq_mode="optional")
     complexity_max_score=1000,
 )
 ```
@@ -176,9 +175,8 @@ config = FraiseQLConfig(
 ```python
 # Maximum performance setup
 config = FraiseQLConfig(
-    apq_enabled=True,
-    apq_storage_backend="postgresql",
-    field_projection=True,
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="postgresql",  # APQ is on by default (apq_mode="optional")
     complexity_max_score=500,
 )
 ```

@@ -20,19 +20,19 @@ from fraiseql.db import _build_partial_period_union_query
 # not interfere with the historical-window assertions.
 TODAY = date(2026, 6, 14)
 
-BASE = dict(
-    coarse_view="v_events_month",
-    fine_grain_view="v_events_day",
-    time_grain_column="date",
-    time_grain_trunc="month",
-    group_by=["date"],
-    aggregations={"data.volume": "SUM(data.volume)"},
-    native_dimensions={"date"},
-    native_measures={"data.volume": "volume"},
-    native_dimension_mapping=None,
-    jsonb_col="data",
-    extra_where=None,
-)
+BASE = {
+    "coarse_view": "v_events_month",
+    "fine_grain_view": "v_events_day",
+    "time_grain_column": "date",
+    "time_grain_trunc": "month",
+    "group_by": ["date"],
+    "aggregations": {"data.volume": "SUM(data.volume)"},
+    "native_dimensions": {"date"},
+    "native_measures": {"data.volume": "volume"},
+    "native_dimension_mapping": None,
+    "jsonb_col": "data",
+    "extra_where": None,
+}
 
 
 def _render(**overrides: object) -> str:
@@ -107,7 +107,7 @@ def test_future_lte_capped_at_today() -> None:
         upper_bound_exclusive=date(2027, 1, 1),  # lte 2026-12-31
         today=TODAY,
     )
-    # Jan–May complete (coarse) + current June up to today (fine); nothing in 2027.
+    # Jan-May complete (coarse) + current June up to today (fine); nothing in 2027.
     assert "v_events_month" in rendered
     assert "v_events_day" in rendered
     assert "2027" not in rendered

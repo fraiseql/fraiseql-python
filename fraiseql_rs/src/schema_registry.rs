@@ -242,6 +242,15 @@ pub fn is_initialized() -> bool {
 mod tests {
     use super::*;
 
+    /// Tests that reset or initialize the global REGISTRY hold this lock: the test
+    /// runner runs tests in parallel, and one test's reset would otherwise land
+    /// between another's initialize and its assertions.
+    static REGISTRY_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    fn lock_registry() -> std::sync::MutexGuard<'static, ()> {
+        REGISTRY_TEST_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
     #[test]
     fn test_field_info_deserialization() {
         let json = r#"{
@@ -302,6 +311,7 @@ mod tests {
 
     #[test]
     fn test_multiple_resets_no_deadlock() {
+        let _guard = lock_registry();
         // This test would deadlock with the old implementation
         for _i in 0..100 {
             // Reset
@@ -329,6 +339,7 @@ mod tests {
 
     #[test]
     fn test_concurrent_access_and_reset() {
+        let _guard = lock_registry();
         use std::thread;
 
         // Spawn 10 threads that read and reset concurrently

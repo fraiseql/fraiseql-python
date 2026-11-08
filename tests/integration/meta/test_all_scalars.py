@@ -27,6 +27,7 @@ from fraiseql.types.scalars import (
     DateRangeScalar,
     DateScalar,
     DateTimeScalar,
+    DecimalScalar,
     DomainNameScalar,
     DurationScalar,
     ExchangeCodeScalar,
@@ -104,7 +105,7 @@ def scalar_test_schema(meta_test_schema):
 
     # Manually register all scalars to ensure they're available
     # This simulates what would happen in real usage when scalars are used in field types
-    for scalar_name, scalar_class in get_all_scalar_types():
+    for _scalar_name, scalar_class in get_all_scalar_types():
         meta_test_schema.register_scalar(scalar_class)
 
     # Register a simple query
@@ -119,7 +120,7 @@ def scalar_test_schema(meta_test_schema):
     return meta_test_schema
 
 
-@pytest.mark.parametrize("scalar_name,scalar_class", get_all_scalar_types())
+@pytest.mark.parametrize(("scalar_name", "scalar_class"), get_all_scalar_types())
 def test_scalar_in_schema_registration(scalar_name, scalar_class, scalar_test_schema):
     """Every scalar should be registrable in a GraphQL schema."""
     # Build the schema using the prepared registry from the fixture
@@ -137,7 +138,7 @@ def test_scalar_in_schema_registration(scalar_name, scalar_class, scalar_test_sc
     )
 
 
-@pytest.mark.parametrize("scalar_name,scalar_class", get_all_scalar_types())
+@pytest.mark.parametrize(("scalar_name", "scalar_class"), get_all_scalar_types())
 async def test_scalar_in_graphql_query(scalar_name, scalar_class, scalar_test_schema):
     """Every scalar should work as a query argument without validation errors."""
     from graphql import graphql
@@ -186,7 +187,7 @@ async def test_scalar_in_graphql_query(scalar_name, scalar_class, scalar_test_sc
 
 
 @pytest.mark.parametrize(
-    "scalar_name,scalar_class",
+    ("scalar_name", "scalar_class"),
     [
         ("CIDRScalar", CIDRScalar),
         ("CUSIPScalar", CUSIPScalar),
@@ -352,7 +353,7 @@ async def test_scalar_in_where_clause(scalar_name, scalar_class, meta_test_pool)
             await conn.commit()
 
 
-@pytest.mark.parametrize("scalar_name,scalar_class", get_all_scalar_types())
+@pytest.mark.parametrize(("scalar_name", "scalar_class"), get_all_scalar_types())
 async def test_scalar_database_roundtrip(scalar_name, scalar_class, meta_test_pool):
     """Every scalar should persist/retrieve correctly from database."""
     # Create a temporary table for this scalar
@@ -422,6 +423,7 @@ def get_test_value_for_scalar(scalar_class):
         CIDRScalar: "192.168.1.0/24",
         CUSIPScalar: "037833100",
         DateScalar: "2023-12-13",
+        DecimalScalar: "12.345678901234567890123",
         IpAddressScalar: "192.168.1.1",
         JSONScalar: {"key": "value", "number": 42},
         UUIDScalar: "550e8400-e29b-41d4-a716-446655440000",
@@ -502,6 +504,7 @@ def get_postgres_type_for_scalar(scalar_class):
         CIDRScalar: "CIDR",
         CUSIPScalar: "VARCHAR(9)",
         DateScalar: "DATE",
+        DecimalScalar: "NUMERIC",
         IpAddressScalar: "INET",
         JSONScalar: "JSONB",
         UUIDScalar: "UUID",

@@ -151,7 +151,8 @@ FraiseQL uses a comprehensive status taxonomy parsed by the Rust layer. See [Sta
 
 FraiseQL recognizes specific error prefixes that map to HTTP status codes:
 
-- `failed:<type>` - Generic failure (500) - e.g., `validation:`, `failed:database_error`
+- `failed:<type>` - Generic failure (500) - e.g., `failed:database_error`; `failed:validation`, `failed:not_found` etc. get the code of their reason
+- `validation:<type>` - Invalid input (422) - e.g., `validation:email`
 - `unauthorized:<type>` - Authentication required (401) - e.g., `unauthorized:token_expired`
 - `forbidden:<type>` - Insufficient permissions (403) - e.g., `forbidden:admin_only`
 - `not_found:<type>` - Resource doesn't exist (404) - e.g., `not_found:user_missing`
@@ -309,16 +310,21 @@ FraiseQL's Rust layer automatically maps status prefixes to HTTP status codes. S
 | Status Pattern | Code | Description | Use Case |
 |----------------|------|-------------|----------|
 | `success`, `created`, `updated`, `deleted`, `completed`, `ok` | 200 | Success | All successful operations |
-| `noop:*` | 200 | Success (no changes) | Idempotent operations, no fields changed |
-| `unauthorized:*` | 401 | Unauthorized | Authentication required or token expired |
-| `forbidden:*` | 403 | Forbidden | Authenticated but insufficient permissions |
-| `not_found:*` | 404 | Not Found | Resource doesn't exist |
-| `timeout:*` | 408 | Request Timeout | Operation timed out |
-| `conflict:*` | 409 | Conflict | Duplicate key, version conflict |
-| `validation:`, `failed:invalid` | 422 | Unprocessable Entity | Invalid input data |
+| `noop:*` | 422 | No changes (returns the error type) | Idempotent operations, no fields changed |
+| `unauthorized:*`, `failed:unauthorized` | 401 | Unauthorized | Authentication required or token expired |
+| `forbidden:*`, `failed:forbidden` | 403 | Forbidden | Authenticated but insufficient permissions |
+| `not_found:*`, `failed:not_found` | 404 | Not Found | Resource doesn't exist |
+| `timeout:*`, `failed:timeout` | 408 | Request Timeout | Operation timed out |
+| `conflict:*`, `failed:conflict`, `failed:duplicate` | 409 | Conflict | Duplicate key, version conflict |
+| `validation:*`, `failed:validation` | 422 | Unprocessable Entity | Invalid input data |
 | `failed:*` (other) | 500 | Internal Server Error | Generic server error |
 
 **Note**: The Rust layer performs case-insensitive matching on status prefixes.
+`failed:<reason>` is read like `<reason>:`, so the trinity helpers
+`mutation_validation_error`, `mutation_not_found` and `mutation_conflict`
+(`failed:validation`, `failed:not_found`, `failed:duplicate`) get 422, 404 and
+409. `mutation_conflict` with another `conflict_type` gives `failed:<type>`,
+which is 500 unless the type is one of these words.
 
 ### Frontend Handling Example
 

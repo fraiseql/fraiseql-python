@@ -34,13 +34,7 @@ def store_persisted_query(hash_value: str, query: str) -> None:
     if not query or not query.strip():
         raise ValueError("Query cannot be empty")
 
-    # Validate that the hash matches the query
-    actual_hash = compute_query_hash(query)
-    if hash_value != actual_hash:
-        logger.warning(
-            f"Hash mismatch: provided={hash_value[:8]}..., "
-            f"computed={actual_hash[:8]}... - storing anyway for APQ compatibility"
-        )
+    check_query_hash(hash_value, query)
 
     _backend.store_persisted_query(hash_value, query)
 
@@ -85,6 +79,27 @@ def compute_query_hash(query: str) -> str:
         SHA256 hash as hex string
     """
     return hashlib.sha256(query.encode("utf-8")).hexdigest()
+
+
+def check_query_hash(hash_value: str, query: str) -> None:
+    """Raise ``ValueError`` unless ``hash_value`` is the SHA-256 of ``query``.
+
+    A persisted query is looked up by its hash, so a text stored under another
+    query's hash would run in its place for every client sending that hash.
+
+    Args:
+        hash_value: Hash the query is to be stored under
+        query: GraphQL query string
+
+    Raises:
+        ValueError: If ``hash_value`` is not ``compute_query_hash(query)``
+    """
+    actual_hash = compute_query_hash(query)
+    if hash_value != actual_hash:
+        raise ValueError(
+            f"Persisted query hash {hash_value[:8]}... does not match the SHA-256 of "
+            f"its query ({actual_hash[:8]}...)"
+        )
 
 
 def get_storage_stats() -> dict[str, int]:

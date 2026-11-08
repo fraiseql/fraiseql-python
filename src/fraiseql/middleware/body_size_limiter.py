@@ -5,11 +5,11 @@ a configurable body size limit.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
 class RequestTooLargeError(Exception):
@@ -83,15 +83,21 @@ class SizeLimitedBody:
             yield chunk
 
 
-class BodySizeLimiterMiddleware(BaseHTTPMiddleware):
-    """Middleware that limits request body size.
+class BodySizeLimiterMiddleware:
+    """ASGI middleware that limits request body size.
 
     Rejects requests that exceed the configured maximum body size
     with HTTP 413 Payload Too Large.
 
     SECURITY: Enforces limits in two ways:
     1. Fast path: Check Content-Length header if present
-    2. Safe path: Stream body and measure actual bytes (catches chunked/missing header)
+    2. Safe path: Read the body and count the bytes received (catches chunked
+       transfer and a missing or false Content-Length), stopping at the limit
+
+    A body within the limit is passed on unchanged to the application.
+    It is a plain ASGI middleware, not a ``BaseHTTPMiddleware``: replacing the
+    receive channel of a ``BaseHTTPMiddleware`` request does not reach the
+    application, which then sees an empty body.
 
     Usage:
         app = FastAPI()
@@ -101,71 +107,53 @@ class BodySizeLimiterMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app: Callable,
+        app: ASGIApp,
         config: BodySizeConfig | None = None,
     ) -> None:
-        super().__init__(app)
+        self.app = app
         self.config = config or BodySizeConfig()
 
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: RequestResponseEndpoint,
-    ) -> Response:
-        """Process request and check body size."""
-        # Skip exempt methods
-        if request.method in self.config.exempt_methods:
-            return await call_next(request)
-
-        # Skip exempt paths
-        if request.url.path in self.config.exempt_paths:
-            return await call_next(request)
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Check the body size of an HTTP request, then pass it on."""
+        if (
+            scope["type"] != "http"
+            or scope["method"] in self.config.exempt_methods
+            or scope["path"] in self.config.exempt_paths
+        ):
+            await self.app(scope, receive, send)
+            return
 
         # Fast path: Check Content-Length header first (efficient)
-        content_length = request.headers.get("content-length")
+        content_length = Headers(scope=scope).get("content-length")
         if content_length:
             try:
                 size = int(content_length)
-                if size > self.config.max_body_size:
-                    return self._create_error_response(size)
             except ValueError:
                 pass
+            else:
+                if size > self.config.max_body_size:
+                    await self._create_error_response(size)(scope, receive, send)
+                    return
 
         # Safe path: Read and measure actual body (catches chunked transfer, missing headers)
         # This is CRITICAL for security - Content-Length can be omitted or spoofed
-        try:
-            body = await self._read_body_with_limit(request)
-        except RequestTooLargeError as e:
-            return self._create_error_response(e.actual_size)
-
-        # Reconstruct request with the body we already read
-        # This avoids double-reading the stream
-        async def receive():
-            return {"type": "http.request", "body": body}
-
-        request._receive = receive
-
-        return await call_next(request)
-
-    async def _read_body_with_limit(self, request: Request) -> bytes:
-        """Read request body while enforcing size limit.
-
-        Streams the body and stops early if limit is exceeded,
-        preventing memory exhaustion from malicious large requests.
-        """
         chunks: list[bytes] = []
         total_size = 0
-
-        async for chunk in request.stream():
+        more_body = True
+        while more_body:
+            message = await receive()
+            if message["type"] != "http.request":
+                # Client disconnected before sending the whole body
+                return
+            chunk = message.get("body", b"")
             total_size += len(chunk)
             if total_size > self.config.max_body_size:
-                raise RequestTooLargeError(
-                    max_size=self.config.max_body_size,
-                    actual_size=total_size,
-                )
+                await self._create_error_response(total_size)(scope, receive, send)
+                return
             chunks.append(chunk)
+            more_body = message.get("more_body", False)
 
-        return b"".join(chunks)
+        await self.app(scope, _replay_body(b"".join(chunks), receive), send)
 
     def _create_error_response(self, actual_size: int | None = None) -> JSONResponse:
         """Create 413 error response."""
@@ -181,3 +169,17 @@ class BodySizeLimiterMiddleware(BaseHTTPMiddleware):
                 "max_size_human": self.config.human_readable_size,
             },
         )
+
+
+def _replay_body(body: bytes, receive: Receive) -> Receive:
+    """Receive channel that hands over ``body`` once, then defers to ``receive``."""
+    body_sent = False
+
+    async def replay() -> Message:
+        nonlocal body_sent
+        if not body_sent:
+            body_sent = True
+            return {"type": "http.request", "body": body, "more_body": False}
+        return await receive()
+
+    return replay

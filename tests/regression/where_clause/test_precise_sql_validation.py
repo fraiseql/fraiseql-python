@@ -186,7 +186,8 @@ class TestPreciseSQLValidation:
         # Should have same structural pattern (only values differ)
         assert sql1.count("::numeric") == sql2.count("::numeric"), "Inconsistent casting"
         assert sql1.count(" = ") == sql2.count(" = "), "Inconsistent operators"
-        assert "100" in sql1 and "200" in sql2, "Values not properly differentiated"
+        assert "100" in sql1, "Values not properly differentiated"
+        assert "200" in sql2, "Values not properly differentiated"
 
 
 if __name__ == "__main__":

@@ -28,14 +28,20 @@ jobs:
       - name: Check uv.lock is in sync with pyproject.toml
         run: uv lock --check
 
+      # Install from uv.lock into .venv, the environment `uv run` uses, so CI
+      # runs the locked ruff, ty and test dependencies. The dev extra carries
+      # test-only packages and confiture (the `migrate` extra). The editable
+      # install builds fraiseql_rs, so integration tests load the extension.
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --locked --extra dev
 
+      # --no-fix: pyproject sets `fix = true`, so a plain `ruff check` would apply
+      # fixable findings in the runner and pass.
       - name: Ruff lint
-        run: uv run ruff check src/
+        run: uv run --extra dev ruff check --no-fix src/ tests/
 
       - name: Ruff format
-        run: uv run ruff format src/ --check
+        run: uv run --extra dev ruff format --check src/ tests/
 
   type-check:
     name: Type Check (ty)
@@ -51,15 +57,29 @@ jobs:
         with:
           python-version: '3.13'
 
+      # From uv.lock into .venv, as in the lint job, with every extra: src/ includes the
+      # integrations (langchain, llamaindex, ...), and ty resolves their imports.
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --locked --all-extras
 
       - name: ty check
-        run: uv run ty check src/
+        run: uv run --all-extras ty check src/
 
   unit-tests:
-    name: Unit Tests
+    name: Unit Tests (Python ${{ matrix.python-version }}, ${{ matrix.extras }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13', '3.14']
+        extras: ['dev']
+        # The tests that need an optional extra skip under `dev` alone, so one job
+        # installs every extra to run them.
+        include:
+          - python-version: '3.13'
+            extras: 'all'
+    env:
+      UV_EXTRAS: ${{ matrix.extras == 'all' && '--all-extras' || '--extra dev' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -69,17 +89,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
 
+      # From uv.lock into .venv, as in the lint job.
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --locked $UV_EXTRAS
 
       - name: Run unit tests
-        run: uv run pytest tests/unit/ -q --tb=short
+        run: uv run $UV_EXTRAS pytest tests/unit/ -q --tb=short
 
   integration-tests:
-    name: Integration Tests (PostgreSQL)
+    name: Integration Tests (PostgreSQL, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13', '3.14']
 
     services:
       postgres:
@@ -105,20 +130,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Rust (for fraiseql_rs extension)
         uses: dtolnay/rust-toolchain@stable
 
+      # From uv.lock into .venv, as in the lint job.
       - name: Install dependencies
-        run: |
-          uv pip install --system maturin
-          uv pip install --system -e ".[dev]"
-          maturin build --manifest-path fraiseql_rs/Cargo.toml --release --manylinux off
-          uv pip install --system fraiseql_rs/target/wheels/*.whl --force-reinstall
+        run: uv sync --locked --extra dev
 
       - name: Run integration tests
-        run: uv run pytest tests/integration/ -q --tb=short
+        run: uv run --extra dev pytest tests/integration/ -q --tb=short
         env:
           DATABASE_URL: postgresql://fraiseql_test:fraiseql_test_password@localhost:5433/test_fraiseql
 
@@ -151,12 +173,33 @@ jobs:
         run: cargo fmt --manifest-path fraiseql_rs/Cargo.toml -- --check
 
       - name: Clippy
-        run: cargo clippy --manifest-path fraiseql_rs/Cargo.toml --all-features -- -D warnings
+        run: cargo clippy --manifest-path fraiseql_rs/Cargo.toml --all-targets --all-features -- -D warnings
 
-      # cargo test cannot run for PyO3 extension-module crates (linking issue).
-      # Rust integration is tested via pytest in the integration-tests job.
       - name: Build (verify compilation)
         run: cargo build --manifest-path fraiseql_rs/Cargo.toml --all-features
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Python for the Rust tests
+        run: uv python install 3.13
+
+      # pyo3's extension-module feature leaves the Python symbols for the interpreter
+      # that loads the extension to provide, so a plain `cargo test --lib` fails to
+      # link (#580). Link the test binary against the libpython of the interpreter
+      # pyo3 builds for, and point PYO3_PYTHON at it so both agree on the version.
+      # A separate target directory keeps these RUSTFLAGS from invalidating the
+      # artifacts of the steps above.
+      - name: Rust unit tests
+        working-directory: fraiseql_rs
+        run: |
+          PY=$(uv python find 3.13)
+          LIBDIR=$("$PY" -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')
+          PYVER=$("$PY" -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
+          PYO3_PYTHON="$PY" \
+          RUSTFLAGS="-L $LIBDIR -l python$PYVER -C link-arg=-Wl,-rpath,$LIBDIR" \
+          CARGO_TARGET_DIR=target/libpython-tests \
+            cargo test --lib --all-features
 
       # Neither clippy nor build above compiles the bench targets, so the benches
       # drifted past the API they call and nothing noticed (#471). This is the

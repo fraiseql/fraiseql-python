@@ -17,7 +17,6 @@
 //! - Need streaming/zero-copy (80% less memory)
 //! - High volume (> 1000 req/sec)
 //! - Field projection required
-//! - Arena allocator available
 //!
 //! ❌ **Use `crate::json_transform` instead when**:
 //! - Called from Python via PyO3
@@ -29,10 +28,7 @@
 
 use pyo3::PyErr;
 
-use crate::{
-    core::{arena::Arena, camel::snake_to_camel},
-    pipeline::projection::FieldSet,
-};
+use crate::{core::camel::snake_to_camel, pipeline::projection::Projection};
 
 /// Maximum JSON nesting depth to prevent stack overflow
 ///
@@ -85,38 +81,55 @@ impl Default for TransformConfig {
 /// PERFORMANCE CHARACTERISTICS:
 /// - Single-pass: Reads input once, writes output once
 /// - Zero-copy keys: Keys transformed in-place when possible
-/// - Arena allocation: All intermediate data uses bump allocator
-/// - SIMD: Vectorized operations for escaping and case conversion
+/// - Keys: camelCase keys go through one reused scratch buffer
+/// - Projection: a key is looked up in the selection by binary search
+///
+/// With a [`Projection`], an object is written with exactly its selected fields,
+/// each under its response key, an object field projected on its own selection and
+/// a leaf copied as it is. Without one, every field is written, its key camelCased
+/// when `camel_case`.
 ///
 /// Memory layout:
 /// ┌─────────────────────────────────────────────────┐
 /// │ Input Buffer (read-only)                        │ ← PostgreSQL result
 /// ├─────────────────────────────────────────────────┤
-/// │ Arena (bump allocator)                          │ ← Temporary keys/values
+/// │ Key scratch buffer (reused)                     │ ← camelCase keys
 /// ├─────────────────────────────────────────────────┤
 /// │ Output Buffer (write-only, pre-sized)           │ → HTTP response
 /// └─────────────────────────────────────────────────┘
 pub struct ZeroCopyTransformer<'a> {
-    arena: &'a Arena,
     config: TransformConfig,
     typename: Option<&'a str>,
-    field_projection: Option<&'a FieldSet>,
+    projection: Option<&'a Projection>,
     current_depth: usize,
+    /// Depth of the row objects: 0 for an object row, 1 for each object of an
+    /// array row. `typename` names their type, and only theirs: a nested
+    /// object is of another type this transformer doesn't know.
+    row_depth: usize,
+    /// Reused for each camelCase key, which is copied to the output right away
+    key_scratch: Vec<u8>,
+    /// Where each selected field's value starts in the input, for the objects
+    /// being projected (a stack: a nested object's entries follow its parent's)
+    value_at: Vec<usize>,
 }
+
+/// `value_at` entry of a field the object hasn't
+const ABSENT: usize = usize::MAX;
 
 impl<'a> ZeroCopyTransformer<'a> {
     pub fn new(
-        arena: &'a Arena,
         config: TransformConfig,
         typename: Option<&'a str>,
-        field_projection: Option<&'a FieldSet>,
+        projection: Option<&'a Projection>,
     ) -> Self {
         ZeroCopyTransformer {
-            arena,
             config,
             typename,
-            field_projection,
+            projection,
             current_depth: 0,
+            row_depth: 0,
+            key_scratch: Vec::new(),
+            value_at: Vec::new(),
         }
     }
 
@@ -127,7 +140,7 @@ impl<'a> ZeroCopyTransformer<'a> {
     /// # Performance
     /// - Time complexity: O(n) where n = input size
     /// - Space complexity: O(k) where k = output size (pre-allocated)
-    /// - Allocations: 1 (output buffer), rest uses arena
+    /// - Allocations: the output buffer, and the key scratch buffer as it grows
     pub fn transform_bytes(
         &mut self,
         input: &[u8],
@@ -138,54 +151,79 @@ impl<'a> ZeroCopyTransformer<'a> {
 
         let mut reader = ByteReader::new(input);
         let mut writer = JsonWriter::new(output);
-
-        // Conditionally wrap in GraphQL response structure
-        if false {
-            // self.config.add_graphql_wrapper {
-            writer.write_object_start()?;
-            writer.write_key(b"data")?;
-            writer.write_object_start()?;
-        }
+        let projection = if self.config.project_fields {
+            self.projection
+        } else {
+            None
+        };
+        let typename = self.typename;
 
         // Transform array/object
         if reader.peek_byte()? == b'[' {
-            self.transform_array(&mut reader, &mut writer)?;
+            self.row_depth = self.current_depth + 1;
+            self.transform_array(&mut reader, &mut writer, projection, typename)?;
         } else {
-            self.transform_object(&mut reader, &mut writer)?;
-        }
-
-        // Conditionally close wrappers
-        if self.config.add_graphql_wrapper {
-            writer.write_object_end()?;
-            writer.write_object_end()?;
+            self.row_depth = self.current_depth;
+            self.transform_object(&mut reader, &mut writer, projection, typename)?;
         }
 
         Ok(())
     }
 
-    /// Transform JSON object (recursive, tail-call optimized)
+    /// Transform JSON object (recursive)
+    ///
+    /// `type_name` is the object's type, when known: the row type for a row object,
+    /// the field's type from the selection for a nested one.
     #[inline]
     fn transform_object(
         &mut self,
         reader: &mut ByteReader,
         writer: &mut JsonWriter,
+        projection: Option<&Projection>,
+        type_name: Option<&str>,
     ) -> Result<(), TransformError> {
         // Check recursion depth limit
         if self.current_depth >= self.config.max_depth {
             return Err(TransformError::MaxDepthExceeded(self.config.max_depth));
         }
 
+        // Only a row object is of type `typename`; a nested object keeps the
+        // __typename its JSON has, if any
+        let inject_typename = self.config.add_typename
+            && self.current_depth == self.row_depth
+            && self.typename.is_some();
+
         self.current_depth += 1;
 
         reader.expect_byte(b'{')?;
         writer.write_object_start()?;
 
+        match projection {
+            Some(projection) => {
+                self.write_projected_fields(reader, writer, projection, type_name, inject_typename)?
+            },
+            None => self.write_all_fields(reader, writer, inject_typename)?,
+        }
+
+        reader.expect_byte(b'}')?;
+        writer.write_object_end()?;
+
+        self.current_depth -= 1;
+        Ok(())
+    }
+
+    /// Write an object's fields, each key camelCased when `camel_case`
+    fn write_all_fields(
+        &mut self,
+        reader: &mut ByteReader,
+        writer: &mut JsonWriter,
+        inject_typename: bool,
+    ) -> Result<(), TransformError> {
         // Inject __typename FIRST (important for GraphQL clients)
-        if let Some(typename) = self.typename {
-            if self.config.add_typename {
+        if inject_typename {
+            if let Some(typename) = self.typename {
                 writer.write_key(b"__typename")?;
                 writer.write_string(typename.as_bytes())?;
-                writer.needs_comma = true;
             }
         }
 
@@ -196,53 +234,118 @@ impl<'a> ZeroCopyTransformer<'a> {
             }
             first = false;
 
-            // Read key
             let key_bytes = reader.read_string()?;
+            reader.expect_byte(b':')?;
 
-            // Skip __typename if already present
-            if key_bytes == b"__typename" {
-                reader.expect_byte(b':')?;
+            // Skip a __typename already present where one was injected
+            if inject_typename && key_bytes == b"__typename" {
                 reader.skip_value()?;
                 continue;
             }
 
-            // Check field projection
-            if let Some(projection) = self.field_projection {
-                if !projection.contains(key_bytes) {
-                    reader.expect_byte(b':')?;
-                    reader.skip_value()?;
-                    continue;
-                }
-            }
-
-            // Transform key (camelCase if needed)
-            if self.config.camel_case {
-                // Multi-architecture optimized snake_to_camel (safe API)
-                let camel_key = snake_to_camel(key_bytes, self.arena);
-                writer.write_key(camel_key)?;
+            // Transform key (camelCase if needed; __typename is a GraphQL name)
+            if self.config.camel_case && key_bytes != b"__typename" {
+                let camel_key = snake_to_camel(key_bytes, &mut self.key_scratch);
+                writer.write_json_key(camel_key)?;
             } else {
-                writer.write_key(key_bytes)?;
+                writer.write_json_key(key_bytes)?;
             }
 
-            reader.expect_byte(b':')?;
-
-            // Transform value (recursive)
-            self.transform_value(reader, writer)?;
+            self.transform_value(reader, writer, None, None)?;
         }
-
-        reader.expect_byte(b'}')?;
-        writer.write_object_end()?;
-
-        self.current_depth -= 1;
         Ok(())
     }
 
-    /// Transform JSON array
+    /// Write the fields of an object that `projection` selects, under their
+    /// response keys, in selection order (a GraphQL response is ordered like its
+    /// selection set); nothing else.
+    ///
+    /// A first pass over the object notes where each selected value starts; the
+    /// fields are then written in projection order, each read from there.
+    fn write_projected_fields(
+        &mut self,
+        reader: &mut ByteReader,
+        writer: &mut JsonWriter,
+        projection: &Projection,
+        type_name: Option<&str>,
+        inject_typename: bool,
+    ) -> Result<(), TransformError> {
+        let base = self.value_at.len();
+        self.value_at.resize(base + projection.fields.len(), ABSENT);
+
+        let mut first = true;
+        while reader.peek_byte()? != b'}' {
+            if !first {
+                reader.expect_byte(b',')?;
+            }
+            first = false;
+
+            let key_bytes = reader.read_string()?;
+            reader.expect_byte(b':')?;
+
+            // Every alias selecting this key reads the value from here; the
+            // first spelling of a key found wins
+            let start = reader.position();
+            for i in projection.matching_or_camel(key_bytes, &mut self.key_scratch) {
+                if self.value_at[base + i] == ABSENT {
+                    self.value_at[base + i] = start;
+                }
+            }
+            reader.skip_value()?;
+        }
+        let end = reader.position();
+
+        let mut injected = false;
+        if inject_typename {
+            if let Some(typename) = self.typename {
+                writer.write_key(b"__typename")?;
+                writer.write_string(typename.as_bytes())?;
+                injected = true;
+            }
+        }
+
+        for (i, field) in projection.fields.iter().enumerate() {
+            if field.is_typename() {
+                if injected && field.output == "__typename" {
+                    continue;
+                }
+                // The object's type, when known; else the JSON's __typename
+                if let Some(name) = type_name.or(field.type_name.as_deref()) {
+                    writer.write_key(field.output.as_bytes())?;
+                    writer.write_string(name.as_bytes())?;
+                    continue;
+                }
+            }
+            let start = self.value_at[base + i];
+            if start == ABSENT {
+                continue;
+            }
+            reader.seek(start);
+            writer.write_key(field.output.as_bytes())?;
+            match &field.children {
+                Some(children) if !field.is_typename() => self.transform_value(
+                    reader,
+                    writer,
+                    Some(children),
+                    field.type_name.as_deref(),
+                )?,
+                _ => writer.write_raw(reader.read_raw_value()?)?,
+            }
+        }
+
+        reader.seek(end);
+        self.value_at.truncate(base);
+        Ok(())
+    }
+
+    /// Transform JSON array: each element is projected on `projection`
     #[inline]
     fn transform_array(
         &mut self,
         reader: &mut ByteReader,
         writer: &mut JsonWriter,
+        projection: Option<&Projection>,
+        type_name: Option<&str>,
     ) -> Result<(), TransformError> {
         // Check recursion depth limit
         if self.current_depth >= self.config.max_depth {
@@ -263,7 +366,7 @@ impl<'a> ZeroCopyTransformer<'a> {
             }
             first = false;
 
-            self.transform_value(reader, writer)?;
+            self.transform_value(reader, writer, projection, type_name)?;
         }
 
         reader.expect_byte(b']')?;
@@ -279,13 +382,15 @@ impl<'a> ZeroCopyTransformer<'a> {
         &mut self,
         reader: &mut ByteReader,
         writer: &mut JsonWriter,
+        projection: Option<&Projection>,
+        type_name: Option<&str>,
     ) -> Result<(), TransformError> {
         match reader.peek_byte()? {
-            b'{' => self.transform_object(reader, writer),
-            b'[' => self.transform_array(reader, writer),
+            b'{' => self.transform_object(reader, writer, projection, type_name),
+            b'[' => self.transform_array(reader, writer, projection, type_name),
             b'"' => {
                 let string_bytes = reader.read_string()?;
-                writer.write_string(string_bytes)
+                writer.write_json_string(string_bytes)
             },
             b't' | b'f' => {
                 let bool_bytes = reader.read_bool()?;
@@ -386,6 +491,26 @@ impl<'a> ByteReader<'a> {
         }
     }
 
+    /// The reader's position in the input
+    #[inline(always)]
+    pub fn position(&self) -> usize {
+        self.pos
+    }
+
+    /// Go back to a position `position` returned
+    #[inline(always)]
+    pub fn seek(&mut self, position: usize) {
+        self.pos = position;
+    }
+
+    /// Read a JSON value of any type, and return its bytes as they are
+    pub fn read_raw_value(&mut self) -> Result<&'a [u8], TransformError> {
+        self.skip_whitespace();
+        let start = self.pos;
+        self.skip_value()?;
+        Ok(&self.bytes[start..self.pos])
+    }
+
     /// Read JSON string (returns slice into input buffer - ZERO COPY!)
     ///
     /// This is critical for performance: we NEVER allocate for keys!
@@ -431,14 +556,19 @@ impl<'a> ByteReader<'a> {
     }
 
     /// Read escaped string (slow path)
+    ///
+    /// The string is returned with its escapes as they are: `a\"b` for `"a\"b"`.
+    /// A backslash escapes the byte after it, so `"a\\"` ends at its last quote.
     fn read_escaped_string(&mut self, start: usize) -> Result<&'a [u8], TransformError> {
-        // For now, just skip to end - full escaping handled by writer
         while self.pos < self.bytes.len() {
-            let byte = self.bytes[self.pos];
-            self.pos += 1;
-
-            if byte == b'"' && self.bytes.get(self.pos - 2) != Some(&b'\\') {
-                return Ok(&self.bytes[start..self.pos - 1]);
+            match self.bytes[self.pos] {
+                b'\\' => self.pos += 2,
+                b'"' => {
+                    let string_bytes = &self.bytes[start..self.pos];
+                    self.pos += 1;
+                    return Ok(string_bytes);
+                },
+                _ => self.pos += 1,
             }
         }
         Err(TransformError::UnterminatedString)
@@ -622,6 +752,30 @@ impl<'a> JsonWriter<'a> {
         Ok(())
     }
 
+    /// Write a key read from JSON input: its escapes are kept, not escaped again
+    #[inline(always)]
+    pub fn write_json_key(&mut self, key: &[u8]) -> Result<(), TransformError> {
+        if self.needs_comma {
+            self.output.push(b',');
+        }
+        self.output.push(b'"');
+        self.output.extend_from_slice(key);
+        self.output.extend_from_slice(b"\":");
+        self.needs_comma = false;
+        Ok(())
+    }
+
+    /// Write a string read from JSON input (`ByteReader::read_string`): its
+    /// escapes are kept, not escaped again
+    #[inline(always)]
+    pub fn write_json_string(&mut self, value: &[u8]) -> Result<(), TransformError> {
+        self.output.push(b'"');
+        self.output.extend_from_slice(value);
+        self.output.push(b'"');
+        self.needs_comma = true;
+        Ok(())
+    }
+
     #[inline(always)]
     pub fn write_raw(&mut self, value: &[u8]) -> Result<(), TransformError> {
         self.output.extend_from_slice(value);
@@ -741,5 +895,251 @@ impl std::error::Error for TransformError {}
 impl From<TransformError> for PyErr {
     fn from(err: TransformError) -> PyErr {
         pyo3::exceptions::PyValueError::new_err(err.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn transform(input: &str, typename: Option<&str>) -> String {
+        let config = TransformConfig {
+            add_typename: true,
+            camel_case: true,
+            project_fields: false,
+            add_graphql_wrapper: false,
+            max_depth: MAX_JSON_DEPTH,
+        };
+        let mut transformer = ZeroCopyTransformer::new(config, typename, None);
+        let mut output = ByteBuf::with_estimated_capacity(input.len(), &config);
+        transformer.transform_bytes(input.as_bytes(), &mut output).unwrap();
+        String::from_utf8(output.into_vec()).unwrap()
+    }
+
+    #[test]
+    fn typename_is_the_rows_not_the_nested_objects() {
+        // A nested object is of its own type: it was given the row's name
+        let out = transform(
+            r#"{"id":"a1","device":{"id":"d1","is_active":true},"devices":[{"id":"d1"}]}"#,
+            Some("Assignment"),
+        );
+        assert_eq!(
+            out,
+            r#"{"__typename":"Assignment","id":"a1","device":{"id":"d1","isActive":true},"devices":[{"id":"d1"}]}"#
+        );
+    }
+
+    #[test]
+    fn each_object_of_an_array_row_is_a_row() {
+        let out = transform(r#"[{"id":1,"owner":{"id":2}},{"id":3}]"#, Some("Post"));
+        assert_eq!(
+            out,
+            r#"[{"__typename":"Post","id":1,"owner":{"id":2}},{"__typename":"Post","id":3}]"#
+        );
+    }
+
+    #[test]
+    fn a_nested_typename_in_the_json_is_kept() {
+        let out = transform(
+            r#"{"__typename":"Stale","device":{"__typename":"Device","id":"d1"}}"#,
+            Some("Assignment"),
+        );
+        assert_eq!(
+            out,
+            r#"{"__typename":"Assignment","device":{"__typename":"Device","id":"d1"}}"#
+        );
+    }
+
+    #[test]
+    fn without_a_typename_nothing_is_injected() {
+        let out = transform(r#"{"id":1,"__typename":"Row","child":{"a_b":1}}"#, None);
+        assert_eq!(out, r#"{"id":1,"__typename":"Row","child":{"aB":1}}"#);
+    }
+
+    #[test]
+    fn escaped_strings_are_copied_as_they_are() {
+        // Escaped again, "a\"b" became "a\\\"b": the client read a\"b
+        let input = r#"{"t":"a\"b\\c\né","end":"x\\","k\"ey":1}"#;
+        let out = transform(input, None);
+        assert_eq!(out, input);
+        let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(parsed["t"], "a\"b\\c\n\u{e9}");
+        assert_eq!(parsed["end"], "x\\");
+    }
+
+    fn project(input: &str, typename: Option<&str>, projection: &Projection) -> String {
+        let config = TransformConfig {
+            add_typename: typename.is_some(),
+            camel_case: true,
+            project_fields: true,
+            add_graphql_wrapper: false,
+            max_depth: MAX_JSON_DEPTH,
+        };
+        let mut transformer = ZeroCopyTransformer::new(config, typename, Some(projection));
+        let mut output = ByteBuf::with_estimated_capacity(input.len(), &config);
+        transformer.transform_bytes(input.as_bytes(), &mut output).unwrap();
+        String::from_utf8(output.into_vec()).unwrap()
+    }
+
+    fn selections(list: &[(&str, &str, bool)]) -> Projection {
+        let values: Vec<serde_json::Value> = list
+            .iter()
+            .map(|(path, response_path, is_object)| {
+                serde_json::json!({"materialized_path": path, "response_path": response_path,
+                                   "is_nested_object": is_object})
+            })
+            .collect();
+        Projection::from_selections(&values)
+    }
+
+    #[test]
+    fn a_key_hashing_like_a_selected_one_is_not_written() {
+        // "author" and "secret_note17" fell on one bit of the old 128-bit hash map
+        let projection = selections(&[
+            ("author", "author", true),
+            ("author.id", "author.id", false),
+        ]);
+        let out = project(
+            r#"{"id":1,"author":{"id":2,"pw":"x"},"secret_note17":"LEAK","secret_note":"s"}"#,
+            Some("Post"),
+            &projection,
+        );
+        assert_eq!(out, r#"{"__typename":"Post","author":{"id":2}}"#);
+    }
+
+    #[test]
+    fn fields_are_written_in_selection_order() {
+        // A GraphQL response map is ordered like its selection set: not like
+        // the row, whose keys PostgreSQL's jsonb sorts by length
+        let projection = selections(&[
+            ("name", "name", false),
+            ("profile", "p", true),
+            ("profile.zip_code", "p.zipCode", false),
+            ("profile.bio", "p.bio", false),
+            ("__typename", "__typename", false),
+            ("id", "id", false),
+        ]);
+        let out = project(
+            r#"{"id": 1, "name": "n", "profile": {"bio": "b", "zip_code": "z"}, "extra": [1]}"#,
+            Some("User"),
+            &projection,
+        );
+        assert_eq!(out, r#"{"__typename":"User","name":"n","p":{"zipCode":"z","bio":"b"},"id":1}"#);
+    }
+
+    #[test]
+    fn selected_typename_is_written_in_its_place() {
+        let projection = selections(&[
+            ("id", "id", false),
+            ("__typename", "kind", false),
+            ("name", "name", false),
+        ]);
+        let out = project(r#"{"name":"n","id":1}"#, Some("User"), &projection);
+        assert_eq!(out, r#"{"__typename":"User","id":1,"kind":"User","name":"n"}"#);
+    }
+
+    #[test]
+    fn nested_selections_are_kept_under_their_keys() {
+        let projection = selections(&[
+            ("author_info", "author_info", true),
+            ("author_info.first_name", "author_info.first_name", false),
+            ("created_at", "created_at", false),
+        ]);
+        let out = project(
+            r#"{"created_at":"c","author_info":{"first_name":"f","last_name":"l"}}"#,
+            None,
+            &projection,
+        );
+        assert_eq!(out, r#"{"author_info":{"first_name":"f"},"created_at":"c"}"#);
+    }
+
+    #[test]
+    fn a_list_of_objects_is_projected_element_by_element() {
+        let projection = selections(&[("tags", "labels", true), ("tags.name", "labels.n", false)]);
+        let out = project(r#"{"tags":[{"name":"a","x":1},null,{"name":"b"}]}"#, None, &projection);
+        assert_eq!(out, r#"{"labels":[{"n":"a"},null,{"n":"b"}]}"#);
+    }
+
+    #[test]
+    fn two_aliases_of_one_field_read_it_twice() {
+        let projection = selections(&[
+            ("device", "d", true),
+            ("device.id", "d.id", false),
+            ("device", "e", true),
+            ("device.device_name", "e.name", false),
+        ]);
+        let out =
+            project(r#"{"device":{"id":"d1","device_name":"n"},"id":"a"}"#, None, &projection);
+        assert_eq!(out, r#"{"d":{"id":"d1"},"e":{"name":"n"}}"#);
+    }
+
+    #[test]
+    fn a_leaf_is_copied_as_it_is() {
+        // A JSON scalar's keys are data, not field names
+        let projection = selections(&[("meta", "meta", false)]);
+        let out = project(r#"{"meta":{"some_key":[1, {"a_b":2}]}}"#, None, &projection);
+        assert_eq!(out, r#"{"meta":{"some_key":[1, {"a_b":2}]}}"#);
+    }
+
+    #[test]
+    fn typename_is_written_where_selected_only() {
+        let projection = Projection::from_selections(&[
+            serde_json::json!({"materialized_path": "__typename", "response_path": "t",
+                               "type_name": "Post"}),
+            serde_json::json!({"materialized_path": "author", "response_path": "author",
+                               "is_nested_object": true, "type_name": "Author"}),
+            serde_json::json!({"materialized_path": "author.__typename",
+                               "response_path": "author.__typename", "type_name": "Author"}),
+            serde_json::json!({"materialized_path": "tags", "response_path": "tags",
+                               "is_nested_object": true, "type_name": "Tag"}),
+            serde_json::json!({"materialized_path": "tags.name", "response_path": "tags.name"}),
+        ]);
+        let config = TransformConfig {
+            add_typename: false,
+            camel_case: true,
+            project_fields: true,
+            add_graphql_wrapper: false,
+            max_depth: MAX_JSON_DEPTH,
+        };
+        let input = r#"{"__typename":"Stale","author":{"id":1},"tags":[{"name":"a"}]}"#;
+        let mut transformer = ZeroCopyTransformer::new(config, Some("Post"), Some(&projection));
+        let mut output = ByteBuf::with_estimated_capacity(input.len(), &config);
+        transformer.transform_bytes(input.as_bytes(), &mut output).unwrap();
+
+        assert_eq!(
+            String::from_utf8(output.into_vec()).unwrap(),
+            r#"{"t":"Post","author":{"__typename":"Author"},"tags":[{"name":"a"}]}"#
+        );
+    }
+
+    #[test]
+    fn a_selected_typename_of_an_unknown_type_is_the_jsons() {
+        let projection = Projection::from_selections(&[serde_json::json!(
+            {"materialized_path": "__typename", "response_path": "__typename"}
+        )]);
+        assert_eq!(
+            project(r#"{"__typename":"Row","id":1}"#, None, &projection),
+            r#"{"__typename":"Row"}"#
+        );
+        assert_eq!(project(r#"{"id":1}"#, None, &projection), "{}");
+    }
+
+    #[test]
+    fn a_snake_case_key_is_found_by_its_camel_case_name() {
+        // The field dns1 (Python dns_1) is read from the key "dns_1"
+        let projection = selections(&[("dns1", "dns1", true), ("dns1.ip", "dns1.ip", false)]);
+        let out = project(r#"{"dns_1":{"ip":"1.1.1.1"},"dns_2":{}}"#, None, &projection);
+        assert_eq!(out, r#"{"dns1":{"ip":"1.1.1.1"}}"#);
+    }
+
+    #[test]
+    fn a_selected_key_is_found_camel_cased_too() {
+        let projection = selections(&[("first_name", "firstName", false)]);
+        assert_eq!(project(r#"{"firstName":"a"}"#, None, &projection), r#"{"firstName":"a"}"#);
+        // Both spellings in the JSON: the field is written once
+        assert_eq!(
+            project(r#"{"first_name":"a","firstName":"b"}"#, None, &projection),
+            r#"{"firstName":"a"}"#
+        );
     }
 }

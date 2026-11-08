@@ -87,15 +87,21 @@ class User:
     @fraiseql.field(description="Number of posts authored by this user")
     async def post_count(self, info) -> int:
         db = info.context["db"]
-        return await db.fetchval(
-            "SELECT count(*) FROM v_post WHERE author_id = $1", self.id
-        )
+        return await db.count("v_post", where={"author_id": {"eq": self.id}})
 ```
 
 Because the parent object (`self`) and `info` are both available, a custom field can
 combine already-loaded data with a targeted query. Keep these resolvers cheap: if a
 field issues one query per parent row, batch it with a dataloader instead (next
 section).
+
+`db.find` and `db.find_one` usually answer with the JSON Rust writes from the view,
+without building Python objects. When the query selects a custom field (of the type
+they return, or of a type nested in it), they return typed objects instead, built from
+the whole JSONB row, so `self.id` is there even when the query doesn't select `id`.
+graphql-core then completes them field by field, which costs about 0.2 ms per row
+(against 0.01 ms for the Rust path): a query that selects only plain fields keeps the
+fast path.
 
 ---
 
@@ -130,7 +136,7 @@ from fraiseql.optimization.dataloader import DataLoader
 class UserDataLoader(DataLoader):
     async def batch_load(self, keys: list[UUID]) -> list["User | None"]:
         db = self.context["db"]
-        rows = await db.find("v_user", id__in=keys)
+        rows = await db.find("v_user", where={"id": {"in": keys}})
         by_id = {row.id: row for row in rows}
         return [by_id.get(key) for key in keys]
 

@@ -40,33 +40,41 @@ class ExecutionTracer:
         """Initialize tracer."""
         self.calls: list[dict[str, Any]] = []
 
-    def trace_argument_coercion(self, fn_name: str, arg_name: str, raw_value: Any, coerced_value: Any) -> None:
+    def trace_argument_coercion(
+        self, fn_name: str, arg_name: str, raw_value: Any, coerced_value: Any
+    ) -> None:
         """Record argument coercion."""
-        self.calls.append({
-            "event": "argument_coercion",
-            "function": fn_name,
-            "argument": arg_name,
-            "raw_value": raw_value,
-            "coerced_value": coerced_value,
-            "coerced_type": type(coerced_value).__name__,
-        })
+        self.calls.append(
+            {
+                "event": "argument_coercion",
+                "function": fn_name,
+                "argument": arg_name,
+                "raw_value": raw_value,
+                "coerced_value": coerced_value,
+                "coerced_type": type(coerced_value).__name__,
+            }
+        )
 
     def trace_field_selection(self, field_name: str, fields_requested: list[str]) -> None:
         """Record field selection."""
-        self.calls.append({
-            "event": "field_selection",
-            "field": field_name,
-            "fields_requested": fields_requested,
-        })
+        self.calls.append(
+            {
+                "event": "field_selection",
+                "field": field_name,
+                "fields_requested": fields_requested,
+            }
+        )
 
     def trace_resolver_call(self, resolver_name: str, args: dict[str, Any], result: Any) -> None:
         """Record resolver call."""
-        self.calls.append({
-            "event": "resolver_call",
-            "resolver": resolver_name,
-            "args": {k: v for k, v in args.items() if k != "info"},
-            "result_type": type(result).__name__,
-        })
+        self.calls.append(
+            {
+                "event": "resolver_call",
+                "resolver": resolver_name,
+                "args": {k: v for k, v in args.items() if k != "info"},
+                "result_type": type(result).__name__,
+            }
+        )
 
     def print_trace(self) -> str:
         """Pretty print the trace."""
@@ -92,6 +100,7 @@ class TestEnumDebugTrace:
 
     async def test_enum_inline_with_trace(self, clear_registry) -> None:
         """Trace inline enum execution."""
+
         # Create simple schema with resolver
         async def user_by_status(info, status: Status) -> User:
             return User(id="1", name="Alice", status=status)
@@ -118,6 +127,7 @@ class TestEnumDebugTrace:
 
     async def test_enum_variable_with_trace(self, clear_registry) -> None:
         """Trace enum variable execution."""
+
         # Create simple schema with resolver
         async def user_by_status(info, status: Status) -> User:
             return User(id="1", name="Alice", status=status)
@@ -153,12 +163,16 @@ class TestEnumDebugTrace:
 
         # From variable (string)
         coerced_from_variable = _coerce_to_enum("ACTIVE", Status)
-        print(f"From variable: 'ACTIVE' -> {coerced_from_variable!r} (type: {type(coerced_from_variable)})")
+        print(
+            f"From variable: 'ACTIVE' -> {coerced_from_variable!r} (type: {type(coerced_from_variable)})"
+        )
         assert coerced_from_variable == Status.ACTIVE
 
         # From inline literal (should also be string)
         coerced_from_inline = _coerce_to_enum("ACTIVE", Status)
-        print(f"From inline: 'ACTIVE' -> {coerced_from_inline!r} (type: {type(coerced_from_inline)})")
+        print(
+            f"From inline: 'ACTIVE' -> {coerced_from_inline!r} (type: {type(coerced_from_inline)})"
+        )
         assert coerced_from_inline == Status.ACTIVE
 
         # They should be identical

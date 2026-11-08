@@ -16,7 +16,7 @@ This guide defines canonical terminology used throughout FraiseQL documentation 
 | **PostgreSQL view** | Generic database views | Any `CREATE VIEW` | When discussing JSONB pattern specifically |
 | **Projection table** | Performance optimization tables | `tv_user_cached` | "table view", "materialized projection" |
 | **Rust pipeline** | Architecture explanations | PostgreSQL → Rust → HTTP | "Rust extension" (in user docs) |
-| **fraiseql_rs** | Code/technical references | Import from `fraiseql_rs` | In user-facing docs |
+| **fraiseql_rs** | Code/technical references | `from fraiseql import fraiseql_rs` | In user-facing docs |
 | **Trinity pattern** | Architectural pattern | Three-identifier design | "three-tier ID system" |
 | **Trinity identifiers** | The three ID fields | pk_*, id, identifier | "Trinity IDs" |
 | **CQRS** | After first definition | Read/write separation | Spell out repeatedly |
@@ -214,10 +214,15 @@ FraiseQL's Rust pipeline transforms PostgreSQL JSONB to HTTP responses
 - Contributing guides
 - Source code references
 
+The extension ships inside the `fraiseql` package; there is no top-level `fraiseql_rs`
+module to import.
+
 **Example:**
 
 ```python
-from fraiseql_rs import transform_jsonb
+from fraiseql import fraiseql_rs
+
+fraiseql_rs.transform_json('{"user_name": "John"}')  # '{"userName":"John"}'
 ```
 
 **Avoid in user docs:**

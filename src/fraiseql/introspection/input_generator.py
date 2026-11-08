@@ -184,13 +184,14 @@ class InputGenerator:
             (object,),
             {
                 "__annotations__": annotations,
-                "__gql_fields__": gql_fields,  # NEW: Store field metadata
+                # Field descriptors as class attributes, like name: str = fraise_field(...)
+                **gql_fields,
                 "__doc__": composite_metadata.comment
                 or f"Auto-generated from {composite_type_name}",
             },
         )
 
-        return input_cls
+        return self._as_input_type(input_cls)
 
     def _composite_type_to_class_name(self, composite_type_name: str) -> str:
         """Convert composite type name to GraphQL input class name.
@@ -323,7 +324,14 @@ class InputGenerator:
         # Create input class
         input_cls = type(class_name, (object,), {"__annotations__": annotations})
 
-        return input_cls
+        return self._as_input_type(input_cls)
+
+    def _as_input_type(self, input_cls: Type) -> Type:
+        """Make a generated class a FraiseQL input type, as ``@fraiseql.input`` does."""
+        # Import here to avoid circular imports
+        from fraiseql import input as fraiseql_input
+
+        return fraiseql_input(input_cls)
 
     def _function_to_input_name(self, function_name: str) -> str:
         """Convert fn_create_user → CreateUserInput."""

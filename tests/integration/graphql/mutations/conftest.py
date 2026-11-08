@@ -233,9 +233,10 @@ async def blog_simple_app_with_native_errors(blog_simple_app, blog_simple_db_url
         await conn.commit()
 
     # Define GraphQL types and mutations
+    from typing import Any
+
     import fraiseql
     from fraiseql.db import DatabaseQuery
-    from typing import Any
 
     # Define MutationError type
     @fraiseql.type
@@ -455,6 +456,6 @@ async def blog_simple_app_with_native_errors(blog_simple_app, blog_simple_db_url
     # Refresh schema to rebuild with the new types and mutations
     await blog_simple_app.refresh_schema()
 
-    yield blog_simple_app
+    return blog_simple_app
 
     # Cleanup happens automatically via database fixture

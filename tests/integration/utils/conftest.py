@@ -1,6 +1,7 @@
 """Fixtures for utility integration tests (introspection, response utils, case conversion)."""
 
 import pytest
+
 from fraiseql import fraise_type, query
 from fraiseql.config.schema_config import SchemaConfig
 
@@ -60,7 +61,6 @@ def case_config():
 @pytest.fixture
 def case_conversion_schema(meta_test_schema, case_config):
     """Schema with case conversion enabled."""
-    from fraiseql.config.schema_config import SchemaConfig
 
     meta_test_schema.clear()
 

@@ -114,10 +114,10 @@ class TestIntrospectionUtils:
 
         # Check field descriptions
         id_field = result["fields"]["id"]
-        assert id_field["type"] == str
+        assert id_field["type"] is str
 
         name_field = result["fields"]["name"]
-        assert name_field["type"] == str
+        assert name_field["type"] is str
 
     def test_describe_fields_function(self) -> None:
         """Test _describe_fields helper function."""
@@ -146,7 +146,7 @@ class TestIntrospectionUtils:
 
         # Check id field
         id_desc = result["id"]
-        assert id_desc["type"] == int
+        assert id_desc["type"] is int
         assert id_desc["purpose"] == "primary_key"
         assert id_desc["default"] is None
         assert id_desc["default_factory"] is None
@@ -154,10 +154,10 @@ class TestIntrospectionUtils:
 
         # Check name field
         name_desc = result["name"]
-        assert name_desc["type"] == str
+        assert name_desc["type"] is str
         assert name_desc["purpose"] == "data"
         assert name_desc["default"] == "test_default"
-        assert name_desc["default_factory"] == str
+        assert name_desc["default_factory"] is str
         assert name_desc["description"] == "Name field"
 
     def test_describe_fields_empty(self) -> None:

@@ -8,15 +8,20 @@ Quick visual guides to help you make the right architectural decisions for your 
 
 ## Database Methods Comparison
 
-### find() vs find_one() vs find_required()
+### find() vs find_one() vs exists()
 
-**Choose the right method based on your use case:**
+**Choose the right method based on your use case.** `find` and `find_one` take the
+view name, the GraphQL field name and `info`, and return the field's response, ready
+for the client: return it from the resolver as is.
 
-| Method | Returns | Raises on Not Found? | Use When | Example |
-|--------|---------|---------------------|----------|---------|
-| **`find()`** | `list[T]` | ❌ No (empty list) | Multiple results expected | `users = await db.find(User, where={"status": "active"})` |
-| **`find_one()`** | `T \| None` | ❌ No (returns None) | Result is optional | `user = await db.find_one(User, id=user_id)` |
-| **`find_required()`** | `T` | ✅ Yes (ValueError) | Result must exist | `user = await db.find_required(User, id=user_id)` |
+| Method | Answers | No match | Use When | Example |
+|--------|---------|----------|----------|---------|
+| **`find()`** | a list field | `[]` | Multiple results expected | `await db.find("v_user", "users", info, where={"status": {"eq": "active"}})` |
+| **`find_one()`** | an optional field | `null` | Result is optional | `await db.find_one("v_user", "user", info, mandatory_filters={"id": user_id})` |
+| **`exists()`** | a `bool` | `False` | Check before answering, e.g. to raise when a row must exist | `await db.exists("v_user", mandatory_filters={"id": user_id})` |
+
+There is no `find_required()`: to make a missing row an error, check with `exists()`
+(or `count()`) and raise, which answers with a GraphQL error.
 
 **Decision tree:**
 
@@ -25,11 +30,11 @@ flowchart TD
     A[Need to query database?] -->|Yes| B{How many results?}
     A -->|No| Z[Don't query]
 
-    B -->|Multiple/List| C[Use find<br/>Returns list[T]]
+    B -->|Multiple/List| C[Use find<br/>list field]
     B -->|Single| D{Is result optional?}
 
-    D -->|Yes, can be None| E[Use find_one<br/>Returns T | None]
-    D -->|No, must exist| F[Use find_required<br/>Raises if not found]
+    D -->|Yes, can be null| E[Use find_one<br/>optional field]
+    D -->|No, must exist| F[Check with exists<br/>raise if missing, then find_one]
 
     style C fill:#90EE90
     style E fill:#87CEEB
@@ -39,27 +44,42 @@ flowchart TD
 **Code examples:**
 
 ```python
-# find() - Get multiple results
-users = await db.find(User, where={"status": "active"})
-if not users:
-    print("No active users")  # Empty list, not None
-for user in users:
-    print(user.name)
+import fraiseql
+from fraiseql.types import ID
 
-# find_one() - Optional single result
-user = await db.find_one(User, id="some-uuid")
-if user is None:
-    print("User not found")  # Handle None
-else:
-    print(user.name)
 
-# find_required() - Required single result
-try:
-    user = await db.find_required(User, id="some-uuid")
-    print(user.name)  # Always has value if we get here
-except ValueError:
-    print("User not found - exception raised")
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: ID
+    name: str
+    status: str
+
+
+# find() - a list field: the rows that match, [] when none do
+@fraiseql.query
+async def active_users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user", "activeUsers", info, where={"status": {"eq": "active"}})
+
+
+# find_one() - an optional field: null when no row matches
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", "user", info, mandatory_filters={"id": id})
+
+
+# A row that must exist: check first, and raise to answer with a GraphQL error
+@fraiseql.query
+async def user_required(info, id: ID) -> User:
+    db = info.context["db"]
+    if not await db.exists("v_user", mandatory_filters={"id": id}):
+        raise ValueError(f"User {id} not found")
+    return await db.find_one("v_user", "userRequired", info, mandatory_filters={"id": id})
 ```
+
+`{ user(id: "...") { name } }` answers `{"user": null}` for an unknown id;
+`userRequired` answers `null` with the error `User ... not found`.
 
 ---
 
@@ -341,7 +361,7 @@ query {
 | Pattern | Best For | Success/Error Handling | Complexity | Example |
 |---------|----------|----------------------|------------|---------|
 | **Function-Based** | Simple mutations | Returns type directly | Low | `async def create_user(...) -> User` |
-| **Class-Based** | Complex mutations | Explicit success/failure types | Medium | `class CreateUser: success: UserCreated; failure: ValidationError` |
+| **Class-Based** | Complex mutations | Explicit success/error types | Medium | `class CreateUser: success: CreateUserSuccess; error: ValidationError` |
 
 **Function-based pattern (simple):**
 
@@ -358,10 +378,10 @@ async def create_user(info, name: str, email: str) -> User:
         "name": name,
         "email": email
     })
-    return await db.find_one(User, id=result["id"])
+    return await db.find_one(User, mandatory_filters={"id": result["id"]})
 ```
 
-**Class-based pattern (with success/failure):**
+**Class-based pattern (with success/error):**
 
 ```python
 import fraiseql
@@ -369,29 +389,16 @@ from fraiseql import mutation
 
 @mutation
 class CreateUser:
-    """Mutation with explicit success/failure handling."""
+    """Mutation with explicit success/error handling."""
     input: CreateUserInput
-    success: UserCreated  # Success type
-    failure: ValidationError  # Failure type
-
-    async def resolve(self, info):
-        db = info.context["db"]
-        result = await db.execute_function("fn_create_user", {
-            "name": self.input.name,
-            "email": self.input.email
-        })
-
-        if result["success"]:
-            user = await db.find_one(User, id=result["user_id"])
-            return UserCreated(
-                user=user,
-                message=result.get("message", "User created")
-            )
-        return ValidationError(
-            message=result["error"],
-            code=result.get("code", "VALIDATION_ERROR")
-        )
+    success: CreateUserSuccess  # Success type
+    error: ValidationError  # Error type
 ```
+
+A class mutation has no resolver body: fraiseql calls the PostgreSQL function
+`create_user(input jsonb)`, which returns a `mutation_response`, and builds
+`CreateUserSuccess` or `ValidationError` from its status. To run Python code,
+use a function mutation that returns `CreateUserSuccess | ValidationError`.
 
 **Decision tree:**
 
@@ -593,13 +600,13 @@ class User:
 
 | Feature | Memory Backend | PostgreSQL Backend |
 |---------|---------------|-------------------|
-| **Multi-instance Support** | ❌ No (each instance has own cache) | ✅ Yes (shared cache) |
-| **Persistence** | ❌ Lost on restart | ✅ Survives restarts |
+| **Multi-instance Support** | ❌ No (each instance has own cache) | ⚠️ Not yet (see the note below) |
+| **Persistence** | ❌ Lost on restart | ⚠️ Not yet (see the note below) |
 | **Performance** | ✅ Fastest (no network) | ⚠️ Network overhead (~1ms) |
 | **Setup Complexity** | ✅ Zero config | ⚠️ Requires migration |
 | **Use Case** | Single instance, development | Multi-instance, production |
 | **Cache Size** | Limited by RAM | Limited by disk |
-| **TTL Support** | ✅ Yes | ✅ Yes |
+| **TTL Support** | ❌ No | ❌ No |
 
 **Decision tree:**
 
@@ -626,8 +633,8 @@ flowchart TD
 from fraiseql import FraiseQLConfig
 
 config = FraiseQLConfig(
-    apq_storage_backend="memory",  # Default
-    apq_cache_size=1000             # Max cached queries
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="memory",  # Default: in-process, unbounded
 )
 ```
 
@@ -635,19 +642,20 @@ config = FraiseQLConfig(
 
 ```python
 config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
     apq_storage_backend="postgresql",
-    apq_storage_schema="apq_cache",
-    apq_cache_ttl=3600  # 1 hour TTL
+    apq_backend_config={"table_prefix": "apq_"},  # Tables apq_queries, apq_responses
 )
-
-# Automatically creates:
-# CREATE TABLE apq_cache.persisted_queries (
-#     query_hash TEXT PRIMARY KEY,
-#     query_text TEXT NOT NULL,
-#     created_at TIMESTAMPTZ DEFAULT NOW(),
-#     last_used TIMESTAMPTZ DEFAULT NOW()
-# );
 ```
+
+There is no TTL or size limit setting: stored queries stay until you delete them.
+
+> **Note:** the `postgresql` backend opens its own small connection pool to
+> `database_url` (or `apq_backend_config["database_url"]`) on the first APQ request,
+> and creates its tables if they don't exist (`auto_create_tables`, default on).
+> Persisted queries survive a restart and are shared by every instance using that
+> database. Its lookups are synchronous: each holds the event loop for one indexed
+> query (a persisted query's text is kept in process once read).
 
 ---
 

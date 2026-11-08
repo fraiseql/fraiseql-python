@@ -14,6 +14,7 @@ and similar query builders.
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import cache
+from types import UnionType
 from typing import (
     Any,
     Protocol,
@@ -62,6 +63,7 @@ def build_operator_composed(
     field_type: type | None = None,
     detected_field_type: FieldType | None = None,
     distance_within: float | None = None,
+    field_name: str | None = None,
 ) -> Composed:
     """Build parameterized SQL for a specific operator using psycopg Composed.
 
@@ -74,6 +76,7 @@ def build_operator_composed(
         field_type: Optional type hint for proper casting.
         detected_field_type: Optional pre-detected field type (overrides detection).
         distance_within: Optional sibling threshold from the GraphQL ``VectorFilter``.
+        field_name: Optional field name, for the missing-threshold deprecation warning.
 
     Returns:
         A psycopg Composed object with properly parameterized SQL.
@@ -84,12 +87,9 @@ def build_operator_composed(
 
     # A distance operator renders a number, not a predicate. Wrap it in the
     # requested comparison so PostgreSQL accepts it in a WHERE clause (#505).
-    if op in VECTOR_DISTANCE_OPERATORS and detected_field_type in (
-        FieldType.VECTOR,
-        FieldType.SPARSE_VECTOR,
-    ):
+    if op in VECTOR_DISTANCE_OPERATORS and detected_field_type == FieldType.VECTOR:
         query_vector, threshold, comparison = unpack_distance_filter(
-            val, operator=op, distance_within=distance_within
+            val, operator=op, distance_within=distance_within, field_name=field_name
         )
         distance_sql = get_operator_function(detected_field_type, op)(path_sql, query_vector)
         return Composed(
@@ -138,7 +138,10 @@ def _make_filter_field_composed(
         field_type: Optional type hint for the field.
 
     Returns:
-        Composed SQL WHERE clause for the field, or None if no valid operators found.
+        Composed SQL WHERE clause for the field, or None if every operator's value is None.
+
+    Raises:
+        ValueError: An operator is unknown for the field's type, or its value is unusable.
     """
     conditions = []
 
@@ -179,12 +182,20 @@ def _make_filter_field_composed(
                 )
 
             condition = build_operator_composed(
-                path_sql, op, val, field_type, detected_field_type, distance_within
+                path_sql,
+                op,
+                val,
+                field_type,
+                detected_field_type,
+                distance_within,
+                field_name=name,
             )
             conditions.append(condition)
-        except ValueError:
-            # Skip unsupported operators
-            continue
+        except ValueError as e:
+            # Skipping it would drop this filter while its siblings survived,
+            # so the query would match rows it was meant to exclude.
+            msg = f"where: field {name!r}, operator {op!r}: {e}"
+            raise ValueError(msg) from e
 
     if not conditions:
         return None
@@ -398,7 +409,7 @@ def _build_where_to_sql(
 
 
 def unwrap_type(typ: type[Any]) -> type[Any]:
-    """Unwrap Optional[T] to T, or return type as is.
+    """Unwrap Optional[T] (or T | None) to T, or return type as is.
 
     Args:
         typ: A type annotation to unwrap.
@@ -406,7 +417,7 @@ def unwrap_type(typ: type[Any]) -> type[Any]:
     Returns:
         The inner type if `typ` is Optional[T], else `typ` unchanged.
     """
-    if get_origin(typ) is Union:
+    if get_origin(typ) in (Union, UnionType):
         args = [arg for arg in get_args(typ) if arg is not type(None)]
         if len(args) == 1:
             return args[0]

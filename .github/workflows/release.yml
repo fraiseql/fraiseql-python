@@ -42,6 +42,18 @@ jobs:
               $PRERELEASE
           fi
 
+  # Signed CycloneDX SBOM attached to the release. A separate workflow, called
+  # here because a release created with GITHUB_TOKEN triggers no `release` event.
+  sbom:
+    name: SBOM
+    needs: create-release
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/sbom-generation.yml
+    with:
+      version: ${{ needs.create-release.outputs.version }}
+
   # Build wheels for each platform
   build-wheels:
     name: Build wheels (${{ matrix.os }})
@@ -64,10 +76,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # One wheel per supported interpreter. The last version listed is the
+      # job's default python, so the pip installs below keep running on 3.13.
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: |
+            3.14
+            3.13
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -81,7 +97,7 @@ jobs:
       - name: Build wheel
         run: |
           pip install maturin
-          maturin build --release --target ${{ matrix.target }} ${{ matrix.maturin-args }}
+          maturin build --release --target ${{ matrix.target }} --find-interpreter ${{ matrix.maturin-args }}
           mkdir -p dist/
           cp fraiseql_rs/target/wheels/*.whl dist/
 
@@ -128,11 +144,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download all artifacts
+      # Only the distributions: the run also holds the SBOM bundle (a README.md,
+      # the signature, the certificate), which twine refuses as a distribution.
+      - name: Download the wheels
         uses: actions/download-artifact@v8
         with:
+          pattern: wheel-*
           path: dist/
           merge-multiple: true
+
+      - name: Download the sdist
+        uses: actions/download-artifact@v8
+        with:
+          name: sdist
+          path: dist/
 
       - name: List distributions
         run: ls -lh dist/

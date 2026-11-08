@@ -84,13 +84,9 @@ async def widgets_count(info) -> int:
     return await _repo(info).count(_VIEW)
 
 
+@pytest.mark.usefixtures("clear_registry_class")
 class TestIssue448MultiFieldFindOne:
     """Multi-field queries mixing find_one, find, and scalar siblings must merge cleanly."""
-
-    @pytest.fixture(scope="class")
-    def clear_registry_fixture(self, clear_registry_class) -> None:
-        """Clear registry before the class runs."""
-        return
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
     async def setup_data(self, class_db_pool, test_schema) -> None:

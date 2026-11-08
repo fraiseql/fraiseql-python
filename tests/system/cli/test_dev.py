@@ -43,6 +43,7 @@ class TestDevCommand:
                 port=8000,
                 reload=True,
                 log_level="info",
+                app_dir=str(Path.cwd()),
             )
 
     def test_dev_custom_options(self, cli_runner, temp_project_dir) -> None:
@@ -55,7 +56,7 @@ class TestDevCommand:
                 [
                     "dev",
                     "--host",
-                    "0.0.0.0",  # noqa: S104
+                    "0.0.0.0",
                     "--port",
                     "3000",
                     "--no-reload",
@@ -70,10 +71,11 @@ class TestDevCommand:
 
             mock_uvicorn.run.assert_called_once_with(
                 "myapp:application",
-                host="0.0.0.0",  # noqa: S104
+                host="0.0.0.0",
                 port=3000,
                 reload=False,
                 log_level="info",
+                app_dir=str(Path.cwd()),
             )
 
     def test_dev_loads_env_file(self, cli_runner, temp_project_dir) -> None:

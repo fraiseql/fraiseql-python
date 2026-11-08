@@ -77,7 +77,7 @@ def test_auth_wrapper_reports_its_real_signature() -> None:
     with too few arguments. Asserting on the wrapper's own signature pins the fix.
     """
 
-    def email(self) -> str:  # noqa: N805 - self-only field method
+    def email(self) -> str:
         return "secret"
 
     wrapped = authorize_field(lambda info: True)(email)

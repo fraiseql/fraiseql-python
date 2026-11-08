@@ -2,6 +2,8 @@
 
 import pytest
 
+from fraiseql.storage.apq_store import compute_query_hash
+
 
 def test_apq_query_storage() -> None:
     """Test storing and retrieving persisted queries by hash."""
@@ -9,7 +11,7 @@ def test_apq_query_storage() -> None:
     from fraiseql.storage.apq_store import get_persisted_query, store_persisted_query
 
     query = "{ users { id name } }"
-    hash_value = "ecf4edb46db40b5132295c0291d62fb65d6759a9eedfa4d5d612dd5ec54a6b38"
+    hash_value = compute_query_hash(query)
 
     # Should store successfully
     store_persisted_query(hash_value, query)
@@ -27,21 +29,21 @@ def test_apq_query_storage_missing_key() -> None:
     assert result is None
 
 
-def test_apq_query_storage_overwrite() -> None:
-    """Test overwriting existing persisted query."""
+def test_apq_query_storage_refuses_another_query_under_a_stored_hash() -> None:
+    """A stored hash cannot be overwritten with a different query."""
     from fraiseql.storage.apq_store import get_persisted_query, store_persisted_query
 
-    hash_value = "test_hash_123"
     query1 = "{ users }"
     query2 = "{ posts }"
+    hash_value = compute_query_hash(query1)
 
-    # Store first query
     store_persisted_query(hash_value, query1)
+    store_persisted_query(hash_value, query1)  # storing it again is fine
     assert get_persisted_query(hash_value) == query1
 
-    # Overwrite with second query
-    store_persisted_query(hash_value, query2)
-    assert get_persisted_query(hash_value) == query2
+    with pytest.raises(ValueError, match="does not match"):
+        store_persisted_query(hash_value, query2)
+    assert get_persisted_query(hash_value) == query1
 
 
 def test_apq_query_storage_multiple_queries() -> None:
@@ -49,9 +51,8 @@ def test_apq_query_storage_multiple_queries() -> None:
     from fraiseql.storage.apq_store import get_persisted_query, store_persisted_query
 
     queries = {
-        "hash1": "{ users { id } }",
-        "hash2": "{ posts { title } }",
-        "hash3": "{ comments { content } }",
+        compute_query_hash(query): query
+        for query in ("{ users { id } }", "{ posts { title } }", "{ comments { content } }")
     }
 
     # Store all queries
@@ -69,14 +70,15 @@ def test_apq_query_storage_clear() -> None:
     from fraiseql.storage.apq_store import clear_storage, get_persisted_query, store_persisted_query
 
     # Store a query
-    store_persisted_query("test_hash", "{ hello }")
-    assert get_persisted_query("test_hash") == "{ hello }"
+    hash_value = compute_query_hash("{ hello }")
+    store_persisted_query(hash_value, "{ hello }")
+    assert get_persisted_query(hash_value) == "{ hello }"
 
     # Clear storage
     clear_storage()
 
     # Query should no longer exist
-    assert get_persisted_query("test_hash") is None
+    assert get_persisted_query(hash_value) is None
 
 
 def test_apq_storage_validation_errors() -> None:
@@ -132,8 +134,8 @@ def test_get_storage_stats() -> None:
     assert stats["total_size_bytes"] == 0
 
     # Add some queries
-    store_persisted_query("hash1", "{ hello }")
-    store_persisted_query("hash2", "{ world }")
+    store_persisted_query(compute_query_hash("{ hello }"), "{ hello }")
+    store_persisted_query(compute_query_hash("{ world }"), "{ world }")
 
     # Check updated stats
     stats = get_storage_stats()

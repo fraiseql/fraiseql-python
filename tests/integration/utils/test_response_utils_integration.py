@@ -141,7 +141,7 @@ class TestFieldDescriptionsIntegration:
 
         assert user_type is not None
 
-        descriptions = extract_field_descriptions(user_type)
+        extract_field_descriptions(user_type)
 
         # Note: computed methods are not included in field descriptions
         # as they are not fields, just methods
@@ -180,7 +180,6 @@ class TestFieldDescriptionsIntegration:
 
             # Should have reasonable content
             if hasattr(type_cls, "__annotations__"):
-                annotations = type_cls.__annotations__
                 # Should have at least some descriptions for annotated fields
                 # (though not all fields may have descriptions)
                 assert len(descriptions) >= 0

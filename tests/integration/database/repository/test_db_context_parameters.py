@@ -51,7 +51,9 @@ class TestDatabaseContextParameters:
         assert result == mock_result
 
         # Verify SQL execution
-        assert mock_cursor.execute.call_count == 3  # One for timeout, one for started_at, one for function
+        assert (
+            mock_cursor.execute.call_count == 3
+        )  # One for timeout, one for started_at, one for function
 
         # Get the last call (the actual function call)
         call_args = mock_cursor.execute.call_args_list[2][0]

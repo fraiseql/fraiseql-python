@@ -1,12 +1,12 @@
 """Complexity analysis for GraphQL subscriptions."""
 
 from dataclasses import dataclass
-from functools import wraps
 from typing import Any, Callable
 
 from graphql import SelectionSetNode
 
 from fraiseql.core.exceptions import ComplexityLimitExceededError
+from fraiseql.utils.annotations import wraps
 
 
 @dataclass

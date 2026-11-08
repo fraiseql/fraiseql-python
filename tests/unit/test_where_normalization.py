@@ -127,12 +127,12 @@ class TestDictNormalization:
 
         assert len(clause.conditions) == 2
         # First condition should use FK
-        fk_cond = [c for c in clause.conditions if c.field_path == ["machine", "id"]][0]
+        fk_cond = next(c for c in clause.conditions if c.field_path == ["machine", "id"])
         assert fk_cond.lookup_strategy == "fk_column"
         assert fk_cond.target_column == "machine_id"
 
         # Second condition should use JSONB
-        jsonb_cond = [c for c in clause.conditions if c.field_path == ["machine", "name"]][0]
+        jsonb_cond = next(c for c in clause.conditions if c.field_path == ["machine", "name"])
         assert jsonb_cond.lookup_strategy == "jsonb_path"
         assert jsonb_cond.jsonb_path == ["machine", "name"]
 
@@ -284,3 +284,83 @@ class TestNormalizationEquivalence:
         assert (
             clause_dict.conditions[0].lookup_strategy == clause_input.conditions[0].lookup_strategy
         )
+
+
+class TestVectorFilterFolding:
+    """A GraphQL VectorFilter reaches FieldCondition as {vector, threshold, comparison}."""
+
+    @staticmethod
+    def _conditions(where):
+        repo = FraiseQLRepository(None)  # type: ignore
+        clause = repo._normalize_where(  # type: ignore
+            where, view_name="tv_vector_doc", table_columns={"id", "embedding"}
+        )
+        return [(c.field_path, c.operator, c.value) for c in clause.conditions]
+
+    def test_graphql_shape_is_one_distance_condition(self):
+        where = {"embedding": {"cosineDistance": {"dense": [1.0, 0.0]}, "distanceWithin": 0.4}}
+
+        assert self._conditions(where) == [
+            (
+                ["embedding"],
+                "cosine_distance",
+                {"vector": [1.0, 0.0], "threshold": 0.4, "comparison": "lte"},
+            )
+        ]
+
+    def test_inner_product_is_an_operator(self):
+        where = {"embedding": {"innerProduct": {"dense": [1.0, 0.0]}, "distanceWithin": -0.5}}
+
+        [(_, operator, value)] = self._conditions(where)
+        assert operator == "inner_product"
+        assert value["threshold"] == -0.5
+
+    def test_python_shapes_are_unchanged(self):
+        where = {"embedding": {"l2_distance": ([1.0, 0.0], 0.75)}}
+        assert self._conditions(where) == [(["embedding"], "l2_distance", ([1.0, 0.0], 0.75))]
+
+    def test_sparse_vector_is_refused(self):
+        import pytest
+
+        where = {"embedding": {"cosineDistance": {"sparse": {"indices": [0], "values": [1.0]}}}}
+        with pytest.raises(ValueError, match="dense vector"):
+            self._conditions(where)
+
+    @staticmethod
+    def _sql(where):
+        repo = FraiseQLRepository(None)  # type: ignore
+        clause = repo._normalize_where(  # type: ignore
+            where, view_name="tv_vector_doc", table_columns={"id", "embedding"}
+        )
+        return clause.to_sql()
+
+    def test_distance_within_is_required(self):
+        import pytest
+
+        where = {"embedding": {"cosineDistance": {"dense": [1.0, 0.0]}}}
+        with pytest.raises(ValueError, match=r"'embedding'.*distanceWithin"):
+            self._conditions(where)
+
+    def test_distance_within_is_required_for_a_bit_string(self):
+        import pytest
+
+        where = {"fingerprint": {"hammingDistance": "1100"}}
+        with pytest.raises(ValueError, match=r"'fingerprint'.*distanceWithin"):
+            self._conditions(where)
+
+    def test_vector_threshold_pair_is_deprecated(self):
+        import pytest
+
+        where = {"embedding": {"l2_distance": [[1.0, 0.0], 0.75]}}
+        with pytest.warns(DeprecationWarning, match=r'\{"vector": \.\.\., "threshold": \.\.\.\}'):
+            _, params = self._sql(where)
+        assert params == [[1.0, 0.0], 0.75]
+
+    def test_vector_threshold_dict_is_not_deprecated(self):
+        import warnings
+
+        where = {"embedding": {"l2_distance": {"vector": [1.0, 0.0], "threshold": 0.75}}}
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _, params = self._sql(where)
+        assert params == [[1.0, 0.0], 0.75]

@@ -134,7 +134,7 @@ class TestOrderBySchemaGeneration:
         schema = build_fraiseql_schema()
         field = schema.query_type.fields.get("manualOrderUsers")
 
-        order_params = [k for k in field.args.keys() if "order" in k.lower()]
+        order_params = [k for k in field.args if "order" in k.lower()]
         assert len(order_params) == 1, f"Should not duplicate: {order_params}"
 
     def test_single_return_type_no_order_by(self):
@@ -232,5 +232,5 @@ class TestPaginationSchemaGeneration:
         schema = build_fraiseql_schema()
         field = schema.query_type.fields.get("manualLimitItems")
 
-        limit_params = [k for k in field.args.keys() if k == "limit"]
+        limit_params = [k for k in field.args if k == "limit"]
         assert len(limit_params) == 1

@@ -288,11 +288,12 @@ You can also gate operations with FraiseQL's auth decorators.
 ```python
 import fraiseql
 from fraiseql.auth import requires_auth
+from fraiseql.types import ID
 
 
 @fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
-    id: fraiseql.ID
+    id: ID
     email: str
     name: str | None
 
@@ -302,7 +303,7 @@ class User:
 async def me(info) -> User | None:
     user = info.context["user"]            # a UserContext (Google `sub` -> user_id)
     db = info.context["db"]
-    return await db.find_one("v_user", id=user.user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user.user_id})
 ```
 
 Denied access surfaces as a GraphQL error with `extensions.code = "FORBIDDEN"`.

@@ -197,7 +197,7 @@ async def my_profile(info) -> User | None:
     if user is None or not user.has_role("member"):
         return None
     db = info.context["db"]
-    return await db.find_one("v_user", id=user.user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user.user_id})
 ```
 
 ---
@@ -385,8 +385,15 @@ from fraiseql.auth import (
 | `TokenRevocationMixin` | Mix into a provider to check revocation during `validate_token` (used by `Auth0ProviderWithRevocation`). |
 
 Both stores implement the same async interface: `revoke_token(token_id, user_id)`,
-`is_revoked(token_id)`, `revoke_all_user_tokens(user_id)`, `cleanup_expired()`,
-and `get_revoked_count()`.
+`is_revoked(token_id)`, `revoke_all_user_tokens(user_id)`, `revoked_before(user_id)`,
+`cleanup_expired()`, and `get_revoked_count()`.
+
+`revoke_all_user_tokens(user_id)` revokes every token of that user issued before
+the call: `is_token_revoked` compares the token's `iat` with the time
+`revoked_before(user_id)` returns, for the user named by `sub`. Once a user's
+tokens were all revoked, that user's tokens without an `iat` claim are rejected
+too. Like a single revocation, it lasts 24 hours. A custom store without
+`revoked_before` gets token-id checks only.
 
 ```python
 store = PostgreSQLRevocationStore(pool)
@@ -419,22 +426,23 @@ from fraiseql.security import (
 
 | Symbol | Signature / fields |
 |--------|--------------------|
-| `RateLimit` | `RateLimit(requests, window, burst=None, strategy=RateLimitStrategy.FIXED_WINDOW)` — `window` is in seconds. |
+| `RateLimit` | `RateLimit(requests, window, burst=None, strategy=RateLimitStrategy.FIXED_WINDOW)` — `window` is in seconds. Only a fixed window is implemented: `burst` and the other strategies log a warning and are ignored. |
 | `RateLimitRule` | `RateLimitRule(path_pattern, rate_limit, key_func=None, exempt_func=None, message=None)`. |
-| `RateLimitStrategy` | `FIXED_WINDOW`, `SLIDING_WINDOW`, `TOKEN_BUCKET`. |
+| `RateLimitStrategy` | `FIXED_WINDOW` (the only one implemented), `SLIDING_WINDOW`, `TOKEN_BUCKET`. |
 | `RateLimitStore` | In-memory store with TTL (default backend). |
 | `RedisRateLimitStore` | `RedisRateLimitStore(redis_client)` — distributed backend for multi-process deployments. |
 
 ```python
 login_rule = RateLimitRule(
     path_pattern="/auth/login",
-    rate_limit=RateLimit(requests=5, window=60, strategy=RateLimitStrategy.SLIDING_WINDOW),
+    rate_limit=RateLimit(requests=5, window=60),
     message="Too many login attempts, please try again shortly.",
 )
 ```
 
 `create_default_rate_limit_rules()` and `setup_rate_limiting(...)` provide a
-ready-made set of rules and wiring.
+ready-made set of rules and wiring. The client is the socket peer unless you pass
+`trusted_proxies`; see [Rate Limiting](../../configuration/rate-limiting.md#client-key).
 
 ---
 

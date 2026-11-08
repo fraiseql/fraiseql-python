@@ -128,7 +128,30 @@ FraiseQL automatically detects vector fields using these patterns:
 - `text_embedding`
 - `image_embedding`
 
-Fields matching these patterns with `List[float]` type get `VectorFilter` in GraphQL schema.
+Fields matching these patterns with `List[float]` type get `VectorFilter` (in `where`) and
+`VectorOrderBy` (in `orderBy`) in the GraphQL schema.
+
+The distance operators work on the view's own `vector` (or `bit`) columns. A vector stored
+inside the JSONB `data` column can't be filtered or sorted by distance. Expose the vector as a
+column of the view: either declare the type over a view without a JSONB `data` column
+(`jsonb_column=None`), or keep `data` and add the vector as a column beside it. A distance
+`where` / `orderBy` reads the column (`"embedding" <=> ...`), and every other field is still read
+from `data`:
+
+```python
+@fraise_type(sql_source="documents", jsonb_column=None)
+class Document:
+    id: ID
+    title: str
+    embedding: List[float]
+```
+
+```sql
+-- or: a view with a data column and the vector beside it
+CREATE VIEW v_document AS
+SELECT id, embedding, jsonb_build_object('id', id, 'title', title) AS data
+FROM documents;
+```
 
 ## GraphQL API
 
@@ -136,34 +159,52 @@ Fields matching these patterns with `List[float]` type get `VectorFilter` in Gra
 
 ```graphql
 input VectorFilter {
-  cosine_distance: [Float!]
-  l2_distance: [Float!]
-  inner_product: [Float!]
-  l1_distance: [Float!]
-  hamming_distance: String
-  jaccard_distance: String
+  cosineDistance: VectorDistanceInput
+  l2Distance: VectorDistanceInput
+  l1Distance: VectorDistanceInput
+  innerProduct: VectorDistanceInput
+  distanceWithin: Float          # maximum distance to include
+  hammingDistance: String
+  jaccardDistance: String
   isnull: Boolean
 }
+
+input VectorDistanceInput {
+  dense: [Float!]
+  sparse: SparseVectorInput      # { indices: [Int!]!, values: [Float!]! }
+}
 ```
+
+A `where` keeps the rows whose distance to the query vector is at most `distanceWithin`.
+`distanceWithin` is required next to a distance operator: without it the query fails with
+`where: 'embedding' needs distanceWithin next to 'cosineDistance'`.
 
 ### VectorOrderBy Schema
 
 ```graphql
 input VectorOrderBy {
-  cosine_distance: [Float!]
-  l2_distance: [Float!]
-  inner_product: [Float!]
-  l1_distance: [Float!]
-  hamming_distance: String
-  jaccard_distance: String
+  cosineDistance: VectorDistanceInput
+  l2Distance: VectorDistanceInput
+  l1Distance: VectorDistanceInput
+  innerProduct: VectorDistanceInput
+  hammingDistance: String
+  jaccardDistance: String
 }
 ```
+
+An `orderBy` sorts by distance to the given vector, nearest first. It takes the same
+operand as a `where`: `{ dense: [...] }` for the float operators, a bit string for
+`hammingDistance` and `jaccardDistance`. Names are camelCase in GraphQL (with the default
+`auto_camel_case`) and snake_case in Python.
+
+`db.find` filters and sorts on `dense` vectors only: a `sparse` operand raises an error in
+both, as the `sparsevec` literal would need the column's dimension.
 
 ### Distance Operators
 
 FraiseQL exposes PostgreSQL pgvector's six native distance operators:
 
-#### Cosine Distance (`cosine_distance`)
+#### Cosine Distance (`cosineDistance`)
 
 - **Operator**: `<=>` (cosine distance)
 - **Range**: 0.0 (identical) to 2.0 (opposite)
@@ -172,7 +213,7 @@ FraiseQL exposes PostgreSQL pgvector's six native distance operators:
 ```graphql
 query {
   documents(
-    where: { embedding: { cosine_distance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -182,7 +223,7 @@ query {
 }
 ```
 
-#### L2 Distance (`l2_distance`)
+#### L2 Distance (`l2Distance`)
 
 - **Operator**: `<->` (Euclidean distance)
 - **Range**: 0.0 (identical) to ∞ (very different)
@@ -191,7 +232,7 @@ query {
 ```graphql
 query {
   documents(
-    where: { embedding: { l2_distance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { l2Distance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -201,7 +242,7 @@ query {
 }
 ```
 
-#### Inner Product (`inner_product`)
+#### Inner Product (`innerProduct`)
 
 - **Operator**: `<#>` (negative inner product)
 - **Range**: More negative = more similar
@@ -210,7 +251,7 @@ query {
 ```graphql
 query {
   documents(
-    where: { embedding: { inner_product: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { innerProduct: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -220,7 +261,7 @@ query {
 }
 ```
 
-#### L1 Distance (`l1_distance`)
+#### L1 Distance (`l1Distance`)
 
 - **Operator**: `<+>` (Manhattan/Taxicab distance)
 - **Range**: 0.0 (identical) to ∞ (very different)
@@ -229,7 +270,7 @@ query {
 ```graphql
 query {
   documents(
-    where: { embedding: { l1_distance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { l1Distance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -239,7 +280,7 @@ query {
 }
 ```
 
-#### Hamming Distance (`hamming_distance`)
+#### Hamming Distance (`hammingDistance`)
 
 - **Operator**: `<~>` (binary Hamming distance)
 - **Range**: 0 (identical) to dimension size (completely different)
@@ -248,7 +289,7 @@ query {
 ```graphql
 query {
   documents(
-    where: { embedding: { hamming_distance: "0101010101..." } }
+    orderBy: { binaryEmbedding: { hammingDistance: "0101010101..." } }
     limit: 10
   ) {
     id
@@ -258,7 +299,7 @@ query {
 }
 ```
 
-#### Jaccard Distance (`jaccard_distance`)
+#### Jaccard Distance (`jaccardDistance`)
 
 - **Operator**: `<%>` (binary Jaccard distance)
 - **Range**: 0.0 (identical) to 1.0 (no overlap)
@@ -267,7 +308,7 @@ query {
 ```graphql
 query {
   documents(
-    where: { embedding: { jaccard_distance: "0101010101..." } }
+    orderBy: { binaryEmbedding: { jaccardDistance: "0101010101..." } }
     limit: 10
   ) {
     id
@@ -277,15 +318,15 @@ query {
 }
 ```
 
-### Ordering by Distance
+### Filtering and Ordering by Distance
 
-Order results by vector similarity:
+Keep the documents within a distance, nearest first:
 
 ```graphql
 query {
   documents(
-    where: { embedding: { cosine_distance: [0.1, 0.2, 0.3, ...] } }
-    orderBy: { embedding: { cosine_distance: [0.1, 0.2, 0.3, ...] } }
+    where: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] }, distanceWithin: 0.5 } }
+    orderBy: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -305,17 +346,17 @@ Combine vector filters with other conditions:
 query {
   documents(
     where: {
-      embedding: { cosine_distance: [0.1, 0.2, 0.3, ...] }
-      tenant_id: { eq: "550e8400-e29b-41d4-a716-446655440000" }
-      created_at: { gte: "2024-01-01" }
+      embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] }, distanceWithin: 0.5 }
+      tenantId: { eq: "550e8400-e29b-41d4-a716-446655440000" }
+      createdAt: { gte: "2024-01-01" }
     }
-    orderBy: { embedding: { cosine_distance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 20
   ) {
     id
     title
     content
-    created_at
+    createdAt
   }
 }
 ```
@@ -442,19 +483,23 @@ WHERE embedding <=> '[...1536 elements...]'::vector;
 
 ### Invalid Vector Formats
 
-FraiseQL validates vector input:
+GraphQL validates vector input against the schema:
 
 ```graphql
 # Valid
-query { documents(where: { embedding: { cosine_distance: [0.1, 0.2, 0.3] } }) }
+query { documents(orderBy: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3] } } }) { id } }
 
 # Invalid - non-numeric values
-query { documents(where: { embedding: { cosine_distance: ["invalid"] } }) }
-# GraphQL Error: All vector values must be numbers
+query { documents(orderBy: { embedding: { cosineDistance: { dense: ["invalid"] } } }) { id } }
+# GraphQL Error: Float cannot represent non numeric value: "invalid"
 
-# Invalid - wrong type
-query { documents(where: { embedding: { cosine_distance: "not_a_list" } }) }
-# GraphQL Error: Vector must be a list of floats
+# Invalid - a bare list where a VectorDistanceInput is expected (in orderBy and in where)
+query { documents(orderBy: { embedding: { cosineDistance: [0.1, 0.2, 0.3] } }) { id } }
+# GraphQL Error: Expected value of type 'VectorDistanceInput' to be an object, found: [0.1, 0.2, 0.3].
+
+# Invalid - a distance operator without distanceWithin
+query { documents(where: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3] } } }) { id } }
+# GraphQL Error: where: 'embedding' needs distanceWithin next to 'cosineDistance': the maximum distance to include
 ```
 
 ## Use Cases
@@ -467,9 +512,8 @@ query_embedding = get_embedding("machine learning basics")
 
 documents = await repo.find(
     "documents",
-    where={"embedding": {"cosine_distance": query_embedding}},
-    orderBy={"embedding": {"cosine_distance": query_embedding}},
-    limit=10
+    order_by={"embedding": {"cosine_distance": query_embedding}},
+    limit=10,
 )
 ```
 
@@ -482,11 +526,11 @@ product_embedding = await get_product_embedding(product_id)
 similar_products = await repo.find(
     "products",
     where={
-        "embedding": {"cosine_distance": product_embedding},
+        "embedding": {"cosine_distance": {"vector": product_embedding, "threshold": 0.3}},
         "category": {"eq": product.category}  # Same category
     },
-    orderBy={"embedding": {"cosine_distance": product_embedding}},
-    limit=5
+    order_by={"embedding": {"cosine_distance": product_embedding}},
+    limit=5,
 )
 ```
 
@@ -498,28 +542,38 @@ query_embedding = get_embedding(user_question)
 
 relevant_docs = await repo.find(
     "documents",
-    where={"embedding": {"cosine_distance": query_embedding}},
-    orderBy={"embedding": {"cosine_distance": query_embedding}},
-    limit=3
+    where={"embedding": {"cosine_distance": {"vector": query_embedding, "threshold": 0.5}}},
+    order_by={"embedding": {"cosine_distance": query_embedding}},
+    limit=3,
 )
 
-context = "\n".join(doc["content"] for doc in relevant_docs)
+# find returns a GraphQL-shaped response: the rows are under data.<view>
+rows = relevant_docs.to_json()["data"]["documents"]
+context = "\n".join(doc["content"] for doc in rows)
 ```
 
 ### Hybrid Search
 
-Combine vector similarity with full-text search:
+Combine vector similarity with full-text search. The full-text operators
+(`matches`, `plain_query`, `phrase_query`, `websearch_query`) filter on a `tsvector`
+column, so give the table one:
+
+```sql
+ALTER TABLE documents ADD COLUMN search_vector tsvector
+    GENERATED ALWAYS AS (to_tsvector('english', title || ' ' || content)) STORED;
+CREATE INDEX ON documents USING gin (search_vector);
+```
 
 ```python
 # Vector + full-text hybrid search
 results = await repo.find(
     "documents",
     where={
-        "embedding": {"cosine_distance": query_embedding},
-        "content": {"search": query_text}  # Full-text search
+        "embedding": {"cosine_distance": {"vector": query_embedding, "threshold": 0.5}},
+        "search_vector": {"websearch_query": query_text},  # Full-text search
     },
-    orderBy={"embedding": {"cosine_distance": query_embedding}},
-    limit=20
+    order_by={"embedding": {"cosine_distance": query_embedding}},
+    limit=20,
 )
 ```
 
@@ -749,33 +803,50 @@ CREATE INDEX CONCURRENTLY ON documents USING hnsw (embedding vector_cosine_ops);
 
 ### Python Client Usage
 
+Outside an app, build the pool and the repository yourself. `find()` returns a
+ready-made GraphQL response (`RustResponseBytes`), with the rows under
+`data.<field_name>`. Declare the type (`@fraiseql.type(sql_source="documents",
+jsonb_column=None)`, as below) for an `embedding` to come back as a list of floats;
+for a table no type is registered for, it comes back in pgvector's text form:
+
 ```python
 import asyncio
-from fraiseql import FraiseQLRepository
+import json
+
+from fraiseql.db import FraiseQLRepository
+from fraiseql.fastapi.app import create_db_pool
+
 
 async def main():
-    repo = FraiseQLRepository("postgresql://localhost/mydb")
+    pool = await create_db_pool("postgresql://localhost/mydb")
+    repo = FraiseQLRepository(pool)
 
     # Semantic search
     query_embedding = [0.1, 0.2, 0.3] * 512  # 1536 dimensions
-    results = await repo.find(
+    result = await repo.find(
         "documents",
-        where={"embedding": {"cosine_distance": query_embedding}},
-        orderBy={"embedding": {"cosine_distance": query_embedding}},
-        limit=10
+        "documents",
+        order_by={"embedding": {"cosine_distance": query_embedding}},
+        limit=10,
     )
+    documents = json.loads(bytes(result))["data"]["documents"]
 
     # Hybrid search
-    results = await repo.find(
+    result = await repo.find(
+        "documents",
         "documents",
         where={
-            "embedding": {"cosine_distance": query_embedding},
+            "embedding": {"cosine_distance": {"vector": query_embedding, "threshold": 0.5}},
             "category": {"eq": "technical"},
-            "created_at": {"gte": "2024-01-01"}
+            "created_at": {"gte": "2024-01-01"},
         },
-        orderBy={"embedding": {"cosine_distance": query_embedding}},
-        limit=20
+        order_by={"embedding": {"cosine_distance": query_embedding}},
+        limit=20,
     )
+    documents = json.loads(bytes(result))["data"]["documents"]
+
+    await pool.close()
+
 
 asyncio.run(main())
 ```
@@ -783,42 +854,30 @@ asyncio.run(main())
 ### FastAPI Integration
 
 ```python
-from fastapi import FastAPI
-from fraiseql.fastapi import FraiseQLApp
-from typing import List
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.types import ID
 
-@fraise_type
+
+@fraiseql.type(sql_source="documents", jsonb_column=None)
 class Document:
     id: ID
     title: str
     content: str
-    embedding: List[float]  # Vector field
+    embedding: list[float]  # Vector field
     category: str
 
-@fraise_query
-async def search_documents(
-    info,
-    query_embedding: List[float],
-    category: str = None,
-    limit: int = 10
-) -> List[Document]:
-    repo = info.context["db"]
 
-    where = {"embedding": {"cosine_distance": query_embedding}}
-    if category:
-        where["category"] = {"eq": category}
+@fraiseql.query
+async def documents(info) -> list[Document]:
+    # A list query gets where, orderBy, limit and offset; find applies them
+    return await info.context["db"].find("documents", "documents", info)
 
-    return await repo.find(
-        "documents",
-        where=where,
-        orderBy={"embedding": {"cosine_distance": query_embedding}},
-        limit=limit
-    )
 
-app = FraiseQLApp(
+app = create_fraiseql_app(
     database_url="postgresql://localhost/mydb",
     types=[Document],
-    queries=[search_documents]
+    queries=[documents],
 )
 ```
 
@@ -834,11 +893,11 @@ const SEARCH_DOCUMENTS = gql`
   ) {
     documents(
       where: {
-        embedding: { cosine_distance: $embedding }
+        embedding: { cosineDistance: { dense: $embedding }, distanceWithin: 0.5 }
         category: { eq: $category }
       }
       orderBy: {
-        embedding: { cosine_distance: $embedding }
+        embedding: { cosineDistance: { dense: $embedding } }
       }
       limit: $limit
     ) {

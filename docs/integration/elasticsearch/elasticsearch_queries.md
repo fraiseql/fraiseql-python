@@ -29,7 +29,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     },
     "size": 50
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Search by Entity Type
@@ -49,7 +49,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     "sort": [{"timestamp": "desc"}],
     "size": 100
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Search by User
@@ -68,7 +68,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     },
     "sort": [{"timestamp": "desc"}]
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ## Advanced Queries
@@ -94,7 +94,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     },
     "size": 50
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Date Range Query
@@ -116,7 +116,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     "sort": [{"timestamp": "desc"}],
     "size": 100
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Combination Query (AND/OR)
@@ -139,7 +139,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     },
     "sort": [{"timestamp": "desc"}]
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ## Aggregations
@@ -170,7 +170,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
       }
     }
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Entity Type Distribution
@@ -192,7 +192,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
       }
     }
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Timeline Histogram
@@ -221,7 +221,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
       }
     }
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ## Debugging Workflows
@@ -246,7 +246,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     "sort": [{"timestamp": "asc"}],
     "size": 1000
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Find Failed Payment Events
@@ -277,7 +277,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     "sort": [{"timestamp": "desc"}],
     "size": 100
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ## Using with Kibana
@@ -348,7 +348,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
       }
     }
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Limit Fields Retrieved
@@ -364,7 +364,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     "_source": ["event_id", "event_type", "timestamp", "user_id"],
     "size": 100
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Use Search After for Pagination
@@ -391,7 +391,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
     "size": 100,
     "search_after": ["2025-01-25T12:34:56.789Z", "event-id-here"]
   }'
-```text
+```
 <!-- Code example in TEXT -->
 
 ## Monitoring Queries
@@ -401,7 +401,7 @@ curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
 ```bash
 <!-- Code example in BASH -->
 curl "localhost:9200/_cluster/health?pretty"
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Monitor Query Performance
@@ -410,7 +410,7 @@ curl "localhost:9200/_cluster/health?pretty"
 <!-- Code example in BASH -->
 # Slow log for queries > 500ms
 curl "localhost:9200/_cat/indices/FraiseQL-*?v&sort=store.size:desc"
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Check Index Statistics
@@ -418,5 +418,5 @@ curl "localhost:9200/_cat/indices/FraiseQL-*?v&sort=store.size:desc"
 ```bash
 <!-- Code example in BASH -->
 curl "localhost:9200/FraiseQL-events-*/_stats?pretty"
-```text
+```
 <!-- Code example in TEXT -->

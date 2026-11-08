@@ -185,7 +185,7 @@ BEGIN
                 FROM tb_organisation o
                 WHERE o.pk_organisation = u.fk_organisation  -- Fast INT join!
             ),
-            'createdAt', u.created_at
+            'created_at', u.created_at
         ),
         NOW()
     FROM tb_user u
@@ -208,7 +208,7 @@ BEGIN
             'identifier', p.identifier,
             'title', p.title,
             'content', p.content,
-            'createdAt', p.created_at,
+            'created_at', p.created_at,
             'author', (
                 SELECT jsonb_build_object(
                     'id', u.id::text,
@@ -266,12 +266,12 @@ async def user(
     identifier: str | None = None
 ) -> User | None:
     """Get user by UUID or identifier"""
-    repo = QueryRepository(info.context["db"])
+    db = info.context["db"]
 
     if id:
-        return await repo.find_one("tv_user", id=id)
+        return await db.find_one("tv_user", "user", info, mandatory_filters={"id": id})
     elif identifier:
-        return await repo.find_by_identifier("tv_user", identifier)
+        return await db.find_one("tv_user", "user", info, mandatory_filters={"identifier": identifier})
     else:
         raise ValueError("Must provide id or identifier")
 
@@ -287,39 +287,34 @@ async def create_user(
     """Create user with human-friendly identifiers"""
     db = info.context["db"]
 
-    # ✅ Just call the function - that's it!
+    # ✅ Just call the function - that's it! It gets the arguments as one jsonb,
+    # and its OUT parameters come back as a dict.
     try:
-        id = await db.fetchval(
-            "SELECT fn_create_user($1, $2, $3, $4)",
-            organisation, identifier, name, email
+        result = await db.execute_function(
+            "fn_create_user",
+            {
+                "organisation_identifier": organisation,
+                "identifier": identifier,
+                "name": name,
+                "email": email,
+            },
         )
     except Exception as e:
         # Database raises meaningful errors
         raise GraphQLError(str(e))
 
     # Read from query side
-    repo = QueryRepository(db)
-    return await repo.find_one("tv_user", id=id)
+    return await db.find_one("tv_user", "createUser", info, mandatory_filters={"id": result["user_id"]})
 ```
 
 ---
 
 ### **Configuration**
 
-```python
-from fraiseql import FraiseQLConfig
-
-config = FraiseQLConfig(
-    # Trinity identifier pattern (DEFAULT in v1)
-    trinity_identifiers=True,
-
-    # Naming conventions
-    primary_key_prefix="pk_",       # pk_user, pk_post
-    foreign_key_prefix="fk_",       # fk_organisation, fk_user
-    public_id_column="id",          # UUID column
-    identifier_column="identifier"  # Human-readable column
-)
-```
+None: trinity identifiers are a naming convention, not a setting. `FraiseQLConfig` has no
+option for them (it ignores unknown ones). Name the columns `pk_*`, `fk_*`, `id` and
+`identifier` in your tables, expose `id` and `identifier` in the `tv_*` view, and declare
+them on the type like any other field.
 
 ---
 
@@ -401,17 +396,20 @@ async def create_user(info, name: str, email: str) -> User:
         raise ValueError("Invalid email")
 
     # ❌ Manual transaction management
-    async with db.transaction():
-        id = await db.fetchval(
-            "INSERT INTO tb_user (name, email) VALUES ($1, $2) RETURNING id",
-            name, email
+    async def insert(conn):
+        cur = await conn.execute(
+            "INSERT INTO tb_user (name, email) VALUES (%s, %s) RETURNING id",
+            (name, email),
         )
+        (id,) = await cur.fetchone()
 
         # ❌ Manual sync (can forget!)
-        await sync_tv_user(db, id)
+        await sync_tv_user(conn, id)
+        return id
 
-    repo = QueryRepository(db)
-    return await repo.find_one("tv_user", id=id)
+    id = await db.run_in_transaction(insert)
+
+    return await db.find_one("tv_user", "createUser", info, mandatory_filters={"id": id})
 ```
 
 **Problems**:
@@ -429,13 +427,7 @@ async def create_user(info, name: str, email: str) -> User:
 **All business logic in PostgreSQL**:
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_create_user(
-    p_organisation_identifier TEXT,
-    p_identifier TEXT,
-    p_name TEXT,
-    p_email TEXT
-)
-RETURNS UUID AS $$
+CREATE OR REPLACE FUNCTION fn_create_user(input JSONB, OUT user_id UUID) AS $$
 DECLARE
     v_fk_organisation INT;
     v_id UUID;
@@ -443,31 +435,31 @@ BEGIN
     -- Resolve organisation by identifier (human-friendly!)
     SELECT pk_organisation INTO v_fk_organisation
     FROM tb_organisation
-    WHERE identifier = p_organisation_identifier;
+    WHERE identifier = input->>'organisation_identifier';
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'Organisation not found: %', p_organisation_identifier;
+        RAISE EXCEPTION 'Organisation not found: %', input->>'organisation_identifier';
     END IF;
 
     -- Validation (in database)
-    IF p_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$' THEN
+    IF input->>'email' !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$' THEN
         RAISE EXCEPTION 'Invalid email format';
     END IF;
 
-    IF EXISTS (SELECT 1 FROM tb_user WHERE identifier = p_identifier) THEN
+    IF EXISTS (SELECT 1 FROM tb_user WHERE identifier = input->>'identifier') THEN
         RAISE EXCEPTION 'Identifier already taken';
     END IF;
 
     -- Insert (transaction is automatic)
     INSERT INTO tb_user (fk_organisation, identifier, name, email)
-    VALUES (v_fk_organisation, p_identifier, p_name, p_email)
+    VALUES (v_fk_organisation, input->>'identifier', input->>'name', input->>'email')
     RETURNING id INTO v_id;
 
     -- Sync to query side (explicit, same transaction)
     PERFORM fn_sync_tv_user(v_id);
 
     -- Return public UUID
-    RETURN v_id;
+    user_id := v_id;
 
 EXCEPTION
     WHEN unique_violation THEN
@@ -492,19 +484,24 @@ async def create_user(
     """Create user (business logic in database)"""
     db = info.context["db"]
 
-    # ✅ Just call the function - that's it!
+    # ✅ Just call the function - that's it! It gets the arguments as one jsonb,
+    # and its OUT parameters come back as a dict.
     try:
-        id = await db.fetchval(
-            "SELECT fn_create_user($1, $2, $3, $4)",
-            organisation, identifier, name, email
+        result = await db.execute_function(
+            "fn_create_user",
+            {
+                "organisation_identifier": organisation,
+                "identifier": identifier,
+                "name": name,
+                "email": email,
+            },
         )
     except Exception as e:
         # Database raises meaningful errors
         raise GraphQLError(str(e))
 
     # Read from query side
-    repo = QueryRepository(db)
-    return await repo.find_one("tv_user", id=id)
+    return await db.find_one("tv_user", "createUser", info, mandatory_filters={"id": result["user_id"]})
 ```
 
 ---
@@ -531,9 +528,9 @@ async def create_user(
 **Naming Convention**:
 
 ```
-fn_create_*     Create entity (INSERT + sync) → returns UUID
-fn_update_*     Update entity (UPDATE + sync) → returns UUID
-fn_delete_*     Delete entity (DELETE + cascade) → returns BOOLEAN
+fn_create_*     Create entity (INSERT + sync) → OUT <entity>_id UUID
+fn_update_*     Update entity (UPDATE + sync) → OUT <entity>_id UUID
+fn_delete_*     Delete entity (DELETE + cascade) → OUT deleted BOOLEAN
 fn_sync_tv_*    Sync command → query side
 fn_*            Custom business logic
 ```
@@ -542,12 +539,7 @@ fn_*            Custom business logic
 
 ```sql
 -- CREATE
-CREATE FUNCTION fn_create_post(
-    p_user_identifier TEXT,  -- Look up user by identifier!
-    p_identifier TEXT,
-    p_title TEXT,
-    p_content TEXT
-) RETURNS UUID AS $$
+CREATE FUNCTION fn_create_post(input JSONB, OUT post_id UUID) AS $$
 DECLARE
     v_fk_user INT;
     v_id UUID;
@@ -555,52 +547,47 @@ BEGIN
     -- Resolve user by identifier (human-friendly API!)
     SELECT pk_user INTO v_fk_user
     FROM tb_user
-    WHERE identifier = p_user_identifier;
+    WHERE identifier = input->>'user_identifier';
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'User not found: %', p_user_identifier;
+        RAISE EXCEPTION 'User not found: %', input->>'user_identifier';
     END IF;
 
     INSERT INTO tb_post (fk_user, identifier, title, content)
-    VALUES (v_fk_user, p_identifier, p_title, p_content)
+    VALUES (v_fk_user, input->>'identifier', input->>'title', input->>'content')
     RETURNING id INTO v_id;
 
     PERFORM fn_sync_tv_post(v_id);
-    RETURN v_id;
+    post_id := v_id;
 END;
 $$ LANGUAGE plpgsql;
 
 -- UPDATE
-CREATE FUNCTION fn_update_post(
-    p_id UUID,
-    p_title TEXT,
-    p_content TEXT
-) RETURNS UUID AS $$
+CREATE FUNCTION fn_update_post(input JSONB, OUT post_id UUID) AS $$
 BEGIN
     UPDATE tb_post
-    SET title = p_title, content = p_content, updated_at = NOW()
-    WHERE id = p_id;
+    SET title = input->>'title', content = input->>'content', updated_at = NOW()
+    WHERE id = (input->>'id')::uuid;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Post not found';
     END IF;
 
-    PERFORM fn_sync_tv_post(p_id);
-    RETURN p_id;
+    PERFORM fn_sync_tv_post((input->>'id')::uuid);
+    post_id := (input->>'id')::uuid;
 END;
 $$ LANGUAGE plpgsql;
 
 -- DELETE
-CREATE FUNCTION fn_delete_post(p_id UUID)
-RETURNS BOOLEAN AS $$
+CREATE FUNCTION fn_delete_post(input JSONB, OUT deleted BOOLEAN) AS $$
 BEGIN
     -- Delete from query side first
-    DELETE FROM tv_post WHERE id = p_id;
+    DELETE FROM tv_post WHERE id = (input->>'id')::uuid;
 
     -- Then from command side
-    DELETE FROM tb_post WHERE id = p_id;
+    DELETE FROM tb_post WHERE id = (input->>'id')::uuid;
 
-    RETURN FOUND;
+    deleted := FOUND;
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -619,22 +606,25 @@ async def create_post(
     content: str
 ) -> Post:
     db = info.context["db"]
-    id = await db.fetchval(
-        "SELECT fn_create_post($1, $2, $3, $4)",
-        author, identifier, title, content
+    result = await db.execute_function(
+        "fn_create_post",
+        {"user_identifier": author, "identifier": identifier, "title": title, "content": content},
     )
-    return await QueryRepository(db).find_one("tv_post", id=id)
+    return await db.find_one("tv_post", "createPost", info, mandatory_filters={"id": result["post_id"]})
 
 @fraiseql.mutation
 async def update_post(info, id: ID, title: str, content: str) -> Post:
     db = info.context["db"]
-    id = await db.fetchval("SELECT fn_update_post($1, $2, $3)", id, title, content)
-    return await QueryRepository(db).find_one("tv_post", id=id)
+    result = await db.execute_function(
+        "fn_update_post", {"id": str(id), "title": title, "content": content}
+    )
+    return await db.find_one("tv_post", "updatePost", info, mandatory_filters={"id": result["post_id"]})
 
 @fraiseql.mutation
 async def delete_post(info, id: ID) -> bool:
     db = info.context["db"]
-    return await db.fetchval("SELECT fn_delete_post($1)", id)
+    result = await db.execute_function("fn_delete_post", {"id": str(id)})
+    return result["deleted"]
 ```
 
 **Pattern**: Python is thin wrapper. Database has all logic.
@@ -694,78 +684,41 @@ Run with: `psql -f tests/test_mutations.sql`
 
 ### **Configuration**
 
-```python
-from fraiseql import FraiseQLConfig
-
-config = FraiseQLConfig(
-    # Use database functions for all mutations (DEFAULT)
-    mutations_as_functions=True,
-
-    # Function naming convention
-    mutation_function_prefix="fn_",
-    sync_function_prefix="fn_sync_tv_",
-
-    # Auto-generate missing functions? (v1.1 feature)
-    auto_generate_functions=False,
-)
-```
+None: a class mutation names its SQL function with `function=` (`function="fn_create_user"`),
+and FraiseQL calls that function. There is no prefix setting and nothing generates
+missing functions.
 
 ---
 
-### **CLI Codegen Support**
+### **Writing the Functions**
 
-```bash
-# Analyze existing functions
-fraiseql analyze --functions
-
-# Output:
-# ✓ Found 6 mutation functions
-#   - fn_create_user(org, identifier, name, email) → UUID
-#   - fn_update_user(id, name) → UUID
-#   - fn_delete_user(id) → BOOLEAN
-#   - fn_create_post(user, identifier, title, content) → UUID
-#   - fn_update_post(id, title, content) → UUID
-#   - fn_delete_post(id) → BOOLEAN
-#
-# ✓ All mutation functions follow naming convention
-# ✓ All functions include sync calls
-
-# Generate missing functions for new table
-fraiseql codegen functions --table tb_comment
-
-# Output: migrations/004_comment_functions.sql
-```
-
-**Generated function** (following pattern):
+FraiseQL has no command that lists or generates these functions: write each one by hand.
+For a new `tb_comment`, the pattern gives:
 
 ```sql
--- Generated by fraiseql codegen
-CREATE FUNCTION fn_create_comment(
-    p_post_identifier TEXT,
-    p_user_identifier TEXT,
-    p_content TEXT
-) RETURNS UUID AS $$
+-- fn_create_comment, following the pattern
+CREATE FUNCTION fn_create_comment(input JSONB, OUT comment_id UUID) AS $$
 DECLARE
     v_fk_post INT;
     v_fk_user INT;
     v_id UUID;
 BEGIN
     -- Resolve foreign keys by identifier
-    SELECT pk_post INTO v_fk_post FROM tb_post WHERE identifier = p_post_identifier;
+    SELECT pk_post INTO v_fk_post FROM tb_post WHERE identifier = input->>'post_identifier';
     IF NOT FOUND THEN RAISE EXCEPTION 'Post not found'; END IF;
 
-    SELECT pk_user INTO v_fk_user FROM tb_user WHERE identifier = p_user_identifier;
+    SELECT pk_user INTO v_fk_user FROM tb_user WHERE identifier = input->>'user_identifier';
     IF NOT FOUND THEN RAISE EXCEPTION 'User not found'; END IF;
 
     -- Insert
     INSERT INTO tb_comment (fk_post, fk_user, content)
-    VALUES (v_fk_post, v_fk_user, p_content)
+    VALUES (v_fk_post, v_fk_user, input->>'content')
     RETURNING id INTO v_id;
 
     -- Sync
     PERFORM fn_sync_tv_comment(v_id);
 
-    RETURN v_id;
+    comment_id := v_id;
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -827,7 +780,8 @@ CREATE TABLE tb_post (
     identifier TEXT UNIQUE NOT NULL,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ============================================
@@ -872,7 +826,7 @@ BEGIN
                 FROM tb_organisation o
                 WHERE o.pk_organisation = u.fk_organisation
             ),
-            'createdAt', u.created_at
+            'created_at', u.created_at
         ),
         NOW()
     FROM tb_user u
@@ -893,7 +847,7 @@ BEGIN
             'identifier', p.identifier,
             'title', p.title,
             'content', p.content,
-            'createdAt', p.created_at,
+            'created_at', p.created_at,
             'author', (
                 SELECT jsonb_build_object(
                     'id', u.id::text,
@@ -916,12 +870,7 @@ $$ LANGUAGE plpgsql;
 -- MUTATION FUNCTIONS with trinity IDs
 -- ============================================
 
-CREATE FUNCTION fn_create_user(
-    p_organisation_identifier TEXT,
-    p_identifier TEXT,
-    p_name TEXT,
-    p_email TEXT
-) RETURNS UUID AS $$
+CREATE FUNCTION fn_create_user(input JSONB, OUT user_id UUID) AS $$
 DECLARE
     v_fk_organisation INT;
     v_id UUID;
@@ -929,35 +878,30 @@ BEGIN
     -- Resolve by identifier (human-friendly!)
     SELECT pk_organisation INTO v_fk_organisation
     FROM tb_organisation
-    WHERE identifier = p_organisation_identifier;
+    WHERE identifier = input->>'organisation_identifier';
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'Organisation not found: %', p_organisation_identifier;
+        RAISE EXCEPTION 'Organisation not found: %', input->>'organisation_identifier';
     END IF;
 
     -- Validation
-    IF p_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$' THEN
+    IF input->>'email' !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$' THEN
         RAISE EXCEPTION 'Invalid email format';
     END IF;
 
     -- Insert
     INSERT INTO tb_user (fk_organisation, identifier, name, email)
-    VALUES (v_fk_organisation, p_identifier, p_name, p_email)
+    VALUES (v_fk_organisation, input->>'identifier', input->>'name', input->>'email')
     RETURNING id INTO v_id;
 
     -- Sync
     PERFORM fn_sync_tv_user(v_id);
 
-    RETURN v_id;
+    user_id := v_id;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE FUNCTION fn_create_post(
-    p_user_identifier TEXT,
-    p_identifier TEXT,
-    p_title TEXT,
-    p_content TEXT
-) RETURNS UUID AS $$
+CREATE FUNCTION fn_create_post(input JSONB, OUT post_id UUID) AS $$
 DECLARE
     v_fk_user INT;
     v_id UUID;
@@ -965,21 +909,21 @@ BEGIN
     -- Resolve user by identifier
     SELECT pk_user INTO v_fk_user
     FROM tb_user
-    WHERE identifier = p_user_identifier;
+    WHERE identifier = input->>'user_identifier';
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'User not found: %', p_user_identifier;
+        RAISE EXCEPTION 'User not found: %', input->>'user_identifier';
     END IF;
 
     -- Insert
     INSERT INTO tb_post (fk_user, identifier, title, content)
-    VALUES (v_fk_user, p_identifier, p_title, p_content)
+    VALUES (v_fk_user, input->>'identifier', input->>'title', input->>'content')
     RETURNING id INTO v_id;
 
     -- Sync
     PERFORM fn_sync_tv_post(v_id);
 
-    RETURN v_id;
+    post_id := v_id;
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -1019,11 +963,11 @@ async def user(
     id: ID | None = None,
     identifier: str | None = None
 ) -> User | None:
-    repo = QueryRepository(info.context["db"])
+    db = info.context["db"]
     if id:
-        return await repo.find_one("tv_user", id=id)
+        return await db.find_one("tv_user", "user", info, mandatory_filters={"id": id})
     elif identifier:
-        return await repo.find_by_identifier("tv_user", identifier)
+        return await db.find_one("tv_user", "user", info, mandatory_filters={"identifier": identifier})
     raise ValueError("Must provide id or identifier")
 
 # MUTATIONS (trivial - logic in database)
@@ -1036,11 +980,16 @@ async def create_user(
     email: str
 ) -> User:
     db = info.context["db"]
-    id = await db.fetchval(
-        "SELECT fn_create_user($1, $2, $3, $4)",
-        organisation, identifier, name, email
+    result = await db.execute_function(
+        "fn_create_user",
+        {
+            "organisation_identifier": organisation,
+            "identifier": identifier,
+            "name": name,
+            "email": email,
+        },
     )
-    return await QueryRepository(db).find_one("tv_user", id=id)
+    return await db.find_one("tv_user", "createUser", info, mandatory_filters={"id": result["user_id"]})
 
 @fraiseql.mutation
 async def create_post(
@@ -1051,11 +1000,11 @@ async def create_post(
     content: str
 ) -> Post:
     db = info.context["db"]
-    id = await db.fetchval(
-        "SELECT fn_create_post($1, $2, $3, $4)",
-        author, identifier, title, content
+    result = await db.execute_function(
+        "fn_create_post",
+        {"user_identifier": author, "identifier": identifier, "title": title, "content": content},
     )
-    return await QueryRepository(db).find_one("tv_post", id=id)
+    return await db.find_one("tv_post", "createPost", info, mandatory_filters={"id": result["post_id"]})
 ```
 
 ### **GraphQL Usage**
@@ -1099,61 +1048,24 @@ query {
 
 ## Integration with FraiseQL v1
 
-### **Updated Configuration (Final)**
+### **Configuration**
+
+These patterns need no configuration: `FraiseQLConfig` has no options for them. A type names
+its view with `sql_source=` (`tv_user`) and its JSONB column with `jsonb_column=` (`data` is
+the default), and a class mutation names its function with `function=`.
+
+### **Reading by UUID or identifier**
+
+There is no separate query repository: the repository in `info.context["db"]` reads
+a view by any of its columns, so a projection table with `id` and `identifier`
+columns can be read by either:
 
 ```python
-from fraiseql import FraiseQLConfig
-
-config = FraiseQLConfig(
-    # Trinity identifier pattern (DEFAULT in v1)
-    trinity_identifiers=True,
-    primary_key_prefix="pk_",          # pk_user, pk_post
-    foreign_key_prefix="fk_",          # fk_organisation, fk_user
-    public_id_column="id",             # UUID (exposed in GraphQL)
-    identifier_column="identifier",    # Human-readable
-
-    # Mutations as functions (DEFAULT in v1)
-    mutations_as_functions=True,
-    mutation_function_prefix="fn_",
-    sync_function_prefix="fn_sync_tv_",
-
-    # Query side
-    query_view_prefix="tv_",
-    jsonb_column="data",
-)
-```
-
-### **Updated QueryRepository**
-
-```python
-from fraiseql.types import ID
-
-class QueryRepository:
-    async def find_one(
-        self,
-        view: str,
-        id: ID | None = None,            # By public UUID
-        identifier: str | None = None       # By human identifier
-    ) -> dict | None:
-        """Find by UUID or identifier"""
-        if id:
-            where = "id = $1"
-            param = id
-        elif identifier:
-            where = "identifier = $1"
-            param = identifier
-        else:
-            raise ValueError("Must provide id or identifier")
-
-        result = await self.db.fetchrow(
-            f"SELECT data FROM {view} WHERE {where}",
-            param
-        )
-        return result["data"] if result else None
-
-    async def find_by_identifier(self, view: str, identifier: str) -> dict | None:
-        """Convenience method"""
-        return await self.find_one(view, identifier=identifier)
+db = info.context["db"]
+# By public UUID
+await db.find_one("tv_user", "user", info, mandatory_filters={"id": user_id})
+# By human identifier
+await db.find_one("tv_user", "user", info, mandatory_filters={"identifier": "alice"})
 ```
 
 ---

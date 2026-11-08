@@ -101,14 +101,14 @@ class TestQueryStatsDisplay:
             result = runner.invoke(
                 query_stats,
                 [
-                    "--database-url", "postgresql://localhost/testdb",
-                    "--top-n", "5",
+                    "--database-url",
+                    "postgresql://localhost/testdb",
+                    "--top-n",
+                    "5",
                 ],
             )
         assert result.exit_code == 0
-        collector.get_stats.assert_called_once_with(
-            top_n=5, order_by="total_exec_time"
-        )
+        collector.get_stats.assert_called_once_with(top_n=5, order_by="total_exec_time")
 
     def test_respects_order_by(self) -> None:
         patches, collector = _mock_pool_and_collector(stats=[])
@@ -117,14 +117,14 @@ class TestQueryStatsDisplay:
             result = runner.invoke(
                 query_stats,
                 [
-                    "--database-url", "postgresql://localhost/testdb",
-                    "--order-by", "mean_exec_time",
+                    "--database-url",
+                    "postgresql://localhost/testdb",
+                    "--order-by",
+                    "mean_exec_time",
                 ],
             )
         assert result.exit_code == 0
-        collector.get_stats.assert_called_once_with(
-            top_n=20, order_by="mean_exec_time"
-        )
+        collector.get_stats.assert_called_once_with(top_n=20, order_by="mean_exec_time")
 
     def test_empty_results_message(self) -> None:
         patches, _collector = _mock_pool_and_collector(stats=[])
@@ -175,7 +175,8 @@ class TestQueryStatsReset:
             result = runner.invoke(
                 query_stats,
                 [
-                    "--database-url", "postgresql://localhost/testdb",
+                    "--database-url",
+                    "postgresql://localhost/testdb",
                     "--reset",
                 ],
                 input="y\n",
@@ -191,7 +192,8 @@ class TestQueryStatsReset:
             result = runner.invoke(
                 query_stats,
                 [
-                    "--database-url", "postgresql://localhost/testdb",
+                    "--database-url",
+                    "postgresql://localhost/testdb",
                     "--reset",
                 ],
                 input="n\n",
@@ -211,7 +213,8 @@ class TestQueryStatsReset:
             result = runner.invoke(
                 query_stats,
                 [
-                    "--database-url", "postgresql://localhost/testdb",
+                    "--database-url",
+                    "postgresql://localhost/testdb",
                     "--reset",
                 ],
                 input="y\n",

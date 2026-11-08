@@ -59,7 +59,7 @@ class TestLTreeFilterOperations:
         assert "*.engineering.*" in sql_str
 
     def test_ltree_matches_ltxtquery_operation(self) -> None:
-        """Test LTree matches_ltxtquery operation (?)."""
+        """Test LTree matches_ltxtquery operation (@)."""
         registry = get_operator_registry()
         path_sql = SQL("data->>'path'")
 
@@ -70,7 +70,7 @@ class TestLTreeFilterOperations:
 
         sql_str = str(sql)
         assert "::ltree" in sql_str, "Missing ltree cast"
-        assert "?" in sql_str, "Missing ltxtquery match operator"
+        assert " @ " in sql_str, "Missing ltxtquery match operator"
         assert "engineering & backend" in sql_str
 
     def test_ltree_eq_operation_with_casting(self) -> None:
@@ -253,5 +253,5 @@ class TestLTreeFilterOperations:
 
             sql_str = str(sql)
             assert "::ltree" in sql_str
-            assert "?" in sql_str
+            assert " @ " in sql_str
             assert query in sql_str

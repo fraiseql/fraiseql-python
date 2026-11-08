@@ -78,8 +78,8 @@ First, add a tags column to your note table:
 ALTER TABLE tb_note ADD COLUMN tags TEXT[] DEFAULT '{}';
 
 -- Update sample data with tags
-UPDATE tb_note SET tags = ARRAY['work', 'urgent'] WHERE title = 'First Note';
-UPDATE tb_note SET tags = ARRAY['personal', 'ideas'] WHERE title = 'Second Note';
+UPDATE tb_note SET tags = ARRAY['work', 'urgent'] WHERE title = 'Welcome to FraiseQL';
+UPDATE tb_note SET tags = ARRAY['personal', 'ideas'] WHERE title = 'Type-safe queries';
 
 -- Add a note with 'work' in the title for filter examples
 INSERT INTO tb_note (title, content, tags)
@@ -100,6 +100,7 @@ SELECT
         'id', id,
         'title', title,
         'content', content,
+        'created_at', created_at,
         'tags', tags
     ) as data  -- Required: Contains the GraphQL response data
 FROM tb_note;
@@ -115,11 +116,12 @@ Add tags to your Note type:
 
 ```python
 # app.py
-@fraiseql.type
+@fraiseql.type(sql_source="v_note", jsonb_column="data")
 class Note:
     id: ID
     title: str
-    content: str
+    content: str | None
+    created_at: datetime
     tags: list[str]  # Add this line
 ```
 
@@ -155,8 +157,8 @@ query {
     tags
   }
 
-  # Filter notes by title containing "work"
-  workNotes: notes(where: { title: { contains: "work" } }) {
+  # Filter notes by title containing "Work" (contains is case-sensitive)
+  workNotes: notes(where: { title: { contains: "Work" } }) {
     title
     content
   }
@@ -170,7 +172,7 @@ query {
   # Combine multiple conditions
   complexFilter: notes(where: {
     AND: [
-      { title: { contains: "meeting" } },
+      { title: { contains: "Meeting" } },
       { tags: { contains: "work" } }
     ]
   }) {
@@ -200,15 +202,15 @@ and many more specialized operators for specific Postgresql types (CIDR, LTREE e
 
 ### Step 1: Create Delete Function (Basic Pattern)
 
-Create a PostgreSQL function for deletion that returns a simple boolean:
+Create a PostgreSQL function for deletion that returns a simple boolean. FraiseQL
+calls it with the arguments as one `jsonb`, and gives you back its `OUT` parameters:
 
 ```sql
 -- Create basic delete function (returns boolean)
-CREATE OR REPLACE FUNCTION fn_delete_note(note_id UUID)
-RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION fn_delete_note(input JSONB, OUT deleted BOOLEAN) AS $$
 BEGIN
-    DELETE FROM tb_note WHERE id = note_id;
-    RETURN FOUND;  -- Returns true if a row was deleted, false otherwise
+    DELETE FROM tb_note WHERE id = (input->>'id')::uuid;
+    deleted := FOUND;  -- true if a row was deleted, false otherwise
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -223,7 +225,9 @@ Add a simple mutation to your app:
 async def delete_note(info, id: ID) -> bool:
     """Delete a note by ID (returns true if deleted, false if not found)."""
     db = info.context["db"]
-    return await db.fetchval("SELECT fn_delete_note($1)", id)
+    # Runs SELECT * FROM fn_delete_note('{"id": ...}'::jsonb): a dict of OUT parameters
+    result = await db.execute_function("fn_delete_note", {"id": str(id)})
+    return result["deleted"]
 ```
 
 **Restart your server** to register the new mutation.
@@ -242,29 +246,29 @@ mutation {
 
 The boolean return is simple but doesn't provide error details. Let's improve this with structured success/failure types.
 
-**First, update the database function** to return JSONB with error information:
+**First, update the database function** to return error information:
 
 ```sql
--- Improved function that returns JSONB with error details
-CREATE OR REPLACE FUNCTION fn_delete_note(note_id UUID)
-RETURNS JSONB AS $$
-DECLARE
-    deleted_count INTEGER;
-BEGIN
-    DELETE FROM tb_note WHERE id = note_id;
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+-- Its OUT parameters change, so drop the basic version first
+DROP FUNCTION IF EXISTS fn_delete_note(JSONB);
 
-    IF deleted_count = 0 THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Note not found',
-            'code', 'NOT_FOUND'
-        );
+-- Improved function that returns error details
+CREATE FUNCTION fn_delete_note(
+    input JSONB,
+    OUT success BOOLEAN,
+    OUT message TEXT,
+    OUT code TEXT
+) AS $$
+BEGIN
+    DELETE FROM tb_note WHERE id = (input->>'id')::uuid;
+
+    IF NOT FOUND THEN
+        success := false;
+        message := 'Note not found';
+        code := 'NOT_FOUND';
     ELSE
-        RETURN jsonb_build_object(
-            'success', true,
-            'message', 'Note deleted successfully'
-        );
+        success := true;
+        message := 'Note deleted successfully';
     END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -279,7 +283,7 @@ class DeleteNoteSuccess:
     """Successful deletion response."""
     message: str = "Note deleted successfully"
 
-@fraiseql.failure
+@fraiseql.error
 class DeleteNoteError:
     """Deletion error response."""
     message: str
@@ -289,9 +293,8 @@ class DeleteNoteError:
 async def delete_note(info, id: ID) -> DeleteNoteSuccess | DeleteNoteError:
     """Delete a note by ID with detailed error handling."""
     db = info.context["db"]
-    # Call function that returns JSONB directly from database
-    # FraiseQL automatically maps JSONB to the appropriate type
-    result = await db.fetchval("SELECT fn_delete_note($1)", id)
+    # The function's OUT parameters come back as a dict
+    result = await db.execute_function("fn_delete_note", {"id": str(id)})
 
     # Return the appropriate type based on success field
     if result.get("success"):
@@ -311,37 +314,42 @@ async def delete_note(info, id: ID) -> DeleteNoteSuccess | DeleteNoteError:
 
 ## Minute 45-60: Production Patterns - Timestamps
 
-**Challenge**: Add `created_at` and `updated_at` timestamps with automatic updates.
+**Challenge**: Track when each note was last changed with an `updated_at` timestamp.
 
-### Step 1: Add Timestamp Columns
+### Step 1: Add the updated_at Column
+
+The quickstart's `tb_note` already has `created_at TIMESTAMP DEFAULT NOW()`, set once
+on insert. Add `updated_at` next to it, with the same type:
 
 ```sql
--- Add timestamp columns
-ALTER TABLE tb_note ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
-ALTER TABLE tb_note ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- Add the column; new rows get NOW() on insert
+ALTER TABLE tb_note ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
 
--- Update existing records
-UPDATE tb_note SET created_at = NOW(), updated_at = NOW();
+-- Existing notes haven't changed since they were created
+UPDATE tb_note SET updated_at = created_at;
 ```
 
-### Step 2: Create Update Trigger
+### Step 2: Set updated_at Explicitly (No Trigger)
 
 ```sql
--- Function to update updated_at
 -- ℹ️ FraiseQL Best Practice: Use DEFAULT instead of triggers
 -- Triggers hide logic from AI and make code harder to understand.
--- For timestamp updates, use explicit application code:
+-- For timestamp updates, set updated_at in the function that does the update:
+CREATE OR REPLACE FUNCTION fn_update_note(input JSONB, OUT updated BOOLEAN) AS $$
+BEGIN
+    UPDATE tb_note
+    SET title = COALESCE(input->>'title', title),
+        content = COALESCE(input->>'content', content),
+        updated_at = NOW()  -- Explicit!
+    WHERE id = (input->>'id')::uuid;
+    updated := FOUND;
+END;
+$$ LANGUAGE plpgsql;
 
--- Python mutation example:
--- @mutation
--- async def update_note(id: str, title: str, context: Context) -> Note:
---     return await context.db.update("tb_note", id, {
---         "title": title,
---         "updated_at": datetime.utcnow()  # Explicit!
---     })
+-- A mutation calls it the way delete_note calls fn_delete_note:
+--   await db.execute_function("fn_update_note", {"id": str(id), "title": title})
 
--- Or use DEFAULT for automatic creation timestamps:
--- created_at TIMESTAMPTZ DEFAULT NOW()  -- Set once on INSERT
+-- created_at needs nothing: its DEFAULT NOW() sets it once, on INSERT
 ```
 
 ### Step 3: Update View
@@ -356,9 +364,9 @@ SELECT
         'id', id,
         'title', title,
         'content', content,
+        'created_at', created_at,
         'tags', tags,
-        'createdAt', created_at,
-        'updatedAt', updated_at
+        'updated_at', updated_at
     ) as data  -- Required: contains GraphQL response
 FROM tb_note;
 ```
@@ -373,9 +381,9 @@ FROM tb_note;
 class Note:
     id: ID
     title: str
-    content: str
+    content: str | None
+    created_at: datetime
     tags: list[str]
-    created_at: datetime  # Add this
     updated_at: datetime  # Add this
 ```
 
@@ -415,7 +423,7 @@ You've completed your first hour with FraiseQL! You now know how to:
 ### Explore Examples (30 minutes each)
 
 - **E-commerce API (../examples/ecommerce/)** - Shopping cart, products, orders
-- **Real-time Chat (../examples/real_time_chat/)** - Subscriptions and real-time updates
+- **[Subscriptions](../architecture/realtime/subscriptions.md)** - Subscriptions and real-time updates
 - **Multi-tenant SaaS (../examples/apq_multi_tenant/)** - Enterprise patterns
 
 ### Advanced Topics

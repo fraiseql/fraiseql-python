@@ -15,6 +15,7 @@ Features:
 """
 
 import asyncio
+import inspect
 import json
 import logging
 import smtplib
@@ -514,15 +515,39 @@ class NotificationManager:
             "webhook": WebhookChannel,
         }
 
-    def register_channel(self, name: str, channel_class: type) -> None:
+    def register_channel(self, name: str, channel_class: type | NotificationChannel) -> None:
         """Register a custom notification channel.
 
         Args:
-            name: Channel name
-            channel_class: Channel class implementing NotificationChannel protocol
+            name: Channel name (the ``channel_type`` of its configs)
+            channel_class: Channel class implementing NotificationChannel protocol,
+                or an instance of one, used as is for every notification
         """
         self.channels[name] = channel_class
         logger.info("Registered notification channel: %s", name)
+
+    @staticmethod
+    def _build_channel(
+        channel_class: type | NotificationChannel, channel_config: dict[str, Any]
+    ) -> NotificationChannel:
+        """The channel to send with: a registered instance, or a new one of the class.
+
+        A class gets the keys of ``channel_config`` its constructor takes (all of
+        them if it takes ``**kwargs``): ``EmailChannel`` its ``smtp_*`` settings,
+        ``SlackChannel`` and ``WebhookChannel`` none. Every key is still passed to
+        ``send``.
+        """
+        if not isinstance(channel_class, type):
+            return channel_class
+        parameters = inspect.signature(channel_class).parameters.values()
+        if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters):
+            return channel_class(**channel_config)
+        accepted = {
+            p.name
+            for p in parameters
+            if p.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+        }
+        return channel_class(**{k: v for k, v in channel_config.items() if k in accepted})
 
     async def send_notifications(self, error_id: str) -> None:
         """Send notifications for an error based on configured rules.
@@ -554,7 +579,10 @@ class NotificationManager:
                 """
                     SELECT
                         error_id, error_fingerprint, error_type, error_message,
-                        severity, occurrence_count, first_seen, last_seen,
+                        severity, occurrence_count,
+                        -- ISO 8601 text, whatever loaders the pool has (the app's
+                        -- pool loads timestamps as raw text)
+                        to_json(first_seen) #>> '{}', to_json(last_seen) #>> '{}',
                         environment, release_version, stack_trace
                     FROM tb_error_log
                     WHERE error_id = %s
@@ -573,8 +601,8 @@ class NotificationManager:
                 "error_message": row[3],
                 "severity": row[4],
                 "occurrence_count": row[5],
-                "first_seen": row[6].isoformat() if row[6] else None,
-                "last_seen": row[7].isoformat() if row[7] else None,
+                "first_seen": row[6],
+                "last_seen": row[7],
                 "environment": row[8],
                 "release_version": row[9],
                 "stack_trace": row[10],
@@ -643,8 +671,7 @@ class NotificationManager:
 
         # Create channel instance
         try:
-            channel_class = self.channels[channel_type]
-            channel = channel_class(**config["channel_config"])
+            channel = self._build_channel(self.channels[channel_type], config["channel_config"])
         except Exception as e:
             logger.exception("Failed to create channel %s", channel_type)
             await self._log_notification(

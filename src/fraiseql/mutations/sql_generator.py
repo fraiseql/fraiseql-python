@@ -6,7 +6,7 @@ UUIDs, enums, IP addresses, and nested dataclasses. Fields set to `fraiseql.UNSE
 are automatically excluded from the resulting JSON object.
 """
 
-import datetime
+import datetime as dt
 import enum
 import ipaddress
 import json
@@ -15,6 +15,7 @@ import uuid
 from collections.abc import Mapping
 from dataclasses import fields as dataclass_fields
 from dataclasses import is_dataclass
+from decimal import Decimal
 
 from psycopg import sql
 from psycopg.types.json import Jsonb
@@ -30,10 +31,13 @@ logger = logging.getLogger(__name__)
 def _serialize_basic(value: object) -> object:
     if isinstance(value, uuid.UUID | ipaddress.IPv4Address | ipaddress.IPv6Address):
         return str(value)
-    if isinstance(value, datetime.date | datetime.datetime):
+    if isinstance(value, dt.date | dt.datetime):
         return value.isoformat()
     if isinstance(value, enum.Enum):
         return value.value
+    if isinstance(value, Decimal):
+        # A JSON string keeps every digit; json.dumps can't encode a Decimal
+        return str(value)
     return value
 
 
@@ -55,7 +59,7 @@ def _serialize_value(value: object, field_type: object = None) -> object:
         # Handle FraiseQL input objects (not dataclasses but similar structure)
         result = {
             field_name: _serialize_value(getattr(value, field_name), field_type)
-            for field_name, field_type in value.__annotations__.items()
+            for field_name, field_type in type(value).__annotations__.items()
             if hasattr(value, field_name) and getattr(value, field_name) is not UNSET
         }
     elif isinstance(value, list):

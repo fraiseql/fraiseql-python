@@ -74,7 +74,7 @@ async def getPosts(info) -> List[PostWithAuthor]:
 async def getUser(info, id: str) -> User:
     """Get a user by ID."""
     db = info.context["db"]
-    return await db.find_one("v_user", "user", info, id=id)
+    return await db.find_one("v_user", "user", info, mandatory_filters={"id": id})
 
 
 # Mutations

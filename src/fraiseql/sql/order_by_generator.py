@@ -21,9 +21,9 @@ with dynamic query generators.
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from psycopg import sql
 
@@ -55,6 +55,29 @@ def _bit_cast(bit_string: str) -> sql.Composed:
     length mismatch, which is the right error to surface.
     """
     return sql.SQL("::bit({})").format(sql.Literal(len(bit_string)))
+
+
+def unpack_vector_operand(value: Any) -> Any:
+    """Return the query vector inside a ``VectorDistanceInput``, or ``value`` as is.
+
+    GraphQL sends an ``orderBy`` operand as ``{"dense": [...]}`` or
+    ``{"sparse": {"indices": [...], "values": [...]}}``, the input a vector
+    ``where`` takes, either as a dict or as the input object. Python callers
+    pass the list (or the sparse dict, or a bit string) directly.
+    """
+    if isinstance(value, dict):
+        if "dense" not in value and "sparse" not in value:
+            return value
+        dense, sparse = value.get("dense"), value.get("sparse")
+    elif hasattr(value, "dense") or hasattr(value, "sparse"):
+        dense, sparse = getattr(value, "dense", None), getattr(value, "sparse", None)
+    else:
+        return value
+    if dense is not None:
+        return dense
+    if sparse is not None and not isinstance(sparse, dict):  # a SparseVectorInput
+        return {"indices": sparse.indices, "values": sparse.values}
+    return sparse
 
 
 @fraise_enum
@@ -94,8 +117,13 @@ class OrderBy:
         field: The field name or nested path (e.g., 'amount' or 'profile.age')
                For vector distance: 'embedding.cosine_distance'
         direction: Sort direction ('asc' or 'desc')
-        value: Optional value for vector distance operations (list[float])
+        value: Optional value for vector distance operations (list[float], or
+               a ``VectorDistanceInput`` with a ``dense`` vector)
         collation: Optional PostgreSQL collation for text sorting (str)
+        temporal_cast: ``"timestamptz"`` or ``"date"`` for a JSONB field the
+               type declares as ``datetime`` / ``date``. The field holds an ISO
+               string, which ``->`` sorts as text; the cast sorts the instant.
+               Set by :meth:`OrderBySet.with_temporal_casts`.
 
     Examples:
         OrderBy('amount') -> "data -> 'amount' ASC"
@@ -107,8 +135,9 @@ class OrderBy:
 
     field: str
     direction: OrderDirection = OrderDirection.ASC
-    value: list[float] | None = None
+    value: Any = None
     collation: str | None = None
+    temporal_cast: Literal["timestamptz", "date"] | None = None
 
     def _collated(self, expr: sql.Composed | sql.SQL) -> sql.Composed | sql.SQL:
         """Append ``COLLATE "name"`` to *expr*, or return it untouched.
@@ -198,7 +227,7 @@ class OrderBy:
                 field_name, operator = parts
                 if operator in VECTOR_DISTANCE_OPERATORS:
                     return self._build_vector_distance_sql(
-                        field_name, operator, self.value, table_ref
+                        field_name, operator, self.value, table_ref, column_mapping
                     )
 
         # Standard JSONB extraction for regular fields.
@@ -215,16 +244,26 @@ class OrderBy:
         # Asking for a collation is asking for a text ordering, so -> is only
         # traded for ->> on the branch that requested one; an uncollated sort
         # keeps its previous SQL byte for byte.
+        #
+        # A datetime / date field is extracted as text and cast, the way the
+        # where side compares it: (data ->> 'created_at')::timestamptz.
         path = self.field.split(".")
         json_path = sql.SQL(" -> ").join(sql.Literal(p) for p in path[:-1])
         last_key = sql.Literal(path[-1])
-        leaf_op = sql.SQL(" ->> ") if self.collation is not None else sql.SQL(" -> ")
+        as_text = self.collation is not None or self.temporal_cast is not None
+        leaf_op = sql.SQL(" ->> ") if as_text else sql.SQL(" -> ")
         if path[:-1]:
             # For nested fields: {table_ref} -> 'profile' -> 'age'
             data_expr = sql.SQL(table_ref + " -> ") + json_path + leaf_op + last_key
         else:
             # For simple fields: {table_ref} -> 'field'
             data_expr = sql.SQL(table_ref) + leaf_op + last_key
+
+        if self.temporal_cast is not None:
+            return (
+                sql.SQL("({})::{} ").format(data_expr, sql.SQL(self.temporal_cast))
+                + self._direction_sql()
+            )
 
         if self.collation is not None:
             data_expr = sql.SQL("({})").format(data_expr)
@@ -235,81 +274,80 @@ class OrderBy:
         self,
         field_name: str,
         operator: str,
-        value: list[float] | dict[str, Any],
+        value: Any,
         table_ref: str = "t",
+        column_mapping: dict[str, str] | None = None,
     ) -> sql.Composed:
         """Build SQL for vector distance ordering.
 
-        Generates: ({table_ref}."field") <operator> '[0.1,0.2,...]'::vector
+        Generates: (t."field") <operator> '[0.1,0.2,...]'::vector on a view
+        without a JSONB column, ("field") <operator> ... on one with it.
+
+        The vector is always a column of the view: a vector inside the JSONB
+        document can't be sorted by distance, so a view with a ``data`` column
+        exposes it beside ``data``, as ``where`` expects. This used to render
+        ``data."field"``, which PostgreSQL reads as a table named ``data``.
 
         Args:
             field_name: The vector field name (e.g., 'embedding')
             operator: One of :data:`VECTOR_DISTANCE_OPERATORS`
-            value: The vector to compare against
-            table_ref: Table alias or column name to use for field access
+            value: The vector to compare against: a list, a ``VectorDistanceInput``
+                (``{"dense": [...]}``, as GraphQL sends it), or a bit string
+            table_ref: ``"t"`` for a view without a JSONB column (selected
+                ``AS t``), otherwise the JSONB column's name
+            column_mapping: Declared field → column names; a mapped vector
+                field sorts on its column
 
         Returns:
             SQL fragment for vector distance ordering
         """
-        # Map operator names to PostgreSQL operators and data types
         # Set to a function name by any operator that must render as a call rather
         # than an infix operator; pg_operator_sql is None in exactly those cases.
         pg_function_sql = None
 
-        if isinstance(value, dict):
-            # Sparse vector handling
-            indices = value["indices"]
-            vals = value["values"]
-            dimension = max(indices) + 1 if indices else 0
-            elements = ",".join(f"{idx}:{val}" for idx, val in zip(indices, vals, strict=True))
-            literal_value = f"{{{elements}}}/{dimension}"
-            type_cast = sql.SQL("::sparsevec")
+        value = unpack_vector_operand(value)
+        is_sparse = isinstance(value, dict)
+        if is_sparse:
+            # A sparsevec literal needs the column's dimension, which neither input
+            # carries: guessing it from the indices made the sort fail on any
+            # column whose dimension the guess missed.
+            msg = (
+                f"order_by: {self.field!r} needs a dense vector; "
+                "db.find can't order by a sparse one"
+            )
+            raise ValueError(msg)
 
-            if operator == "cosine_distance":
-                pg_operator_sql = sql.SQL("<=>")
-            elif operator == "l2_distance":
-                pg_operator_sql = sql.SQL("<->")
-            elif operator == "l1_distance":
-                pg_operator_sql = sql.SQL("<+>")
-            elif operator == "inner_product":
-                pg_operator_sql = sql.SQL("<#>")
-            else:
-                # hamming_distance and jaccard_distance are bit-string operators;
-                # pgvector has no sparsevec form of either.
-                raise ValueError(f"Unsupported sparse vector operator: {operator}")
+        literal_value = "[" + ",".join(str(v) for v in value) + "]"
+        if operator == "cosine_distance":
+            pg_operator_sql = sql.SQL("<=>")
+            type_cast = sql.SQL("::vector")
+        elif operator == "l2_distance":
+            pg_operator_sql = sql.SQL("<->")
+            type_cast = sql.SQL("::vector")
+        elif operator == "l1_distance":
+            pg_operator_sql = sql.SQL("<+>")
+            type_cast = sql.SQL("::vector")
+        elif operator == "inner_product":
+            pg_operator_sql = sql.SQL("<#>")
+            type_cast = sql.SQL("::vector")
+        elif operator == "hamming_distance":
+            pg_operator_sql = sql.SQL("<~>")
+            literal_value = str(value)  # value is already a string for binary operators
+            type_cast = _bit_cast(literal_value)
+        elif operator == "jaccard_distance":
+            # Rendered as jaccard_distance(col, lit), not as the <%> operator.
+            # psycopg scans a statement for placeholders whenever parameters
+            # accompany it, and rejects `%>` as one; escaping to `<%%>` only
+            # moves the failure to the no-parameter statements, which are sent
+            # verbatim and then have no such operator. The function form is the
+            # one spelling correct under both, at the cost of the
+            # bit_jaccard_ops index, which cannot match a function call (#495).
+            pg_operator_sql = None
+            pg_function_sql = sql.SQL("jaccard_distance")
+            literal_value = str(value)  # value is already a string for binary operators
+            type_cast = _bit_cast(literal_value)
         else:
-            # Dense vector handling
-            literal_value = "[" + ",".join(str(v) for v in value) + "]"
-            if operator == "cosine_distance":
-                pg_operator_sql = sql.SQL("<=>")
-                type_cast = sql.SQL("::vector")
-            elif operator == "l2_distance":
-                pg_operator_sql = sql.SQL("<->")
-                type_cast = sql.SQL("::vector")
-            elif operator == "l1_distance":
-                pg_operator_sql = sql.SQL("<+>")
-                type_cast = sql.SQL("::vector")
-            elif operator == "inner_product":
-                pg_operator_sql = sql.SQL("<#>")
-                type_cast = sql.SQL("::vector")
-            elif operator == "hamming_distance":
-                pg_operator_sql = sql.SQL("<~>")
-                literal_value = str(value)  # value is already a string for binary operators
-                type_cast = _bit_cast(literal_value)
-            elif operator == "jaccard_distance":
-                # Rendered as jaccard_distance(col, lit), not as the <%> operator.
-                # psycopg scans a statement for placeholders whenever parameters
-                # accompany it, and rejects `%>` as one; escaping to `<%%>` only
-                # moves the failure to the no-parameter statements, which are sent
-                # verbatim and then have no such operator. The function form is the
-                # one spelling correct under both, at the cost of the
-                # bit_jaccard_ops index, which cannot match a function call (#495).
-                pg_operator_sql = None
-                pg_function_sql = sql.SQL("jaccard_distance")
-                literal_value = str(value)  # value is already a string for binary operators
-                type_cast = _bit_cast(literal_value)
-            else:
-                raise ValueError(f"Unknown vector distance operator: {operator}")
+            raise ValueError(f"Unknown vector distance operator: {operator}")
 
         # Build SQL: ({table_ref}."field") <operator> 'literal'::type ASC
         # or, where pg_operator_sql is None: func({table_ref}."field", 'literal'::type) ASC
@@ -320,9 +358,13 @@ class OrderBy:
         else:
             direction_str = str(self.direction).upper()
         direction_sql = sql.SQL(direction_str)
-        column_sql = sql.Composed(
-            [sql.SQL(table_ref + "."), sql.Identifier(field_name)],
-        )
+        column = (column_mapping or {}).get(field_name, field_name)
+        if table_ref == "t":
+            column_sql = sql.Composed([sql.SQL("t."), sql.Identifier(column)])
+        else:
+            # The FROM clause has no alias here, and table_ref names the JSONB
+            # column, not a table.
+            column_sql = sql.Composed([sql.Identifier(column)])
         if pg_operator_sql is None:
             return sql.Composed(
                 [
@@ -389,6 +431,34 @@ class OrderBySet:
             for instr in self.instructions
         )
         return sql.SQL("ORDER BY ") + clauses
+
+    def with_temporal_casts(self, source_type: type | None) -> "OrderBySet":
+        """Return this set with ``temporal_cast`` set on its datetime / date keys.
+
+        A key gets the cast when *source_type* declares its path ``datetime`` or
+        ``date`` (unwrapping ``X | None``, following nested types), resolved as
+        the where side resolves it. A vector distance key (it carries a value),
+        a key with a collation (a text ordering was asked for) and a key that
+        does not resolve keep their SQL. A key that renders as a flat column
+        ignores the cast, so a real timestamptz column is unchanged.
+        """
+        if source_type is None:
+            return self
+
+        from fraiseql.where_normalization import _declared_temporal_cast
+
+        instructions = [
+            replace(instr, temporal_cast=cast)
+            if instr.value is None
+            and instr.collation is None
+            and instr.temporal_cast is None
+            and (cast := _declared_temporal_cast(source_type, instr.field.split(".")))
+            else instr
+            for instr in self.instructions
+        ]
+        if all(new is old for new, old in zip(instructions, self.instructions, strict=True)):
+            return self
+        return replace(self, instructions=instructions)
 
     def uses_flat_columns(
         self,

@@ -256,6 +256,28 @@ mod test_status_taxonomy {
     }
 
     #[test]
+    fn test_failed_reason_gets_the_reason_code() {
+        // The trinity helpers (mutation_validation_error, mutation_not_found,
+        // mutation_conflict) return "failed:<reason>"
+        for (status, code) in [
+            ("failed:validation", 422),
+            ("failed:not_found", 404),
+            ("failed:unauthorized", 401),
+            ("failed:forbidden", 403),
+            ("failed:conflict", 409),
+            ("failed:duplicate", 409),
+            ("failed:timeout", 408),
+            ("FAILED:Validation", 422),
+            ("failed:validation:email", 422),
+            ("failed:exception", 500),
+            ("failed:", 500),
+            ("failed:not_found_anywhere", 500),
+        ] {
+            assert_eq!(MutationStatus::from_str(status).application_code(), code, "{status}");
+        }
+    }
+
+    #[test]
     fn test_success_is_not_error() {
         let status = MutationStatus::from_str("created");
         assert!(status.is_success());

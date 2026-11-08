@@ -26,7 +26,7 @@ async def ensure_rbac_schema(class_db_pool, test_schema) -> None:
             """
                 SELECT EXISTS (
                     SELECT 1 FROM information_schema.tables
-                    WHERE table_name = 'roles'
+                    WHERE table_name = 'roles' AND table_schema = current_schema()
                 )
             """
         )

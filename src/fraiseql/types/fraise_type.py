@@ -14,7 +14,7 @@ from fraiseql.types.constructor import define_fraiseql_type
 T = TypeVar("T", bound=type[Any])
 
 
-@dataclass_transform(field_specifiers=(fraise_field, field, Field))
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field, field, Field))
 @overload
 def fraise_type(
     _cls: None = None,

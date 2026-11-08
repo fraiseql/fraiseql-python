@@ -177,8 +177,8 @@ SELECT
         'id',        u.id,
         'username',  u.username,
         'email',     u.email,
-        'isActive',  u.is_active,
-        'createdAt', u.created_at
+        'is_active',  u.is_active,
+        'created_at', u.created_at
     ) AS data
 FROM tb_user u
 WHERE u.deleted_at IS NULL;     -- only active users
@@ -255,7 +255,7 @@ SELECT
     jsonb_build_object(
         'id',        o.id,
         'total',     o.total,
-        'createdAt', o.created_at,
+        'created_at', o.created_at,
         'user', jsonb_build_object(
             'id',       u.id,
             'username', u.username,
@@ -310,7 +310,7 @@ SELECT
         'id',        u.id,
         'username',  u.username,
         'email',     u.email,
-        'createdAt', u.created_at
+        'created_at', u.created_at
     ) AS data
 FROM tb_user u
 WHERE u.deleted_at IS NULL;        -- only active users
@@ -344,7 +344,7 @@ async def users(info) -> list[User]:
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 ---

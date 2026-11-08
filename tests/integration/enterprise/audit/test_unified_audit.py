@@ -23,7 +23,7 @@ from fraiseql.db import FraiseQLRepository
 pytestmark = pytest.mark.enterprise
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def setup_unified_audit(class_db_pool: psycopg_pool.AsyncConnectionPool, test_schema) -> None:
     import asyncio
 

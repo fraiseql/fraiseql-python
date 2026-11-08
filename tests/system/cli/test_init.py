@@ -6,6 +6,7 @@ pytestmark = pytest.mark.integration
 
 from pathlib import Path
 
+from fraiseql.cli.commands.init import FRAISEQL_PIN, REQUIRES_PYTHON
 from fraiseql.cli.main import cli
 
 
@@ -29,7 +30,7 @@ class TestInitCommand:
         assert (project_path / "src" / "mutations").exists()
         assert (project_path / "src" / "queries").exists()
         assert (project_path / "tests").exists()
-        assert (project_path / "migrations").exists()
+        assert (project_path / "db" / "migrations").exists()
 
         # Check files
         assert (project_path / ".env").exists()
@@ -106,8 +107,8 @@ class TestInitCommand:
 
         pyproject = (temp_project_dir / "testproject" / "pyproject.toml").read_text()
         assert 'name = "testproject"' in pyproject
-        assert "fraiseql>=0.2.1" in pyproject
-        assert 'requires-python = ">=3.10"' in pyproject
+        assert FRAISEQL_PIN in pyproject
+        assert f'requires-python = "{REQUIRES_PYTHON}"' in pyproject
         assert "[tool.ruff]" in pyproject
         assert "[tool.pyright]" in pyproject
 

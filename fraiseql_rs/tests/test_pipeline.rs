@@ -20,6 +20,7 @@ fn main() {
         None, // No field selections
         None, // Use default is_list
         None, // Use default include_graphql_wrapper
+        None, // Use default inject_typename
     ) {
         Ok(bytes) => {
             let result_str = String::from_utf8_lossy(&bytes);

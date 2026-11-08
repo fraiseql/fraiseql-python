@@ -7,23 +7,22 @@
 **Basic Pattern (todo_quickstart.py):**
 
 ```python
+@fraiseql.mutation
 async def create_user(info, input: CreateUserInput) -> User:
-    # Simple success/error handling
-    user_id = await db.call_function("create_user", ...)
-    return User.from_dict(result)
+    # Simple success/error handling: an exception becomes a GraphQL error
+    db = info.context["db"]
+    result = await db.execute_function("create_user", {"email": input.email, "name": input.name})
+    return await db.find_one("v_user", "createUser", info, where={"id": result["id"]})
 ```
 
-**Enterprise Pattern (blog_api/):**
+**Enterprise Pattern:**
 
 ```python
-class CreateUser(
-    FraiseQLMutation,  # Clean default pattern
-    function="app.create_user"
-):
+@fraiseql.mutation(function="create_user", schema="app")
+class CreateUser:
     input: CreateUserInput
-    success: CreateUserSuccess  # With metadata - auto-decorated
-    failure: CreateUserError    # With context - auto-decorated
-    noop: CreateUserNoop       # For edge cases - auto-decorated
+    success: CreateUserSuccess  # With metadata
+    error: CreateUserError      # With context; a "noop:" status also returns it
 ```
 
 ### Function Architecture
@@ -68,9 +67,8 @@ CREATE FUNCTION core.create_user(...) RETURNS app.mutation_result;
 | Example | Complexity | Patterns Used | Best For |
 |---------|------------|---------------|----------|
 | `todo_quickstart.py` | Basic | Simple mutations | Learning FraiseQL |
-| `blog_api/` | Intermediate | Mutation results, basic audit | Content management |
-| `ecommerce_api/` | Advanced | Cross-entity validation | E-commerce apps |
-| `enterprise_patterns/` | Full | All patterns | Production systems |
+| `blog_simple/` | Intermediate | Class mutations, `mutation_response` | Content management |
+| `saas-starter/` | Full | Tenant scoping, context params, activity log | Production systems |
 
 ## Pattern Evolution
 
@@ -80,47 +78,48 @@ CREATE FUNCTION core.create_user(...) RETURNS app.mutation_result;
 # Simple, direct approach
 @fraiseql.query
 async def users(info) -> list[User]:
-    return await info.context["db"].find("users")
+    return await info.context["db"].find("v_user", "users", info)
 
 @fraiseql.mutation
 async def create_user(info, input: CreateUserInput) -> User:
-    result = await info.context["db"].call_function("create_user", input.dict())
-    return User.from_dict(result)
+    db = info.context["db"]
+    # create_user(input_data jsonb) RETURNS jsonb: {"id": ...}
+    result = await db.execute_function("create_user", {"email": input.email, "name": input.name})
+    return await db.find_one("v_user", "createUser", info, where={"id": result["id"]})
 ```
 
 ### Stage 2: Structured Responses
 
 ```python
 # Add success/error structure
-class CreateUser(FraiseQLMutation):
+@fraiseql.mutation
+class CreateUser:
     input: CreateUserInput
-    success: CreateUserSuccess  # Auto-decorated
-    failure: CreateUserError    # Auto-decorated
+    success: CreateUserSuccess  # @fraiseql.success
+    error: CreateUserError      # @fraiseql.error
 ```
 
 ### Stage 3: Business Logic Handling
 
 ```python
-# Add NOOP for business rules
-class CreateUser(FraiseQLMutation):
+# Add NOOP for business rules: the SQL function returns a "noop:..." status,
+# which comes back as CreateUserError
+@fraiseql.mutation
+class CreateUser:
     input: CreateUserInput
-    success: CreateUserSuccess  # Auto-decorated
-    failure: CreateUserError    # Auto-decorated
-    noop: CreateUserNoop       # Auto-decorated
+    success: CreateUserSuccess  # @fraiseql.success
+    error: CreateUserError      # @fraiseql.error
 ```
 
 ### Stage 4: Full Enterprise
 
 ```python
 # Complete audit, validation, and error handling
-class CreateUser(
-    FraiseQLMutation,  # Clean default pattern
-    function="app.create_user"  # app/core split
-):
+@fraiseql.mutation(function="create_user", schema="app")  # app/core split
+class CreateUser:
     input: CreateUserInput            # With validation
-    success: CreateUserSuccess        # With audit trail - auto-decorated
-    failure: CreateUserError          # With field errors - auto-decorated
-    noop: CreateUserNoop             # With business context - auto-decorated
+    success: CreateUserSuccess        # With audit trail
+    error: CreateUserError            # With field errors and "noop:" business context
 ```
 
 ## Code Comparison Examples
@@ -241,11 +240,11 @@ Use this tree to choose the right pattern:
 Is this a learning/prototype project?
 ├─ Yes → Use Basic patterns (todo_quickstart.py)
 └─ No → Do you need audit trails?
-    ├─ No → Use Intermediate patterns (blog_api basic)
+    ├─ No → Use Intermediate patterns (blog_simple)
     └─ Yes → Do you need NOOP handling?
-        ├─ No → Use Advanced patterns (blog_api enterprise)
+        ├─ No → Use Advanced patterns (saas-starter)
         └─ Yes → Do you have complex business rules?
-            ├─ No → Use blog_api with NOOP
+            ├─ No → Add NOOP statuses to your functions
             └─ Yes → Use Full Enterprise patterns
 ```
 

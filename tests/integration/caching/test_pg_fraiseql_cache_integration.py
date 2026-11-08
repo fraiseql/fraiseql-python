@@ -228,10 +228,8 @@ class TestExtensionDetection:
         async def mock_execute(query, *args) -> None:
             nonlocal call_count
             call_count += 1
-            # First two calls are CREATE TABLE queries (succeed)
-            if call_count <= 2:
-                return
-            # Third call is pg_extension query (fail with permission error)
+            # auto_initialize=False: no CREATE TABLE, the first call is the
+            # pg_extension query (fail with permission error)
             raise psycopg.errors.InsufficientPrivilege("permission denied for table pg_extension")
 
         mock_cursor.execute = mock_execute
@@ -618,7 +616,7 @@ class TestVersionChecking:
         async def mock_execute(query, params=None) -> None:
             # Track what gets cached during SET
             if "INSERT INTO" in query and params:
-                key, value_json, expires = params
+                key, value_json, _expires = params
                 cached_data[key] = json.loads(value_json)
 
         async def mock_fetchone() -> None:
@@ -636,7 +634,7 @@ class TestVersionChecking:
             return [("user", 42)]
 
         # Initial setup mocks for extension detection
-        initial_fetchone = AsyncMock(return_value=("1.0",))
+        AsyncMock(return_value=("1.0",))
 
         # Track call count to return correct data
         fetchone_call_count = 0
@@ -672,7 +670,7 @@ class TestVersionChecking:
         await cache.set("test_key", [{"id": 1, "name": "Alice"}], ttl=300, versions={"user": 42})
 
         # Step 2: Get cached value (should include version metadata)
-        result, cached_versions = await cache.get_with_metadata("test_key")
+        _result, cached_versions = await cache.get_with_metadata("test_key")
         assert cached_versions == {"user": 42}, (
             f"Should cache with version 42, got {cached_versions}"
         )
@@ -710,7 +708,7 @@ class TestVersionChecking:
         async def mock_fetchall() -> None:
             # Get the last execute call
             if execute_calls:
-                last_query, last_params = execute_calls[-1]
+                _last_query, last_params = execute_calls[-1]
                 if last_params:
                     tenant_id = last_params[0]
                     if tenant_id == tenant_a:

@@ -145,7 +145,7 @@ scripts), build the psycopg pool and the repository directly. The repository tak
 psycopg `AsyncConnectionPool` and an optional context dict.
 
 ```python
-from fraiseql.fastapi import create_db_pool
+from fraiseql.fastapi.app import create_db_pool
 from fraiseql.db import FraiseQLRepository
 
 # create_db_pool returns a psycopg_pool.AsyncConnectionPool, configured for FraiseQL
@@ -199,7 +199,7 @@ async def products(info, limit: int = 20, offset: int = 0) -> list[Product]:
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
     # find_one returns RustResponseBytes for a hit, or None when no row matches
-    return await db.find_one("v_user", field_name="user", info=info, id=id)
+    return await db.find_one("v_user", field_name="user", info=info, mandatory_filters={"id": id})
 ```
 
 ### Filtered query
@@ -310,7 +310,7 @@ query still runs through psycopg.
 
 ```python
 import pytest
-from fraiseql.fastapi import create_db_pool
+from fraiseql.fastapi.app import create_db_pool
 from fraiseql.db import FraiseQLRepository
 from fraiseql.core.rust_pipeline import RustResponseBytes
 
@@ -323,7 +323,7 @@ async def db(postgres_url: str) -> FraiseQLRepository:
 
 @pytest.mark.asyncio
 async def test_user_query(db: FraiseQLRepository) -> None:
-    result = await db.find("v_user", field_name="users", info=None, status="active")
+    result = await db.find("v_user", field_name="users", info=None, mandatory_filters={"status": "active"})
     assert isinstance(result, RustResponseBytes)
 ```
 

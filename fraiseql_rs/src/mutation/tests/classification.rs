@@ -65,7 +65,8 @@ fn test_noop_prefix() {
     assert!(status.is_noop());
     assert!(status.is_error()); // v1.8.0: noop is error type
     match status {
-        MutationStatus::Noop(reason) => assert_eq!(reason, "unchanged"),
+        // The full status string is kept
+        MutationStatus::Noop(status) => assert_eq!(status, "noop:unchanged"),
         _ => panic!("Expected Noop variant"),
     }
 }

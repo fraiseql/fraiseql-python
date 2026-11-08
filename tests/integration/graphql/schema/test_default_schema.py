@@ -37,12 +37,13 @@ class TestDefaultSchemaConfig:
         assert config.default_query_schema == "public"
 
     def test_config_allows_custom_default_schemas(self) -> None:
-        """Test that custom default schemas can be set."""
-        config = FraiseQLConfig(
-            database_url="postgresql://test@localhost/test",
-            default_mutation_schema="app",
-            default_query_schema="queries",
-        )
+        """Test that custom default schemas can be set (default_query_schema does nothing)."""
+        with pytest.warns(DeprecationWarning, match="default_query_schema has no effect"):
+            config = FraiseQLConfig(
+                database_url="postgresql://test@localhost/test",
+                default_mutation_schema="app",
+                default_query_schema="queries",
+            )
 
         assert config.default_mutation_schema == "app"
         assert config.default_query_schema == "queries"

@@ -1,15 +1,27 @@
 """Authentication decorators for GraphQL resolvers."""
 
 from collections.abc import Callable, Coroutine
-from functools import wraps
 from typing import Any, ParamSpec, TypeVar
 
 from graphql import GraphQLError, GraphQLResolveInfo
 
 from fraiseql.auth.base import UserContext
+from fraiseql.utils.annotations import wraps
 
 P = ParamSpec("P")
 T = TypeVar("T")
+
+
+def _is_resolve_info(info: object) -> bool:
+    """Whether ``info`` is a resolver's info.
+
+    graphql-core passes a GraphQLResolveInfo; fraiseql's multi-field path (a query
+    with several root fields) passes its own stand-in with the same attributes, so
+    the check is on what the decorators read rather than on the class.
+    """
+    return isinstance(info, GraphQLResolveInfo) or (
+        hasattr(info, "context") and hasattr(info, "field_name")
+    )
 
 
 def requires_auth(
@@ -32,7 +44,7 @@ def requires_auth(
             msg = "GraphQL resolver must have info as first argument"
             raise ValueError(msg)
 
-        if not isinstance(info, GraphQLResolveInfo):
+        if not _is_resolve_info(info):
             msg = "First argument must be GraphQLResolveInfo"
             raise TypeError(msg)
 
@@ -71,7 +83,7 @@ def requires_permission(
                 raise ValueError(msg)
 
             # Type guard to ensure info is GraphQLResolveInfo
-            if not isinstance(info, GraphQLResolveInfo):
+            if not _is_resolve_info(info):
                 msg = "First argument must be GraphQLResolveInfo"
                 raise TypeError(msg)
 
@@ -122,7 +134,7 @@ def requires_role(
                 raise ValueError(msg)
 
             # Type guard to ensure info is GraphQLResolveInfo
-            if not isinstance(info, GraphQLResolveInfo):
+            if not _is_resolve_info(info):
                 msg = "First argument must be GraphQLResolveInfo"
                 raise TypeError(msg)
 
@@ -173,7 +185,7 @@ def requires_any_permission(
                 raise ValueError(msg)
 
             # Type guard to ensure info is GraphQLResolveInfo
-            if not isinstance(info, GraphQLResolveInfo):
+            if not _is_resolve_info(info):
                 msg = "First argument must be GraphQLResolveInfo"
                 raise TypeError(msg)
 
@@ -227,7 +239,7 @@ def requires_any_role(
                 raise ValueError(msg)
 
             # Type guard to ensure info is GraphQLResolveInfo
-            if not isinstance(info, GraphQLResolveInfo):
+            if not _is_resolve_info(info):
                 msg = "First argument must be GraphQLResolveInfo"
                 raise TypeError(msg)
 

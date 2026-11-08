@@ -42,7 +42,7 @@ class TestStringFilterRegex:
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
     async def setup_test_views(
-        self, class_db_pool: psycopg_pool.AsyncConnectionPool, test_types
+        self, class_db_pool: psycopg_pool.AsyncConnectionPool, test_schema, test_types
     ) -> AsyncGenerator[None]:
         """Create test views with proper structure."""
         Product = test_types["Product"]

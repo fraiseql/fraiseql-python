@@ -253,6 +253,23 @@ class Order:
     total: Decimal  # Exact precision (NUMERIC)
 ```
 
+`Decimal` is the GraphQL `Decimal` scalar: serialized as a string (`"99.99"`),
+parsed to `decimal.Decimal` from a string or a number, and filtered with
+`DecimalFilter`. A `Decimal` input field reaches your SQL function as a JSON
+string; read it with `(input->>'total')::numeric`.
+
+In HTTP mode a JSONB *number* reaches the client with every digit PostgreSQL
+wrote, as a JSON number; a client whose JSON parser makes floats (JavaScript's
+`JSON.parse`) rounds it to about 17 significant digits. To send the scalar's
+string form instead, emit the column as text in the view, `'total', total::text`.
+Where filters still compare it as a number:
+
+```sql
+CREATE VIEW v_order AS
+SELECT id, jsonb_build_object('id', id, 'total', total::text) AS data
+FROM tb_order;
+```
+
 ---
 
 ### ❌ Using str for Boolean

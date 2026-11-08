@@ -170,11 +170,11 @@ class GraphQLTestClient:
             return None
 
         # Handle dict (keep as-is for now, will enhance in Phase 4.3)
-        if result_type == dict or result_type == Any:
+        if result_type is dict or result_type is Any:
             return data
 
         # Handle list types
-        if hasattr(result_type, "__origin__") and result_type.__origin__ == list:
+        if hasattr(result_type, "__origin__") and result_type.__origin__ is list:
             # Get the item type from list[ItemType]
             item_type = result_type.__args__[0] if result_type.__args__ else Any
             if isinstance(data, list):

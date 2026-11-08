@@ -22,13 +22,6 @@ from fraiseql.sql.where.operators.vectors import (
     build_jaccard_distance_sql,
     build_l1_distance_sql,
     build_l2_distance_sql,
-    build_quantization_reconstruct_sql,
-    build_quantized_distance_sql,
-    build_sparse_cosine_distance_sql,
-    build_sparse_inner_product_sql,
-    build_sparse_l2_distance_sql,
-    build_sparse_vector_avg_aggregation,
-    build_sparse_vector_sum_aggregation,
     build_vector_avg_aggregation,
     build_vector_norm_sql,
     build_vector_sum_aggregation,
@@ -264,48 +257,6 @@ class TestBinaryVectorDistanceOperators:
         assert "::bit" in sql_str
         assert "111000" in sql_str
 
-
-class TestSparseVectorDistanceOperators:
-    """Test sparse vector distance operators."""
-
-    def test_sparse_cosine_distance(self):
-        """Test sparse vector cosine distance."""
-        path_sql = SQL("sparse_embedding")
-        sparse_vector = {"indices": [0, 2, 4], "values": [0.1, 0.3, 0.5]}
-        result = build_sparse_cosine_distance_sql(path_sql, sparse_vector)
-        sql_str = result.as_string(None)
-        assert "<=>" in sql_str
-        assert "::sparsevec" in sql_str
-        assert "0:0.1,2:0.3,4:0.5" in sql_str
-
-    def test_sparse_l2_distance(self):
-        """Test sparse vector L2 distance."""
-        path_sql = SQL("sparse_vec")
-        sparse_vector = {"indices": [1, 3, 5], "values": [0.2, 0.4, 0.6]}
-        result = build_sparse_l2_distance_sql(path_sql, sparse_vector)
-        sql_str = result.as_string(None)
-        assert "<->" in sql_str
-        assert "::sparsevec" in sql_str
-        assert "1:0.2,3:0.4,5:0.6" in sql_str
-
-    def test_sparse_inner_product(self):
-        """Test sparse vector inner product."""
-        path_sql = SQL("sparse_vectors")
-        sparse_vector = {"indices": [0, 1, 2], "values": [1.0, 2.0, 3.0]}
-        result = build_sparse_inner_product_sql(path_sql, sparse_vector)
-        sql_str = result.as_string(None)
-        assert "<#>" in sql_str
-        assert "::sparsevec" in sql_str
-        assert "0:1.0,1:2.0,2:3.0" in sql_str
-
-    def test_sparse_empty_vector(self):
-        """Test sparse vector with empty indices/values."""
-        path_sql = SQL("sparse_field")
-        sparse_vector = {"indices": [], "values": []}
-        result = build_sparse_cosine_distance_sql(path_sql, sparse_vector)
-        sql_str = result.as_string(None)
-        assert "<=>" in sql_str
-        assert "::sparsevec" in sql_str
         # Should handle empty case gracefully
 
 
@@ -337,24 +288,6 @@ class TestVectorAggregationOperators:
             build_vector_norm_sql(SQL("embedding"), None)
 
 
-class TestSparseVectorAggregationOperators:
-    """Test sparse vector aggregation functions."""
-
-    def test_sparse_vector_sum_aggregation(self):
-        """Test sparse vector SUM aggregation."""
-        path_sql = SQL("sparse_embeddings")
-        result = build_sparse_vector_sum_aggregation(path_sql)
-        sql_str = result.as_string(None)
-        assert "SUM(" in sql_str
-
-    def test_sparse_vector_avg_aggregation(self):
-        """Test sparse vector AVG aggregation."""
-        path_sql = SQL("sparse_embeddings")
-        result = build_sparse_vector_avg_aggregation(path_sql)
-        sql_str = result.as_string(None)
-        assert "AVG(" in sql_str
-
-
 class TestHalfVectorAggregationOperators:
     """Test half vector (binary quantized) aggregation functions."""
 
@@ -371,28 +304,6 @@ class TestHalfVectorAggregationOperators:
         result = build_half_vector_avg_aggregation(path_sql)
         sql_str = result.as_string(None)
         assert "AVG(" in sql_str
-
-
-class TestVectorQuantizationOperators:
-    """Quantization operators are not WHERE predicates and are refused (#510).
-
-    Both named functions -- ``quantized_<type>_distance`` and
-    ``reconstruct_quantized_vector`` -- are undefined, and neither returns a
-    boolean. The assertions here previously pinned that broken rendering.
-    Reachability and the injection channels are covered in
-    ``test_vector_non_predicate_operators.py``.
-    """
-
-    def test_quantized_distance_is_rejected(self):
-        """``quantized_cosine_distance`` is not a function FraiseQL defines."""
-        config = {"target_vector": [0.1, 0.2, 0.3], "distance_type": "cosine"}
-        with pytest.raises(WhereClauseError):
-            build_quantized_distance_sql(SQL("quantized_embedding"), config)
-
-    def test_quantization_reconstruct_is_rejected(self):
-        """Reconstruction returns a vector, never a predicate."""
-        with pytest.raises(WhereClauseError):
-            build_quantization_reconstruct_sql(SQL("quantized_vector"), None)
 
 
 class TestCustomVectorDistanceOperators:
@@ -418,17 +329,15 @@ class TestBinaryVectorBitWidth:
     QUERY_BITS = "1111000011110000111100001111000011110000111100001111000011110000"
 
     def test_hamming_casts_both_operands_to_the_literal_width(self) -> None:
-        result = build_hamming_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
+        result = build_hamming_distance_sql(SQL("(data ->> 'fingerprint')"), self.QUERY_BITS)
         assert result.as_string(None) == (
-            "((data ->> 'fingerprint'))::bit(64) <~> "
-            f"'{self.QUERY_BITS}'::bit(64)"
+            f"((data ->> 'fingerprint'))::bit(64) <~> '{self.QUERY_BITS}'::bit(64)"
         )
 
     def test_jaccard_casts_both_operands_to_the_literal_width(self) -> None:
-        result = build_jaccard_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
+        result = build_jaccard_distance_sql(SQL("(data ->> 'fingerprint')"), self.QUERY_BITS)
         assert result.as_string(None) == (
-            "jaccard_distance(((data ->> 'fingerprint'))::bit(64), "
-            f"'{self.QUERY_BITS}'::bit(64))"
+            f"jaccard_distance(((data ->> 'fingerprint'))::bit(64), '{self.QUERY_BITS}'::bit(64))"
         )
 
     @pytest.mark.parametrize("builder", [build_hamming_distance_sql, build_jaccard_distance_sql])
@@ -452,7 +361,7 @@ class TestBinaryVectorBitWidth:
     )
     def test_column_side_is_cast_too(self, builder, prefix) -> None:
         """The path is a JSONB text extraction, so it needs the cast as well."""
-        sql_str = builder(SQL('(data ->> \'fp\')'), "101010").as_string(None)
+        sql_str = builder(SQL("(data ->> 'fp')"), "101010").as_string(None)
         assert sql_str.startswith(prefix)
 
 
@@ -470,7 +379,7 @@ class TestJaccardRendersWithoutAPercentSign:
     BITS = "111000"
 
     def test_jaccard_uses_the_function_form(self) -> None:
-        result = build_jaccard_distance_sql(SQL('(data ->> \'fp\')'), self.BITS)
+        result = build_jaccard_distance_sql(SQL("(data ->> 'fp')"), self.BITS)
         assert result.as_string(None) == (
             "jaccard_distance(((data ->> 'fp'))::bit(6), '111000'::bit(6))"
         )

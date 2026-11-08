@@ -105,14 +105,15 @@ For databases using the Trinity Pattern (UUID public ID + INTEGER internal PK):
 
 ## Limitations
 
-1. **2-level nesting maximum** for dict-based filters
-   - ✅ Supported: `{ machine: { id: { eq: $id } } }`
-   - ❌ Not supported: `{ machine: { owner: { id: { eq: $id } } } }`
-   - Use GraphQL field resolvers for deeper nesting
+1. **FK resolution is one level deep**
+   - `{ machine: { id: { eq: $id } } }` can use the `machine_id` column
+   - Deeper filters (`{ machine: { owner: { name: { eq: $name } } } }`) follow the
+     JSONB path (`data -> 'machine' -> 'owner' ->> 'name'`), so the view's JSONB must
+     hold the nested object
 
 2. **Metadata requirements**
    - FK detection works best with type metadata
-   - Register types: `register_type_for_view(Type, "table_name")`
+   - Register types: `register_type_for_view("view_name", Type)`
    - Without metadata, falls back to heuristics
 
 3. **JSONB path performance**

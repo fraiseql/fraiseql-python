@@ -138,7 +138,7 @@ def format_graphql_value(value):
 def get_all_operators():
     """Auto-enumerate all WHERE operators from ALL_OPERATORS."""
     operators = []
-    for operator_name in ALL_OPERATORS.keys():
+    for operator_name in ALL_OPERATORS:
         # Skip internal/private operators
         if operator_name.startswith("_"):
             continue
@@ -371,11 +371,11 @@ async def test_operator_in_where_clause_with_database(operator, meta_test_pool):
         # Determine Python type based on column type
         if column_type == "INTEGER":
             field_type = int
-        elif column_type == "FLOAT" or column_type == "DOUBLE PRECISION":
+        elif column_type in {"FLOAT", "DOUBLE PRECISION"}:
             field_type = float
         elif column_type == "TEXT[]":
             field_type = list[str]
-        elif column_type.startswith("VECTOR") or column_type.startswith("BIT("):
+        elif column_type.startswith(("VECTOR", "BIT(")):
             # VECTOR and BIT types both use list[float] to trigger VectorFilter
             # BIT is used for hamming/jaccard distance operators
             field_type = list[float]
@@ -631,8 +631,8 @@ def get_test_params_for_operator(operator):
         "matches_any_lquery": (["*.a.*", "*.b.*"], "path", "getLtrees"),
         "subpath": ("path.to", "path", "getLtrees"),
         "index": (1, "path", "getLtrees"),
-        "index_eq": (1, "path", "getLtrees"),
-        "index_gte": (0, "path", "getLtrees"),
+        "index_eq": ({"label": "to", "position": 1}, "path", "getLtrees"),
+        "index_gte": ({"label": "to", "position": 0}, "path", "getLtrees"),
         "lca": (["a.b.c", "a.b.d"], "path", "getLtrees"),
         "concat": ("additional.path", "path", "getLtrees"),
         # LTree level operators

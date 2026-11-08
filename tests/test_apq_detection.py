@@ -13,8 +13,8 @@ def test_detect_apq_request() -> None:
     )
     normal_request = GraphQLRequest(query="{ hello }")
 
-    assert is_apq_request(apq_request) == True
-    assert is_apq_request(normal_request) == False
+    assert is_apq_request(apq_request) is True
+    assert is_apq_request(normal_request) is False
 
 
 def test_detect_apq_request_with_both_query_and_hash() -> None:
@@ -25,7 +25,7 @@ def test_detect_apq_request_with_both_query_and_hash() -> None:
         query="{ hello }", extensions={"persistedQuery": {"version": 1, "sha256Hash": "abc123"}}
     )
 
-    assert is_apq_request(apq_request) == True
+    assert is_apq_request(apq_request) is True
 
 
 def test_detect_apq_request_with_non_apq_extensions() -> None:
@@ -34,7 +34,7 @@ def test_detect_apq_request_with_non_apq_extensions() -> None:
 
     request = GraphQLRequest(query="{ hello }", extensions={"tracing": {"version": 1}})
 
-    assert is_apq_request(request) == False
+    assert is_apq_request(request) is False
 
 
 def test_detect_apq_request_no_extensions() -> None:
@@ -43,7 +43,7 @@ def test_detect_apq_request_no_extensions() -> None:
 
     request = GraphQLRequest(query="{ hello }")
 
-    assert is_apq_request(request) == False
+    assert is_apq_request(request) is False
 
 
 def test_detect_apq_request_empty_extensions() -> None:
@@ -52,7 +52,7 @@ def test_detect_apq_request_empty_extensions() -> None:
 
     request = GraphQLRequest(query="{ hello }", extensions={})
 
-    assert is_apq_request(request) == False
+    assert is_apq_request(request) is False
 
 
 def test_get_apq_hash() -> None:
@@ -80,9 +80,9 @@ def test_is_apq_hash_only_request() -> None:
     )
     normal = GraphQLRequest(query="{ hello }")
 
-    assert is_apq_hash_only_request(hash_only) == True
-    assert is_apq_hash_only_request(with_query) == False
-    assert is_apq_hash_only_request(normal) == False
+    assert is_apq_hash_only_request(hash_only) is True
+    assert is_apq_hash_only_request(with_query) is False
+    assert is_apq_hash_only_request(normal) is False
 
 
 def test_is_apq_with_query_request() -> None:
@@ -97,6 +97,6 @@ def test_is_apq_with_query_request() -> None:
     )
     normal = GraphQLRequest(query="{ hello }")
 
-    assert is_apq_with_query_request(hash_only) == False
-    assert is_apq_with_query_request(with_query) == True
-    assert is_apq_with_query_request(normal) == False
+    assert is_apq_with_query_request(hash_only) is False
+    assert is_apq_with_query_request(with_query) is True
+    assert is_apq_with_query_request(normal) is False

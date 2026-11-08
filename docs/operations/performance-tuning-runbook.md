@@ -61,9 +61,10 @@ Is performance issue...
 
 ### Diagnosis Step 1: Enable Query Logging
 
-FraiseQL is a Python/FastAPI application. Turn up Python logging to see the SQL it issues
-against your views and functions. Set the logger level via standard Python logging (or the
-`FRAISEQL_` environment, e.g. `FRAISEQL_DATABASE_ECHO=true` to echo SQL).
+FraiseQL is a Python/FastAPI application with no SQL echo setting (`database_echo` is
+deprecated and has no effect). Turn up Python logging for FraiseQL's own messages, and
+log the statements in PostgreSQL itself (`log_min_duration_statement`, or
+`pg_stat_statements`) to see the SQL it runs against your views and functions.
 
 ```python
 # In your app entry point, before create_fraiseql_app(...)
@@ -768,7 +769,7 @@ config = FraiseQLConfig(
     complexity_max_score=1000,
     rate_limit_enabled=True,
     rate_limit_requests_per_minute=60,
-    execution_timeout_ms=30000,
+    query_timeout=30,  # statement timeout, seconds
 )
 ```
 

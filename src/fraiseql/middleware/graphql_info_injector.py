@@ -4,8 +4,9 @@ This middleware provides automatic injection of GraphQL info into resolver conte
 """
 
 import inspect
-from functools import wraps
 from typing import Any, Callable, TypeVar
+
+from fraiseql.utils.annotations import wraps
 
 # Type variable for decorators
 F = TypeVar("F", bound=Callable[..., Any])

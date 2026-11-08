@@ -109,7 +109,7 @@ async def all_users(info, limit: int = 100) -> list[User]:
 async def my_orders(info, limit: int = 50) -> list[Order]:
     """List the current user's orders."""
     db = info.context["db"]
-    return await db.find("v_order", user_id=info.context["user_id"], limit=limit)
+    return await db.find("v_order", limit=limit, mandatory_filters={"user_id": info.context["user_id"]})
 ```
 
 ### Option B: An `Authorizer` (centralized policy)

@@ -2,7 +2,6 @@
 
 import pytest
 
-
 # Known exceptions for certain test rules
 # These are documented legitimate cases where strict rules don't apply
 
@@ -13,15 +12,14 @@ KNOWN_EXCEPTIONS = {
         ("error_monitoring", "Errors by Environment"),
     ],
     # Queries with time columns but don't need time filtering
-    # (e.g., latest value queries with complex CTEs)
+    # (e.g., listings of the largest rows, whatever their age)
     "no_time_filter": [
-        ("database_pool", "Pool Utilization Rate"),
+        ("apq_effectiveness", "Largest Persisted Queries"),
     ],
     # Queries with aggregates that intentionally don't use GROUP BY
     # (e.g., simple aggregate-only queries with FILTER clauses or single-row results)
     "no_group_by": [
         ("error_monitoring", "Error Resolution Status"),
-        ("cache_hit_rate", "Overall Cache Hit Rate"),
     ],
 }
 

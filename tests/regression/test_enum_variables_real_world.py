@@ -69,9 +69,13 @@ class TestEnumVariableBugRealWorld:
 
             # Return mock data
             if period == Period.CURRENT:
-                return [Allocation(id="1", machine_name="PrinterA", location="Floor1", period=period)]
+                return [
+                    Allocation(id="1", machine_name="PrinterA", location="Floor1", period=period)
+                ]
             if period == Period.STOCK:
-                return [Allocation(id="2", machine_name="PrinterB", location="Warehouse", period=period)]
+                return [
+                    Allocation(id="2", machine_name="PrinterB", location="Warehouse", period=period)
+                ]
             return []
 
         schema = fraiseql.build_fraiseql_schema(query_types=[allocations])
@@ -114,7 +118,9 @@ class TestEnumVariableBugRealWorld:
         assert result.errors is None or len(result.errors) == 0, f"Errors: {result.errors}"
 
         # Check if we can access the nested field
-        allocation = result.data["allocations"][0] if result.data and result.data["allocations"] else None
+        allocation = (
+            result.data["allocations"][0] if result.data and result.data["allocations"] else None
+        )
         if allocation:
             machine_name = allocation.get("machineName")
             print(f"✅ VARIABLE - machineName returned: {machine_name}")
@@ -163,9 +169,17 @@ class TestEnumVariableBugRealWorld:
             results = []
             if filters:
                 if filters.get("is_current"):
-                    results = [Allocation(id="1", machine_name="Current", location="Floor1", period=Period.CURRENT)]
+                    results = [
+                        Allocation(
+                            id="1", machine_name="Current", location="Floor1", period=Period.CURRENT
+                        )
+                    ]
                 elif filters.get("is_stock_current"):
-                    results = [Allocation(id="2", machine_name="Stock", location="Warehouse", period=Period.STOCK)]
+                    results = [
+                        Allocation(
+                            id="2", machine_name="Stock", location="Warehouse", period=Period.STOCK
+                        )
+                    ]
             return results
 
         schema = fraiseql.build_fraiseql_schema(query_types=[allocations_with_filtering])

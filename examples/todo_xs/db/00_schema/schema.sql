@@ -57,7 +57,7 @@ SELECT
         'identifier', u.identifier,
         'email', u.email,
         'name', u.name,
-        'createdAt', u.created_at
+        'created_at', u.created_at
     ) AS data
 FROM tb_user u;
 
@@ -69,7 +69,7 @@ SELECT
         'id', t.id::text,
         'title', t.title,
         'completed', t.completed,
-        'createdAt', t.created_at,
+        'created_at', t.created_at,
         'user', jsonb_build_object(
             'id', u.id::text,
             'name', u.name

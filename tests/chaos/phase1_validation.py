@@ -80,7 +80,7 @@ class Phase1SuccessCriteria:
         - System remains responsive within limits
         """
         results = test_case.metrics.get_summary()
-        comparison = test_case.compare_to_baseline("db_connection")
+        test_case.compare_to_baseline("db_connection")
 
         issues = []
         passed = True
@@ -108,9 +108,7 @@ class Phase1SuccessCriteria:
         # Check error rate is acceptable
         error_rate = results.get("error_count", 0) / max(total_ops, 1)
         if error_rate > 0.2:  # Max 20% errors under latency
-            issues.append(
-                f"Error rate too high under latency: {error_rate:.1%} (max 20%)"
-            )
+            issues.append(f"Error rate too high under latency: {error_rate:.1%} (max 20%)")
             passed = False
 
         status_msg = "PASS" if passed else "FAIL"
@@ -204,7 +202,7 @@ class Phase1SuccessCriteria:
         critical_failures = 0
         for passed, _, details in test_results:
             test_type = details.get("test_type", "")
-            if not passed and test_type in ["connection_chaos"]:
+            if not passed and test_type == "connection_chaos":
                 critical_failures += 1
 
         if critical_failures > 0:

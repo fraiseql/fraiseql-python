@@ -38,19 +38,27 @@ FraiseQL uses parameterized queries exclusively:
 
 ```python
 import fraiseql
+from fraiseql.types import ID
 
-# SAFE: Parameterized query
-async def get_user(user_id: str) -> User:
-    async with db.connection() as conn:
+# SAFE: repository filters are always bound parameters
+@fraiseql.query
+async def get_user(info, user_id: ID) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", mandatory_filters={"id": user_id})
+
+# SAFE: raw SQL with psycopg placeholders
+async def get_user_email(db, user_id: str) -> str | None:
+    async with db.get_pool().connection() as conn:
         result = await conn.execute(
-            "SELECT * FROM users WHERE id = $1",
-            user_id  # Automatically escaped
+            "SELECT email FROM tb_user WHERE id = %s",
+            (user_id,)  # Sent as a parameter, never spliced into the SQL
         )
-        return result.fetchone()
+        row = await result.fetchone()
+        return row[0] if row else None
 
 # UNSAFE: String interpolation (never do this!)
-# async def get_user_unsafe(user_id: str) -> User:
-#     query = f"SELECT * FROM users WHERE id = '{user_id}'"
+# async def get_user_unsafe(db, user_id: str):
+#     query = f"SELECT * FROM tb_user WHERE id = '{user_id}'"
 #     result = await conn.execute(query)  # VULNERABLE
 ```
 
@@ -132,82 +140,57 @@ def sanitize_graphql_query(query: str) -> str:
 
 ## Query Complexity Limits
 
-### Complexity Analysis
+FraiseQL checks a query's depth and complexity before it runs, on `POST` and
+`GET /graphql` (APQ persisted queries included). A query over a limit gets a GraphQL
+error and runs no resolver or SQL. No limit is on by default.
+
+### Depth Limiting
 
 ```python
 from fraiseql.fastapi.config import FraiseQLConfig
 
 config = FraiseQLConfig(
     database_url="postgresql://...",
-    # Query complexity limits
-    complexity_enabled=True,
-    complexity_max_score=1000,
-    complexity_max_depth=10,
-    complexity_default_list_size=10,
-    # Field-specific multipliers
-    complexity_field_multipliers={
-        "users": 2,  # Expensive field
-        "orders": 3,
-        "analytics": 10
-    }
+    max_query_depth=10,  # or FRAISEQL_MAX_QUERY_DEPTH=10
 )
 ```
 
-### Depth Limiting
+`{ users { id } }` has depth 1, `{ users { posts { id } } }` depth 2; fragments add no
+depth of their own. A deeper query gets:
 
-```python
-from graphql import GraphQLError
-
-def enforce_max_depth(document, max_depth: int = 10):
-    """Prevent excessively nested queries."""
-    from graphql import visit
-
-    current_depth = 0
-
-    def enter_field(node, key, parent, path, ancestors):
-        nonlocal current_depth
-        depth = len([a for a in ancestors if hasattr(a, "kind") and a.kind == "field"])
-
-        if depth > max_depth:
-            raise GraphQLError(
-                f"Query depth {depth} exceeds maximum {max_depth}",
-                extensions={"code": "MAX_DEPTH_EXCEEDED"}
-            )
-
-    visit(document, {"Field": {"enter": enter_field}})
+```json
+{"errors": [{"message": "Query depth 12 exceeds the maximum depth of 10",
+             "extensions": {"code": "QUERY_TOO_DEEP", "depth": 12, "maxDepth": 10}}]}
 ```
 
-### Cost Analysis
+Introspection (`__schema`, `__type`) is not counted: `introspection_policy` decides who
+may run it (it is disabled in production by default).
+
+### Complexity Analysis
 
 ```python
-from fraiseql.analysis.complexity import calculate_query_cost
-
-@app.middleware("http")
-async def query_cost_middleware(request: Request, call_next):
-    if request.url.path != "/graphql":
-        return await call_next(request)
-
-    body = await request.json()
-    query = body.get("query", "")
-
-    # Calculate cost
-    cost = calculate_query_cost(query, schema)
-
-    # Reject expensive queries
-    if cost > 1000:
-        return Response(
-            content=json.dumps({
-                "errors": [{
-                    "message": f"Query cost {cost} exceeds limit 1000",
-                    "extensions": {"code": "QUERY_TOO_EXPENSIVE"}
-                }]
-            }),
-            status_code=400,
-            media_type="application/json"
-        )
-
-    return await call_next(request)
+config = FraiseQLConfig(
+    database_url="postgresql://...",
+    # Setting a limit turns complexity_enabled on
+    complexity_max_score=1000,
+    complexity_max_depth=10,
+    complexity_default_list_size=10,
+    # Cost of a field instead of 1, by name or "Type.field"
+    complexity_field_multipliers={
+        "search": 5,
+        "Order.lines": 3,
+    },
+)
 ```
+
+The score is computed from the schema: a scalar costs 1, an object field 1 plus its
+selections, and a list field 1 plus its selections times its `limit` / `first` argument
+(literal or variable), else `complexity_default_list_size`. `{ users { posts { id } } }`
+without limits scores `1 + 10 * (1 + 10 * 1) = 111`; with `users(limit: 2)` it scores
+`1 + 2 * 11 = 23`. A query over `complexity_max_score` gets a `QUERY_TOO_COMPLEX` error
+(`extensions.complexity`, `extensions.maxComplexity`), one deeper than
+`complexity_max_depth` a `QUERY_TOO_DEEP` error. `complexity_enabled=False` keeps these
+two limits off; `max_query_depth` always applies.
 
 ## Rate Limiting
 
@@ -369,54 +352,50 @@ app.add_middleware(
 ### Token Security
 
 ```python
+import os
+from datetime import timedelta
+
 import fraiseql
+from fraiseql.auth.native import TokenManager
 
-# JWT configuration
-from fraiseql.auth import CustomJWTProvider
-
-auth_provider = CustomJWTProvider(
-    secret_key=os.getenv("JWT_SECRET_KEY"),  # NEVER hardcode
-    algorithm="HS256",
-    issuer="https://yourapp.com",
-    audience="https://api.yourapp.com"
+# JWT configuration (HS256 access and refresh tokens)
+token_manager = TokenManager(
+    secret_key=os.environ["JWT_SECRET_KEY"],  # NEVER hardcode
+    access_token_ttl=timedelta(hours=1),
+    refresh_token_ttl=timedelta(days=30),
 )
 
-# Token expiration
-ACCESS_TOKEN_TTL = 3600  # 1 hour
-REFRESH_TOKEN_TTL = 2592000  # 30 days
+
+@fraiseql.type
+class TokenPair:
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
 
 # Token rotation
 @fraiseql.mutation
-async def refresh_access_token(info, refresh_token: str) -> dict:
+async def refresh_access_token(info, refresh_token: str) -> TokenPair:
     """Rotate access token using refresh token."""
-    # Validate refresh token
-    payload = await auth_provider.validate_token(refresh_token)
+    # Checks the signature, the expiry and that it is a refresh token
+    payload = token_manager.verify_refresh_token(refresh_token)
 
-    # Check token type
-    if payload.get("token_type") != "refresh":
-        raise ValueError("Invalid token type")
-
-    # Generate new access token
-    new_access_token = generate_access_token(
-        user_id=payload["sub"],
-        ttl=ACCESS_TOKEN_TTL
-    )
-
-    # Optionally rotate refresh token too
-    new_refresh_token = generate_refresh_token(
-        user_id=payload["sub"],
-        ttl=REFRESH_TOKEN_TTL
-    )
+    # New access and refresh tokens, in the same token family
+    tokens = token_manager.generate_tokens(payload["sub"], family_id=payload["family"])
 
     # Revoke old refresh token
     await revocation_service.revoke_token(payload)
 
-    return {
-        "access_token": new_access_token,
-        "refresh_token": new_refresh_token,
-        "token_type": "bearer"
-    }
+    return TokenPair(
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+    )
 ```
+
+`verify_refresh_token` raises `TokenExpiredError` or `InvalidTokenError` (from
+`fraiseql.auth.native`). For tokens from an identity provider (Auth0, or your own
+issuer with `iss` / `aud` claims), validate them in an `AuthProvider` instead: see
+[Authentication](../advanced/authentication.md#custom-jwt-provider).
 
 ### Password Security
 
@@ -458,50 +437,42 @@ class PasswordHasher:
 
 ### PII Protection
 
+Keep the sensitive values in private fields (a name starting with `_`: not in the
+schema, nor in the `where` and `orderBy` inputs), and expose them through field
+resolvers that check who asks:
+
 ```python
 import fraiseql
+from fraiseql.security import authorize_field
+from fraiseql.types import ID
 
-from dataclasses import dataclass
 
-@dataclass
-class User:
-    """User with PII protection."""
-    id: ID
-    email: str
-    name: str
-    _ssn: str | None = None  # Private field
-    _credit_card: str | None = None
-
-    @property
-    def ssn_masked(self) -> str | None:
-        """Return masked SSN."""
-        if not self._ssn:
-            return None
-        return f"***-**-{self._ssn[-4:]}"
-
-    @property
-    def credit_card_masked(self) -> str | None:
-        """Return masked credit card."""
-        if not self._credit_card:
-            return None
-        return f"****-****-****-{self._credit_card[-4:]}"
-
-# GraphQL type
-@fraiseql.type_
+@fraiseql.type
 class UserGQL:
     id: ID
     email: str
     name: str
+    _ssn: str | None = None  # private: not in the schema
 
-    # Only admins can see full SSN
-    @authorize_field(lambda obj, info: info.context["user"].has_role("admin"))
-    async def ssn(self) -> str | None:
+    # Only admins can see the full SSN
+    @fraiseql.field
+    @authorize_field(lambda info: info.context["user"].has_role("admin"))
+    async def ssn(self, info) -> str | None:
         return self._ssn
 
-    # Everyone sees masked version
-    async def ssn_masked(self) -> str | None:
-        return self.ssn_masked
+    # Everyone sees the masked version
+    @fraiseql.field
+    async def ssn_masked(self, info) -> str | None:
+        return f"***-**-{self._ssn[-4:]}" if self._ssn else None
+
+
+def to_graphql(row: dict) -> UserGQL:
+    return UserGQL(id=row["id"], email=row["email"], name=row["name"], _ssn=row.get("ssn"))
 ```
+
+A denied `ssn` is `null`, with the error `Not authorized to access field 'ssn'`
+(code `FIELD_AUTHORIZATION_ERROR`). These resolvers run when graphql-core resolves the
+object, as for a resolver that returns `UserGQL` instances.
 
 ### Data Encryption
 
@@ -527,16 +498,16 @@ class FieldEncryption:
 # Usage
 encryptor = FieldEncryption()
 
-# Store encrypted
+# Store encrypted (conn: a psycopg connection, e.g. from db.get_pool().connection())
 encrypted_ssn = encryptor.encrypt("123-45-6789")
 await conn.execute(
-    "INSERT INTO users (id, ssn_encrypted) VALUES ($1, $2)",
-    user_id, encrypted_ssn
+    "INSERT INTO users (id, ssn_encrypted) VALUES (%s, %s)",
+    (user_id, encrypted_ssn)
 )
 
 # Retrieve and decrypt
-result = await conn.execute("SELECT ssn_encrypted FROM users WHERE id = $1", user_id)
-encrypted = result.fetchone()["ssn_encrypted"]
+result = await conn.execute("SELECT ssn_encrypted FROM users WHERE id = %s", (user_id,))
+encrypted = (await result.fetchone())[0]
 ssn = encryptor.decrypt(encrypted)
 ```
 
@@ -608,21 +579,25 @@ import fraiseql
 async def update_order_status(info, order_id: str, status: str) -> Order:
     """Update order status - automatically logged."""
     user_id = info.context["user"].user_id
+    db = info.context["db"]
 
-    async with db.connection() as conn:
-        # Set user context for trigger
+    async with db.get_pool().connection() as conn:
+        # Set user context for trigger (transaction-local, like SET LOCAL)
         await conn.execute(
-            "SET LOCAL app.current_user_id = $1",
-            user_id
+            "SELECT set_config('app.current_user_id', %s, true)",
+            (str(user_id),)
         )
 
         # Update (trigger logs before/after state)
         await conn.execute(
-            "UPDATE orders SET status = $1 WHERE id = $2",
-            status, order_id
+            "UPDATE orders SET status = %s WHERE id = %s",
+            (status, order_id)
         )
+    # The pool commits when the block exits
 
-    return await fetch_order(order_id)
+    return await db.find_one(
+        "v_order", "updateOrderStatus", info, mandatory_filters={"id": order_id}
+    )
 ```
 
 ## Compliance
@@ -663,19 +638,19 @@ async def delete_my_account(info) -> bool:
     """GDPR: Right to be forgotten."""
     user_id = info.context["user"].user_id
 
-    async with db.connection() as conn:
-        async with conn.transaction():
-            # Anonymize or delete data
-            await conn.execute(
-                "UPDATE users SET email = $1, name = $2, deleted_at = NOW() WHERE id = $3",
-                f"deleted-{user_id}@deleted.com",
-                "Deleted User",
-                user_id
-            )
+    async def forget_user(conn):
+        # Anonymize or delete data
+        await conn.execute(
+            "UPDATE users SET email = %s, name = %s, deleted_at = NOW() WHERE id = %s",
+            (f"deleted-{user_id}@deleted.com", "Deleted User", user_id)
+        )
 
-            # Delete related data
-            await conn.execute("DELETE FROM user_sessions WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM user_consents WHERE user_id = $1", user_id)
+        # Delete related data
+        await conn.execute("DELETE FROM user_sessions WHERE user_id = %s", (user_id,))
+        await conn.execute("DELETE FROM user_consents WHERE user_id = %s", (user_id,))
+
+    # One transaction: everything or nothing
+    await info.context["db"].run_in_transaction(forget_user)
 
     # Log deletion
     security_logger.log_event(

@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from fraiseql.storage.apq_store import compute_query_hash
 from fraiseql.storage.backends.postgresql import PostgreSQLAPQBackend
 
 pytestmark = pytest.mark.integration
@@ -51,7 +52,9 @@ def test_postgresql_backend_table_creation() -> None:
     # Responses table now has composite key for tenant support
     assert "hash VARCHAR(64) NOT NULL" in create_responses_sql
     assert "tenant_id VARCHAR(255)" in create_responses_sql
-    assert "PRIMARY KEY (hash, COALESCE(tenant_id, ''))" in create_responses_sql
+    # One row per (hash, tenant): a unique index, since a primary key can't hold an expression
+    assert "PRIMARY KEY" not in create_responses_sql
+    assert "ON apq_responses (hash, COALESCE(tenant_id, ''))" in create_responses_sql
 
 
 @patch("fraiseql.storage.backends.postgresql.PostgreSQLAPQBackend._execute_query")
@@ -61,8 +64,8 @@ def test_postgresql_backend_store_persisted_query(mock_execute, mock_config) -> 
     mock_config["auto_create_tables"] = False
     backend = PostgreSQLAPQBackend(mock_config)
 
-    hash_value = "abc123hash"
     query = "{ users { id name } }"
+    hash_value = compute_query_hash(query)
 
     backend.store_persisted_query(hash_value, query)
 
@@ -187,7 +190,7 @@ def test_postgresql_backend_error_handling(mock_config) -> None:
     # Test that database errors are handled gracefully
     with patch.object(backend, "_execute_query", side_effect=Exception("DB Error")):
         # Should not raise - should handle gracefully
-        backend.store_persisted_query("hash", "query")
+        backend.store_persisted_query(compute_query_hash("query"), "query")
         backend.store_cached_response("hash", {"data": {}})
 
     with patch.object(backend, "_fetch_one", side_effect=Exception("DB Error")):

@@ -23,10 +23,9 @@ PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 # package -> (first patched version, why it is in the tree)
 REQUIRED_FLOORS = {
     "sqlparse": ("0.6.0", "dev-only: used by scripts/, imported nowhere in src/"),
-    "nltk": ("3.10.0", "optional: transitive through the llamaindex extra"),
-    "pypdf": ("6.15.0", "optional: declared by the llamaindex extra"),
+    "nltk": ("3.10.4", "optional: transitive through the llamaindex extra"),
     "cryptography": ("50.0.0", "core in practice: pulled in by pyjwt[crypto]"),
-    "aiohttp": ("3.14.3", "optional: dev extra, and transitive via llama-index-core"),
+    "aiohttp": ("3.14.4", "optional: dev extra, and transitive via llama-index-core"),
     # Not a Dependabot alert — found by making the pip-audit CI gate authoritative,
     # which is the point of that change. `click.edit()` is a command injection, and
     # FraiseQL's CLI never calls it; the floor moves because the package is core.
@@ -35,6 +34,13 @@ REQUIRED_FLOORS = {
     # `DirectoryPromptRegistry.set()`, which llama-index-core does not use; the floor
     # moves because the extra declares the package.
     "banks": ("2.4.5", "optional: declared by the llamaindex extra"),
+    # The pip-audit gate on 1.31.0 (2026-10-26).
+    "pillow": ("13.0.0", "optional: declared by the llamaindex extra"),
+    "opentelemetry-api": ("1.45.1", "optional: declared by the tracing and all extras"),
+    "black": ("26.10.1", "dev-only: the dev extra"),
+    "filelock": ("4.2.1", "dev-only: the dev extra, and transitive via tox and virtualenv"),
+    # The pip-audit gate on 1.31.1 (2026-11-05).
+    "pypdf": ("6.21.4", "optional: declared by the llamaindex extra"),
 }
 
 
@@ -88,9 +94,9 @@ def test_sqlparse_is_not_a_runtime_dependency(pyproject: dict) -> None:
     which already degrades gracefully when it is absent.
 
     Declaring it under ``project.dependencies`` put four advisories in the runtime
-    surface of every install for a script-only tool. It still arrives transitively
-    via ``fraiseql-confiture``, so moving it does not remove the package — it moves
-    where the floor is enforced and what the scope of the finding is.
+    surface of every install for a script-only tool. It is now declared only in the
+    ``dev`` dependency group, and nothing in the runtime dependencies or the extras
+    pulls it in (``fraiseql-confiture``, the ``migrate`` extra, no longer does).
     """
     runtime = [name for name, _ in _declarations(pyproject, "sqlparse")]
     assert "project.dependencies" not in runtime
@@ -106,3 +112,17 @@ def test_cryptography_floor_is_declared_on_the_default_install(pyproject: dict) 
     """
     runtime = [name for name, _ in _declarations(pyproject, "cryptography")]
     assert "project.dependencies" in runtime
+
+
+def test_graphql_core_excludes_the_release_that_leaks_aborted_validations(pyproject: dict) -> None:
+    """GHSA-mpqx-q82w-9x46: graphql-core 3.3.0 keeps every validation aborted by
+    ``max_errors`` alive through a shared exception's traceback, so any client can
+    exhaust memory with small invalid documents. 3.2 creates a new error each time
+    and is not affected, so the 3.2 line stays allowed and only 3.3.0 is excluded.
+    """
+    declarations = _declarations(pyproject, "graphql-core")
+    assert declarations, "graphql-core is no longer declared"
+
+    for location, req in declarations:
+        assert not req.specifier.contains("3.3.0"), f"{location}: {req} admits 3.3.0"
+        assert req.specifier.contains("3.3.1"), f"{location}: {req} rejects the fix"

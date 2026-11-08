@@ -20,7 +20,7 @@ class TestTypeMapper:
         result = mapper.pg_type_to_python("text", nullable=True)
         # Should be Optional[str] - we can't easily test the exact type
         # but it should not be just str
-        assert result != str
+        assert result is not str
 
     def test_array_type_mapping(self) -> None:
         """Test array types."""
@@ -28,7 +28,7 @@ class TestTypeMapper:
         result = mapper.pg_type_to_python("text[]")
         # Should be List[str] - we can't easily test the exact type
         # but it should not be just str
-        assert result != str
+        assert result is not str
 
     def test_case_insensitive_mapping(self) -> None:
         """Test case insensitive type mapping."""

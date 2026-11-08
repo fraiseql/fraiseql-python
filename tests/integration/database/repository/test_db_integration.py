@@ -27,7 +27,6 @@ class TestFraiseQLRepositoryIntegration:
     """Integration test suite for FraiseQLRepository with real database."""
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
-    @pytest.mark.asyncio
     async def test_data(self, class_db_pool, test_schema) -> str:
         """Create test tables and data with committed changes."""
         async with class_db_pool.connection() as conn:

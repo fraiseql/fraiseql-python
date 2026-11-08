@@ -119,10 +119,10 @@ def graphql_query_examples():
 
     # GraphQL query with coordinate filtering
     query_with_distance = """
-    query FindNearbyLocations($lat: Float!, $lng: Float!, $radius: Int!) {
+    query FindNearbyLocations($lat: Float!, $lng: Float!, $radius: Float!) {
       locations(
         where: {
-          coordinates: { distance_within: { center: [$lat, $lng], radius: $radius } }
+          coordinates: { distanceWithin: { center: [$lat, $lng], radius: $radius } }
         }
       ) {
         id

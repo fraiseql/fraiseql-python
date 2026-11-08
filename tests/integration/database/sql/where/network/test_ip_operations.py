@@ -242,7 +242,7 @@ class TestNetworkFilterSQL:
         """Test SQL generation for private IP filtering."""
         from fraiseql.sql.network_utils import generate_private_ip_sql
 
-        sql, params = generate_private_ip_sql("data->>'ip_address'", True)
+        sql, _params = generate_private_ip_sql("data->>'ip_address'", True)
 
         # Should check RFC 1918 ranges
         assert "10.0.0.0/8" in sql or "192.168.0.0/16" in sql or "172.16.0.0/12" in sql
@@ -252,7 +252,7 @@ class TestNetworkFilterSQL:
         """Test SQL generation for IPv4 filtering."""
         from fraiseql.sql.network_utils import generate_ipv4_sql
 
-        sql, params = generate_ipv4_sql("data->>'ip_address'", True)
+        sql, _params = generate_ipv4_sql("data->>'ip_address'", True)
 
         # Should check for IPv4 format (family = 4 or pattern matching)
         assert "family(" in sql.lower() or "inet" in sql.lower()

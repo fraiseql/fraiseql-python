@@ -42,12 +42,21 @@ async def test_jwt_expiration_during_request(
 
     iterations = max(5, int(10 * chaos_config.load_multiplier))
 
-    for i in range(iterations):
+    # DETERMINISTIC PATTERN: 15% token expirations (at least one) and 5% other auth
+    # failures, in an order shuffled with a fixed seed. Drawing each with
+    # random.random() left a 10-iteration run without any expiration about 1 run in 5.
+    expired_count = max(1, round(iterations * 0.15))
+    other_failure_count = round(iterations * 0.05)
+    token_kinds = ["expired"] * expired_count + ["invalid"] * other_failure_count
+    token_kinds += ["valid"] * (iterations - len(token_kinds))
+    random.Random(0).shuffle(token_kinds)
+
+    for token_kind in token_kinds:
         try:
             # Simulate JWT validation
-            if random.random() < 0.15:  # 15% chance of token expiration during processing
+            if token_kind == "expired":
                 raise Exception("Token expired during request processing")
-            if random.random() < 0.05:  # 5% chance of other auth failures
+            if token_kind == "invalid":
                 raise Exception("JWT validation failed")
             # Successful authentication
             auth_successes += 1
@@ -110,12 +119,24 @@ async def test_rbac_policy_failure(
 
     iterations = max(6, int(12 * chaos_config.load_multiplier))
 
-    for i in range(iterations):
+    # DETERMINISTIC SCHEDULE: 20% policy evaluation failures, then 30% of the other
+    # checks denied, in an order shuffled with a fixed seed (was two unseeded
+    # random.random() draws per operation)
+    evaluation_failures = max(1, round(iterations * 0.2))
+    denials = max(1, round((iterations - evaluation_failures) * 0.3))
+    checks = (
+        ["evaluation_failure"] * evaluation_failures
+        + ["denied"] * denials
+        + ["allowed"] * (iterations - evaluation_failures - denials)
+    )
+    random.Random("rbac_policy_failure").shuffle(checks)
+
+    for check in checks:
         try:
             # Simulate RBAC policy check
-            if random.random() < 0.2:  # 20% chance of policy evaluation failure
+            if check == "evaluation_failure":  # 20% policy evaluation failures
                 raise Exception("RBAC policy evaluation failed")
-            if random.random() < 0.3:  # 30% chance of authorization denial
+            if check == "denied":  # 30% authorization denials
                 raise Exception("Access denied by RBAC policy")
 
             # Policy check passed - proceed with operation
@@ -142,8 +163,10 @@ async def test_rbac_policy_failure(
     )
 
     summary = metrics.get_summary()
-    # RBAC failures should not crash the system
-    assert summary.get("query_count", 0) >= 10, (
+    # RBAC failures should not crash the system: every operation the policy allowed
+    # ran (was >= 10 queries, which the random draws missed about 1 run in 13 and
+    # which 12 iterations, a load multiplier of 1, expected 6.7 of)
+    assert summary.get("query_count", 0) == policy_successes == checks.count("allowed"), (
         "Should maintain operation throughput despite RBAC issues"
     )
 
@@ -184,16 +207,17 @@ async def test_authentication_service_outage(
 
     outage_iterations = set(range(outage_interval - 1, total_operations, outage_interval))
     auth_fail_iterations = set(range(auth_fail_interval - 1, total_operations, auth_fail_interval))
-    degraded_success_iterations = set(range(degraded_success_interval - 1, total_operations, degraded_success_interval))
+    degraded_success_iterations = set(
+        range(degraded_success_interval - 1, total_operations, degraded_success_interval)
+    )
     recovery_iterations = set(range(recovery_interval - 1, total_operations, recovery_interval))
 
     for i in range(total_operations):
         try:
             # Deterministic auth service availability - repeatable every run
-            if auth_service_available:
-                if i in outage_iterations:
-                    auth_service_available = False
-                    service_outages += 1
+            if auth_service_available and i in outage_iterations:
+                auth_service_available = False
+                service_outages += 1
 
             if auth_service_available:
                 # Normal authentication

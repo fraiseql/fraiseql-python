@@ -119,6 +119,7 @@ class TestCORSProductionWarnings:
         assert len(cors_warnings) == 0
 
 
+@pytest.mark.usefixtures("clear_registry")
 class TestCORSIntegration:
     """Test CORS integration with FastAPI app."""
 

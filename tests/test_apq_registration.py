@@ -92,26 +92,35 @@ class TestRegisterQueries:
         # The method should be inherited from base class
         assert hasattr(PostgreSQLAPQBackend, "register_queries")
 
-    def test_postgresql_backend_register_queries_integration(self, class_db_pool) -> None:
+    def test_postgresql_backend_register_queries_integration(self, postgres_url) -> None:
         """Test PostgreSQL backend can register multiple queries (integration)."""
+        import uuid
+
+        import psycopg
+
         from fraiseql.storage.apq_store import compute_query_hash
         from fraiseql.storage.backends.postgresql import PostgreSQLAPQBackend
 
-        # Use test database pool
-        backend = PostgreSQLAPQBackend(config={"auto_create_tables": False}, pool=class_db_pool)
+        prefix = f"apq_reg_{uuid.uuid4().hex[:8]}_"
+        backend = PostgreSQLAPQBackend({"table_prefix": prefix}, database_url=postgres_url)
+        try:
+            queries = [
+                "query A { a }",
+                "query B { b }",
+            ]
 
-        queries = [
-            "query A { a }",
-            "query B { b }",
-        ]
+            result = backend.register_queries(queries)
 
-        result = backend.register_queries(queries)
-
-        assert len(result) == 2
-
-        for query in queries:
-            expected_hash = compute_query_hash(query)
-            assert expected_hash in result
+            assert len(result) == 2
+            with psycopg.connect(postgres_url) as conn:
+                stored = dict(conn.execute(f"SELECT hash, query FROM {prefix}queries").fetchall())
+            for query in queries:
+                assert result[compute_query_hash(query)] == query
+                assert stored[compute_query_hash(query)] == query
+        finally:
+            backend.close()
+            with psycopg.connect(postgres_url, autocommit=True) as conn:
+                conn.execute(f"DROP TABLE IF EXISTS {prefix}queries, {prefix}responses")
 
 
 class TestRegisterQueriesFromApp:

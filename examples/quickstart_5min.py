@@ -52,11 +52,25 @@ SELECT
 
 FROM tb_note;
 
--- SQL function for creating notes (CQRS pattern)
+-- What a mutation function returns: fraiseql reads these 8 fields
 
-CREATE OR REPLACE FUNCTION fn_create_note(input jsonb)
+-- (migrations/trinity/005_add_mutation_response.sql defines it too, with helpers)
 
-RETURNS jsonb AS $$
+CREATE TYPE mutation_response AS (
+
+    status text, message text, entity_id text, entity_type text,
+
+    entity jsonb, updated_fields text[], cascade jsonb, metadata jsonb
+
+);
+
+-- SQL function for creating notes (CQRS pattern): the CreateNote mutation calls it
+
+-- with the input as one jsonb
+
+CREATE OR REPLACE FUNCTION create_note(input jsonb)
+
+RETURNS mutation_response AS $$
 
 DECLARE
 
@@ -70,7 +84,11 @@ BEGIN
 
     RETURNING id INTO new_id;
 
-    RETURN jsonb_build_object('success', true, 'id', new_id);
+    RETURN ROW('new', 'Note created', new_id::text, 'Note',
+
+               (SELECT data FROM v_note WHERE id = new_id),
+
+               NULL, NULL, NULL)::mutation_response;
 
 END;
 
@@ -118,7 +136,7 @@ class CreateNoteInput:
     content: str | None = None
 
 
-# Define success/failure types
+# Define success/error types
 @fraiseql.success
 class CreateNoteSuccess:
     """Success response for note creation."""
@@ -140,7 +158,7 @@ class ValidationError:
 async def notes(info) -> list[Note]:
     """Get all notes."""
     db = info.context["db"]
-    return await db.find("v_note", "notes", info, order_by=[("created_at", "DESC")])
+    return await db.find("v_note", "notes", info, order_by=[{"created_at": "DESC"}])
 
 
 @fraiseql.query
@@ -150,44 +168,26 @@ async def notes_filtered(info, title_contains: str | None = None) -> list[Note]:
     where = {}
     if title_contains:
         where = {"title": {"ilike": f"%{title_contains}%"}}
-    return await db.find("v_note", "notesFiltered", info, where=where, order_by=[("created_at", "DESC")])
+    return await db.find("v_note", "notesFiltered", info, where=where, order_by=[{"created_at": "DESC"}])
 
 
 @fraiseql.query
 async def note(info, id: int) -> Note | None:
     """Get a single note by ID."""
     db = info.context["db"]
-    return await db.find_one("v_note", "note", info, id=id)
+    return await db.find_one("v_note", "note", info, mandatory_filters={"id": id})
 
 
-# Mutations
+# Mutations: fraiseql calls the SQL function create_note with the input as one
+# jsonb, and turns the mutation_response it returns into CreateNoteSuccess or
+# ValidationError
 @fraiseql.mutation
 class CreateNote:
     """Create a new note."""
 
     input: CreateNoteInput
     success: CreateNoteSuccess
-    failure: ValidationError
-
-    async def resolve(self, info) -> CreateNoteSuccess | ValidationError:
-        db = info.context["db"]
-
-        try:
-            # Call SQL function (CQRS pattern)
-            result = await db.execute_function("fn_create_note", {
-                "title": self.input.title,
-                "content": self.input.content,
-            })
-
-            if not result.get("success"):
-                return ValidationError(message="Failed to create note")
-
-            # Fetch the created note via Rust pipeline
-            note = await db.find_one("v_note", "note", info, id=result["id"])
-            return CreateNoteSuccess(note=note)
-
-        except Exception as e:
-            return ValidationError(message=f"Failed to create note: {e!s}")
+    error: ValidationError
 
 
 # Collect types, queries, and mutations for app creation

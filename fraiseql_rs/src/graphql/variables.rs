@@ -177,17 +177,19 @@ mod tests {
 
     #[test]
     fn test_string_coercion() {
-        let mut query = ParsedQuery::default();
-        query.variables = vec![VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "String".to_string(),
-                nullable: false,
-                list: false,
-                list_nullable: false,
-            },
-            default_value: None,
-        }];
+        let query = ParsedQuery {
+            variables: vec![VariableDefinition {
+                name: "test".to_string(),
+                var_type: GraphQLType {
+                    name: "String".to_string(),
+                    nullable: false,
+                    list: false,
+                    list_nullable: false,
+                },
+                default_value: None,
+            }],
+            ..Default::default()
+        };
         let processor = VariableProcessor::new(&query);
 
         let result = processor
@@ -265,11 +267,11 @@ mod tests {
         let result = processor.process_variable(
             "test",
             &var_def,
-            &HashMap::from([("test".to_string(), serde_json::json!(3.14))]),
+            &HashMap::from([("test".to_string(), serde_json::json!(2.5))]),
         );
 
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), serde_json::json!(3.14));
+        assert_eq!(result.unwrap(), serde_json::json!(2.5));
     }
 
     #[test]
@@ -299,17 +301,19 @@ mod tests {
 
     #[test]
     fn test_default_value_usage() {
-        let mut query = ParsedQuery::default();
-        query.variables = vec![VariableDefinition {
-            name: "test".to_string(),
-            var_type: GraphQLType {
-                name: "String".to_string(),
-                nullable: false,
-                list: false,
-                list_nullable: false,
-            },
-            default_value: Some("\"default_value\"".to_string()),
-        }];
+        let query = ParsedQuery {
+            variables: vec![VariableDefinition {
+                name: "test".to_string(),
+                var_type: GraphQLType {
+                    name: "String".to_string(),
+                    nullable: false,
+                    list: false,
+                    list_nullable: false,
+                },
+                default_value: Some("\"default_value\"".to_string()),
+            }],
+            ..Default::default()
+        };
         let processor = VariableProcessor::new(&query);
 
         // Test with no variable provided - should use default
@@ -320,17 +324,19 @@ mod tests {
 
     #[test]
     fn test_missing_required_variable() {
-        let mut query = ParsedQuery::default();
-        query.variables = vec![VariableDefinition {
-            name: "required_var".to_string(),
-            var_type: GraphQLType {
-                name: "String".to_string(),
-                nullable: false,
-                list: false,
-                list_nullable: false,
-            },
-            default_value: None,
-        }];
+        let query = ParsedQuery {
+            variables: vec![VariableDefinition {
+                name: "required_var".to_string(),
+                var_type: GraphQLType {
+                    name: "String".to_string(),
+                    nullable: false,
+                    list: false,
+                    list_nullable: false,
+                },
+                default_value: None,
+            }],
+            ..Default::default()
+        };
         let processor = VariableProcessor::new(&query);
 
         let result = processor.process_variables(&HashMap::new());

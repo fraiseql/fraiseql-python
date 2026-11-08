@@ -1,313 +1,381 @@
 {
   "dashboard": {
-    "title": "FraiseQL APQ Effectiveness",
-    "tags": ["fraiseql", "apq", "persisted-queries", "performance"],
+    "uid": "fraiseql-apq",
+    "title": "FraiseQL APQ Storage",
+    "description": "Persisted queries stored by the PostgreSQL APQ backend (apq_storage_backend=\"postgresql\", default table_prefix \"apq_\").",
+    "tags": [
+      "fraiseql",
+      "apq",
+      "persisted-queries",
+      "performance"
+    ],
     "timezone": "browser",
     "schemaVersion": 38,
     "version": 1,
-    "refresh": "30s",
+    "refresh": "5m",
+    "time": {
+      "from": "now-7d",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "label": "PostgreSQL",
+          "type": "datasource",
+          "query": "grafana-postgresql-datasource",
+          "current": {},
+          "hide": 0,
+          "refresh": 1,
+          "regex": "",
+          "options": []
+        }
+      ]
+    },
     "panels": [
       {
         "id": 1,
-        "title": "APQ Hit Rate",
+        "title": "Stored Persisted Queries",
         "type": "stat",
-        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "WITH apq_stats AS (\n  SELECT\n    SUM(CASE WHEN labels->>'cache_type' = 'apq' AND metric_name = 'cache_hits_total' THEN metric_value ELSE 0 END) as hits,\n    SUM(CASE WHEN labels->>'cache_type' = 'apq' AND metric_name = 'cache_misses_total' THEN metric_value ELSE 0 END) as misses\n  FROM monitoring.metrics\n  WHERE metric_name IN ('cache_hits_total', 'cache_misses_total')\n    AND timestamp > NOW() - INTERVAL '$time_range'\n    AND environment = '$environment'\n)\nSELECT\n  ROUND(100.0 * hits / NULLIF(hits + misses, 0), 2) as hit_rate_percent\nFROM apq_stats;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*) AS stored_queries FROM apq_queries",
             "format": "table"
           }
         ],
-        "options": {
-          "graphMode": "area",
-          "colorMode": "value",
-          "orientation": "auto",
-          "textMode": "value_and_name"
-        },
         "fieldConfig": {
           "defaults": {
-            "unit": "percent",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "red"},
-                {"value": 70, "color": "yellow"},
-                {"value": 90, "color": "green"}
-              ]
-            }
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
       },
       {
         "id": 2,
-        "title": "Total APQ Requests",
+        "title": "New Persisted Queries",
         "type": "stat",
-        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  SUM(metric_value) as total_apq_requests\nFROM monitoring.metrics\nWHERE metric_name IN ('cache_hits_total', 'cache_misses_total')\n  AND labels->>'cache_type' = 'apq'\n  AND timestamp > NOW() - INTERVAL '$time_range'\n  AND environment = '$environment';",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*) AS new_queries\nFROM apq_queries\nWHERE $__timeFilter(created_at)",
             "format": "table"
           }
         ],
-        "options": {
-          "graphMode": "area",
-          "colorMode": "value",
-          "orientation": "auto",
-          "textMode": "value_and_name"
-        },
+        "description": "Queries registered for the first time in the time range.",
         "fieldConfig": {
           "defaults": {
             "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
       },
       {
         "id": 3,
-        "title": "Bandwidth Saved",
+        "title": "Cached Responses",
         "type": "stat",
-        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "WITH apq_hits AS (\n  SELECT SUM(metric_value) as total_hits\n  FROM monitoring.metrics\n  WHERE metric_name = 'cache_hits_total'\n    AND labels->>'cache_type' = 'apq'\n    AND timestamp > NOW() - INTERVAL '$time_range'\n    AND environment = '$environment'\n)\nSELECT\n  total_hits,\n  ROUND((total_hits * 2048)::numeric, 0) as bytes_saved,\n  ROUND((total_hits * 2048 / 1024.0)::numeric, 2) as kb_saved,\n  ROUND((total_hits * 2048 / 1048576.0)::numeric, 2) as mb_saved\nFROM apq_hits;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*) AS cached_responses FROM apq_responses",
             "format": "table"
           }
         ],
-        "options": {
-          "graphMode": "none",
-          "colorMode": "value",
-          "orientation": "auto",
-          "textMode": "value_and_name"
-        },
+        "description": "Rows of apq_responses: filled only when APQ response caching is on.",
         "fieldConfig": {
           "defaults": {
-            "unit": "decmbytes",
-            "mappings": []
-          }
+            "unit": "short"
+          },
+          "overrides": []
         },
-        "description": "Estimated bandwidth saved by APQ (assuming ~2KB per query)"
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          }
+        }
       },
       {
         "id": 4,
-        "title": "APQ Operations Over Time",
-        "type": "timeseries",
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+        "title": "APQ Storage Size",
+        "type": "stat",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 6,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
         "targets": [
           {
-            "refId": "Hits",
-            "rawSql": "SELECT\n  date_trunc('minute', timestamp) as time,\n  SUM(metric_value) as apq_hits\nFROM monitoring.metrics\nWHERE metric_name = 'cache_hits_total'\n  AND labels->>'cache_type' = 'apq'\n  AND timestamp >= $__timeFrom()\n  AND timestamp <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "APQ Hits"
-          },
-          {
-            "refId": "Misses",
-            "rawSql": "SELECT\n  date_trunc('minute', timestamp) as time,\n  SUM(metric_value) as apq_misses\nFROM monitoring.metrics\nWHERE metric_name = 'cache_misses_total'\n  AND labels->>'cache_type' = 'apq'\n  AND timestamp >= $__timeFrom()\n  AND timestamp <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "APQ Misses"
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT SUM(pg_total_relation_size(oid)) AS storage_bytes\nFROM pg_class\nWHERE oid IN ('apq_queries'::regclass, 'apq_responses'::regclass)",
+            "format": "table"
           }
         ],
         "fieldConfig": {
           "defaults": {
-            "color": {"mode": "palette-classic"},
-            "custom": {
-              "lineInterpolation": "smooth",
-              "showPoints": "never",
-              "fillOpacity": 10
-            },
-            "unit": "short"
+            "unit": "bytes"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
       },
       {
         "id": 5,
-        "title": "APQ Hit Rate Over Time",
+        "title": "APQ Storage Growth",
         "type": "timeseries",
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 18},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 6
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "WITH apq_stats AS (\n  SELECT\n    date_trunc('minute', timestamp) as time,\n    SUM(CASE WHEN metric_name = 'cache_hits_total' THEN metric_value ELSE 0 END) as hits,\n    SUM(CASE WHEN metric_name = 'cache_misses_total' THEN metric_value ELSE 0 END) as misses\n  FROM monitoring.metrics\n  WHERE metric_name IN ('cache_hits_total', 'cache_misses_total')\n    AND labels->>'cache_type' = 'apq'\n    AND timestamp >= $__timeFrom()\n    AND timestamp <= $__timeTo()\n    AND environment = '$environment'\n  GROUP BY time\n)\nSELECT\n  time,\n  ROUND(100.0 * hits / NULLIF(hits + misses, 0), 2) as hit_rate_percent\nFROM apq_stats\nWHERE hits + misses > 0\nORDER BY time;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  $__timeGroupAlias(created_at, $__interval),\n  COUNT(*) AS new_queries\nFROM apq_queries\nWHERE $__timeFilter(created_at)\nGROUP BY 1\nORDER BY 1",
             "format": "time_series"
           }
         ],
         "fieldConfig": {
           "defaults": {
-            "color": {"mode": "thresholds"},
+            "unit": "short",
             "custom": {
               "lineInterpolation": "smooth",
               "showPoints": "never",
-              "fillOpacity": 20
+              "fillOpacity": 10
             },
-            "unit": "percent",
-            "min": 0,
-            "max": 100,
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "red"},
-                {"value": 70, "color": "yellow"},
-                {"value": 90, "color": "green"}
-              ]
+            "color": {
+              "mode": "palette-classic"
             }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
           }
         }
       },
       {
         "id": 6,
-        "title": "Stored Persisted Queries",
-        "type": "stat",
-        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 28},
+        "title": "Cached Responses by Tenant",
+        "type": "bargauge",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 6
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT COUNT(DISTINCT hash) as stored_queries\nFROM tb_persisted_query\nWHERE created_at > NOW() - INTERVAL '$time_range';",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  COALESCE(tenant_id, '(no tenant)') AS tenant_id,\n  COUNT(*) AS cached_responses\nFROM apq_responses\nGROUP BY tenant_id\nORDER BY cached_responses DESC\nLIMIT 20",
             "format": "table"
           }
         ],
-        "options": {
-          "graphMode": "none",
-          "colorMode": "value",
-          "orientation": "auto",
-          "textMode": "value_and_name"
-        },
         "fieldConfig": {
           "defaults": {
             "unit": "short"
-          }
+          },
+          "overrides": []
         },
-        "description": "Number of unique persisted queries stored in the database"
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": true
+          },
+          "orientation": "horizontal",
+          "displayMode": "gradient"
+        }
       },
       {
         "id": 7,
-        "title": "APQ Storage Growth",
-        "type": "timeseries",
-        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 28},
+        "title": "Recently Registered Queries",
+        "type": "table",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 14
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  date_trunc('day', created_at) as time,\n  COUNT(*) as new_queries\nFROM tb_persisted_query\nWHERE created_at >= $__timeFrom()\n  AND created_at <= $__timeTo()\nGROUP BY time\nORDER BY time;",
-            "format": "time_series"
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  hash,\n  LEFT(query, 100) AS query_preview,\n  created_at,\n  updated_at\nFROM apq_queries\nWHERE $__timeFilter(created_at)\nORDER BY created_at DESC\nLIMIT 20",
+            "format": "table"
           }
         ],
         "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "palette-classic"},
-            "custom": {
-              "lineInterpolation": "smooth",
-              "showPoints": "auto",
-              "fillOpacity": 10
-            },
-            "unit": "short"
-          }
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
         }
       },
       {
         "id": 8,
-        "title": "Top Persisted Queries by Usage",
+        "title": "Largest Persisted Queries",
         "type": "table",
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 34},
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "WITH apq_usage AS (\n  SELECT\n    labels->>'query_hash' as query_hash,\n    SUM(metric_value) as usage_count\n  FROM monitoring.metrics\n  WHERE metric_name = 'cache_hits_total'\n    AND labels->>'cache_type' = 'apq'\n    AND timestamp > NOW() - INTERVAL '$time_range'\n    AND environment = '$environment'\n  GROUP BY query_hash\n)\nSELECT\n  au.query_hash,\n  LEFT(pq.query, 100) as query_preview,\n  au.usage_count,\n  pq.created_at,\n  EXTRACT(EPOCH FROM (NOW() - pq.created_at)) / 3600 as hours_since_creation\nFROM apq_usage au\nLEFT JOIN tb_persisted_query pq ON au.query_hash = pq.hash\nWHERE au.usage_count > 0\nORDER BY au.usage_count DESC\nLIMIT 20;",
-            "format": "table"
-          }
-        ],
-        "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": {"id": "byName", "options": "usage_count"},
-              "properties": [
-                {
-                  "id": "custom.cellOptions",
-                  "value": {
-                    "type": "color-background",
-                    "mode": "gradient"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      },
-      {
-        "id": 9,
-        "title": "APQ Request Types",
-        "type": "piechart",
-        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 44},
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT\n  CASE\n    WHEN metric_name = 'cache_hits_total' THEN 'Hash-only (Hit)'\n    WHEN metric_name = 'cache_misses_total' THEN 'Hash + Query (Miss)'\n  END as request_type,\n  SUM(metric_value) as count\nFROM monitoring.metrics\nWHERE metric_name IN ('cache_hits_total', 'cache_misses_total')\n  AND labels->>'cache_type' = 'apq'\n  AND timestamp > NOW() - INTERVAL '$time_range'\n  AND environment = '$environment'\nGROUP BY request_type;",
-            "format": "table"
-          }
-        ],
-        "options": {
-          "legend": {"displayMode": "list", "placement": "bottom"},
-          "pieType": "donut",
-          "displayLabels": ["name", "percent"]
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
         },
-        "description": "APQ Hits: Client sent hash-only. APQ Misses: Client had to send full query."
-      },
-      {
-        "id": 10,
-        "title": "Bandwidth Savings Over Time",
-        "type": "timeseries",
-        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 44},
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 14
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "WITH apq_hits AS (\n  SELECT\n    date_trunc('hour', timestamp) as time,\n    SUM(metric_value) as hits\n  FROM monitoring.metrics\n  WHERE metric_name = 'cache_hits_total'\n    AND labels->>'cache_type' = 'apq'\n    AND timestamp >= $__timeFrom()\n    AND timestamp <= $__timeTo()\n    AND environment = '$environment'\n  GROUP BY time\n)\nSELECT\n  time,\n  (hits * 2048 / 1048576.0) as mb_saved\nFROM apq_hits\nORDER BY time;",
-            "format": "time_series"
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  hash,\n  OCTET_LENGTH(query) AS query_bytes,\n  LEFT(query, 100) AS query_preview,\n  created_at\nFROM apq_queries\nORDER BY query_bytes DESC\nLIMIT 20",
+            "format": "table"
           }
         ],
+        "description": "The bytes a client saves on each request that sends only the hash of this query.",
         "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "palette-classic"},
-            "custom": {
-              "lineInterpolation": "smooth",
-              "showPoints": "never",
-              "fillOpacity": 20
-            },
-            "unit": "decmbytes"
-          }
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
         }
       }
-    ],
-    "templating": {
-      "list": [
-        {
-          "name": "environment",
-          "type": "custom",
-          "options": [
-            {"text": "production", "value": "production"},
-            {"text": "staging", "value": "staging"},
-            {"text": "development", "value": "development"}
-          ],
-          "current": {"text": "production", "value": "production"},
-          "multi": false
-        },
-        {
-          "name": "time_range",
-          "type": "custom",
-          "options": [
-            {"text": "1 hour", "value": "1 hour"},
-            {"text": "6 hours", "value": "6 hours"},
-            {"text": "24 hours", "value": "24 hours"},
-            {"text": "7 days", "value": "7 days"}
-          ],
-          "current": {"text": "24 hours", "value": "24 hours"},
-          "multi": false
-        }
-      ]
-    },
-    "time": {
-      "from": "now-24h",
-      "to": "now"
-    }
+    ]
   },
   "overwrite": true,
-  "message": "FraiseQL APQ Effectiveness Dashboard"
+  "message": "FraiseQL APQ Storage Dashboard"
 }

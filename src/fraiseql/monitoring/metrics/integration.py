@@ -5,11 +5,12 @@ for metrics collection.
 """
 
 import time
-from functools import wraps
 from typing import Any, Awaitable, Callable, Optional
 
 from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from fraiseql.utils.annotations import wraps
 
 from .collectors import FraiseQLMetrics
 from .config import CONTENT_TYPE_LATEST, MetricsConfig

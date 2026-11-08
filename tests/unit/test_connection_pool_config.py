@@ -49,7 +49,7 @@ class TestConnectionPoolDefaults:
 
         # Mock schema registry to avoid initialization
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -75,7 +75,7 @@ class TestConnectionPoolDefaults:
             return []
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -104,7 +104,7 @@ class TestConnectionPoolCustomParameters:
             return []
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -129,7 +129,7 @@ class TestConnectionPoolCustomParameters:
             return []
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -154,7 +154,7 @@ class TestConnectionPoolCustomParameters:
             return []
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -179,7 +179,7 @@ class TestConnectionPoolCustomParameters:
             return []
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -204,7 +204,7 @@ class TestConnectionPoolCustomParameters:
             return []
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -246,7 +246,7 @@ class TestConnectionPoolWithConfig:
         )
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 types=[User],
                 queries=[users],
                 config=config,
@@ -276,7 +276,7 @@ class TestBackwardCompatibility:
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
             # This should work exactly as before WP-027
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],

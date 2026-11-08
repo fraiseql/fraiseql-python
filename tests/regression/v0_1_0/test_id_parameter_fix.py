@@ -52,6 +52,7 @@ class TestReservedWordParameters:
         SchemaConfig._instance = None
         # Also clear the GraphQL type cache
         from fraiseql.core.graphql_type import _graphql_type_cache
+
         _graphql_type_cache.clear()
 
     def test_graphql_schema_removes_trailing_underscore(self) -> None:

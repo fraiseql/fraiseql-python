@@ -26,6 +26,9 @@ class FieldInfo:
 
     type_name: str  # The GraphQL type name (e.g., "String", "Equipment")
     is_nested_object: bool  # True if this is an object type, False for scalars/enums
+    # The field's name in the schema: "smtpServer", or "smtp_server" when the
+    # schema keeps snake_case names (auto_camel_case=False)
+    graphql_name: str | None = None
 
 
 class GraphQLSchemaWrapper:
@@ -76,15 +79,13 @@ class GraphQLSchemaWrapper:
         fields = graphql_type.fields
 
         # Try original field name first
-        if field_name in fields:
-            field = fields[field_name]
-        else:
+        graphql_name = field_name
+        if field_name not in fields:
             # If not found, try camelCase version (GraphQL schema uses camelCase)
-            camel_field_name = to_camel_case(field_name)
-            if camel_field_name in fields:
-                field = fields[camel_field_name]
-            else:
+            graphql_name = to_camel_case(field_name)
+            if graphql_name not in fields:
                 return None
+        field = fields[graphql_name]
 
         field_type = field.type
 
@@ -105,6 +106,7 @@ class GraphQLSchemaWrapper:
         return FieldInfo(
             type_name=base_type_name,
             is_nested_object=is_nested,
+            graphql_name=graphql_name,
         )
 
 
@@ -138,12 +140,17 @@ class FieldSelection:
     alias: str  # Final output key: "deviceName"
     type_name: str  # GraphQL type: "String"
     is_nested_object: bool  # False for scalars, True for objects
+    # The key of each segment of path, from the root: ["device", "deviceName"].
+    # None when the FieldPath didn't give them.
+    response_path: list[str] | None = None
 
 
 def build_selection_tree(
     field_paths: list[Any],  # list[FieldPath]
     schema_registry: Any,  # SchemaRegistry
     parent_type: str,
+    *,
+    by_alias: bool = True,
 ) -> list[FieldSelection]:
     """Build flat list of field selections with materialized paths.
 
@@ -154,9 +161,14 @@ def build_selection_tree(
         field_paths: List of FieldPath objects from AST parser
         schema_registry: Schema registry for type lookups
         parent_type: The GraphQL type name for the root object
+        by_alias: Name each field by its response key (the alias, or the name),
+            for a response that goes to the client as is; else by its name, for
+            graphql-core to complete. A FieldPath without names and response keys
+            names its leaf by its alias, and the fields above by their names.
 
     Returns:
-        List of FieldSelection objects with materialized paths
+        List of FieldSelection objects with materialized paths. Two aliases of one
+        field are two selections (with by_alias).
 
     Example:
         >>> field_paths = [
@@ -174,8 +186,16 @@ def build_selection_tree(
         ['equipment', 'name']
     """
     selections = []
+    # The key each selection answers under, from the root; a FieldPath without
+    # response keys is deduplicated by JSON path instead
+    output_paths: list[tuple[str, ...]] = []
 
     for fp in field_paths:
+        # The key each segment answers under, when the FieldPath says
+        output_keys = getattr(fp, "response_keys" if by_alias else "names", None)
+        if output_keys is not None and len(output_keys) != len(fp.path):
+            output_keys = None
+
         # Walk the path to resolve types at each level
         current_type = parent_type
         cumulative_path: list[str] = []
@@ -187,7 +207,11 @@ def build_selection_tree(
             field_info = schema_registry.get_field_type(current_type, field_name)
 
             # Determine type information
-            if field_info:
+            if field_name == "__typename":
+                # Its value is the name of the object it is selected on
+                field_type_name = current_type
+                is_nested = False
+            elif field_info:
                 field_type_name = field_info.type_name
                 is_nested = field_info.is_nested_object
             else:
@@ -196,14 +220,17 @@ def build_selection_tree(
                 is_nested = False
 
             # Determine alias for this level
-            if i == len(fp.path) - 1:
+            if output_keys is not None:
+                alias = output_keys[i]
+            elif i == len(fp.path) - 1:
                 # Leaf field: use the alias from the AST
                 alias = fp.alias
             else:
-                # Intermediate field: convert snake_case field name to camelCase for alias
-                # This ensures nested objects like "smtp_server" get alias "smtpServer"
-                # (Will be overridden if there's another FieldPath with this exact path)
-                alias = to_camel_case(field_name)
+                # Intermediate field: its name in the schema. "smtp_server" is
+                # "smtpServer", unless the schema keeps snake_case names
+                # (auto_camel_case=False). camelCase when the schema doesn't say.
+                graphql_name = getattr(field_info, "graphql_name", None)
+                alias = graphql_name if isinstance(graphql_name, str) else to_camel_case(field_name)
 
             selections.append(
                 FieldSelection(
@@ -211,18 +238,63 @@ def build_selection_tree(
                     alias=alias,
                     type_name=field_type_name,
                     is_nested_object=is_nested,
+                    response_path=list(output_keys[: i + 1]) if output_keys is not None else None,
                 )
+            )
+            output_paths.append(
+                tuple(output_keys[: i + 1]) if output_keys is not None else tuple(cumulative_path)
             )
 
             # Move to next type in path
             if field_info:
                 current_type = field_info.type_name
 
-    # Deduplicate selections by path (keep first occurrence)
+    # Deduplicate selections by the key they answer under (keep first occurrence):
+    # two aliases of one field are two selections
     unique_selections: dict[tuple[str, ...], FieldSelection] = {}
-    for sel in selections:
-        path_key = tuple(sel.path)
-        if path_key not in unique_selections:
-            unique_selections[path_key] = sel
+    for sel, output_path in zip(selections, output_paths, strict=True):
+        if output_path not in unique_selections:
+            unique_selections[output_path] = sel
 
     return list(unique_selections.values())
+
+
+def named_object_type(graphql_type: Any) -> str | None:
+    """The name of the object type a field returns (through lists and non-null), else None.
+
+    ``[Note!]!`` gives ``"Note"``; a scalar, an interface or a union gives None.
+    """
+    while is_non_null_type(graphql_type) or is_list_type(graphql_type):
+        graphql_type = graphql_type.of_type
+    return graphql_type.name if is_object_type(graphql_type) else None
+
+
+def rust_field_selections(
+    field_paths: list[Any],  # list[FieldPath]
+    schema: GraphQLSchema,
+    parent_type: str,
+    *,
+    by_alias: bool = True,
+) -> list[dict[str, Any]]:
+    """The selection the Rust pipeline projects each row on, as it reads it.
+
+    One dict per selected field, parents included: its JSON path
+    (``materialized_path``, dot-separated), the key it answers under (``alias``)
+    and the key of each segment down to it (``response_path``, dot-separated), its
+    type, and whether it is an object. Rust writes only these fields. by_alias: see
+    build_selection_tree.
+    """
+    selections = []
+    for sel in build_selection_tree(
+        field_paths, GraphQLSchemaWrapper(schema), parent_type=parent_type, by_alias=by_alias
+    ):
+        selection: dict[str, Any] = {
+            "materialized_path": ".".join(sel.path),
+            "alias": sel.alias,
+            "type_name": sel.type_name,
+            "is_nested_object": sel.is_nested_object,
+        }
+        if sel.response_path is not None:
+            selection["response_path"] = ".".join(sel.response_path)
+        selections.append(selection)
+    return selections

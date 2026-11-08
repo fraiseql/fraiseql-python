@@ -165,7 +165,7 @@ class LTreeOperatorStrategy(BaseOperatorStrategy):
             return SQL("{} ~ {}::lquery").format(casted_path, Literal(str(value)))
 
         if operator == "matches_ltxtquery":
-            return SQL("{} ? {}::ltxtquery").format(casted_path, Literal(str(value)))
+            return SQL("{} @ {}::ltxtquery").format(casted_path, Literal(str(value)))
 
         # List operators (path needs casting, values cast by _build_in_operator)
         if operator == "in":

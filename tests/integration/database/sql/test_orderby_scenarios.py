@@ -334,11 +334,15 @@ class TestComplexOrderByScenarios:
     def test_error_recovery_complex_scenarios(self) -> None:
         """Test that complex scenarios handle errors gracefully."""
         # Test various error conditions with complex inputs
-        error_cases = [
-            # Invalid nested structure
+        # A leaf that is not a direction raises rather than sorting DESC.
+        for case in (
             [{"field": {"invalid": "nested"}}],
-            # Mixed valid and invalid
             [{"validField": "ASC"}, {"invalidField": {"nested": "invalid"}}],
+        ):
+            with pytest.raises(ValueError, match="sort direction"):
+                _convert_order_by_input_to_sql(case)
+
+        error_cases = [
             # Empty nested field
             [{"": "ASC"}],
             # None values in complex structure

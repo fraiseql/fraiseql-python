@@ -232,29 +232,27 @@ Typical performance characteristics:
 
 ## Error Handling
 
-### Unsupported Deep Nesting
+### Deep Nesting
 
-Dict-based filters support 2-level nesting only:
+A nested filter follows the JSONB path of each level, as deep as the document goes:
 
 ```python
-# ✅ Supported: 2 levels
+# data -> 'device' ->> 'location'
 {"device": {"location": {"eq": "Seattle"}}}
 
-# ❌ Not supported: 3+ levels
+# data -> 'device' -> 'location' -> 'address' ->> 'city'
 {"device": {"location": {"address": {"city": {"eq": "Seattle"}}}}}
 ```
 
-Deep nesting will log a warning and skip the nested fields.
-
 ### Invalid Filter Structures
 
-Malformed filters are gracefully handled:
+Malformed filters raise `ValueError` instead of being skipped:
 
 ```python
-# Empty nested filter - ignored (no conditions added)
+# Empty nested filter: "WhereClause must have at least one condition, ..."
 {"device": {}}
 
-# Invalid operator - logged and skipped
+# Unknown operator: "Invalid operator 'invalid_field'. Supported operators: ..."
 {"device": {"invalid_field": "not_an_operator"}}
 ```
 
@@ -360,7 +358,7 @@ def test_find_active_assignments_with_active_devices(self):
 
 ```python
 import fraiseql
-from fraiseql.db import FraiseQLRepository
+from fraiseql.db import FraiseQLRepository, register_type_for_view
 
 @fraiseql.type
 class Device:
@@ -375,8 +373,8 @@ class Assignment:
     status: str
     device: Device
 
-# Register types
-register_type_for_view("assignments", Assignment)
+# Register types (the view is "id" + a JSONB "data" column)
+register_type_for_view("assignments", Assignment, has_jsonb_data=True)
 
 # Repository usage
 repo = FraiseQLRepository(db_pool)

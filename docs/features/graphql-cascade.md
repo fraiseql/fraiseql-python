@@ -242,7 +242,7 @@ Array of entities that were created or updated:
 **For regular GraphQL queries:**
 
 - PostgreSQL returns plain JSONB (no `__typename` in database)
-- Rust automatically injects `__typename` using the schema registry
+- Rust writes `__typename` where the query selects it, using the schema registry
 - Rust knows the type of each field from the GraphQL schema
 
 **For CASCADE data:**
@@ -254,7 +254,7 @@ Array of entities that were created or updated:
 
 Think of it this way:
 
-- **Query data**: Rust knows the schema → auto-injects `__typename`
+- **Query data**: Rust knows the schema → writes `__typename` where it is selected
 - **CASCADE data**: Rust doesn't know what's inside → you provide `__typename`
 
 ### `deleted` (Array)
@@ -443,7 +443,7 @@ See [Migration: Add mutation_response](../../migrations/trinity/005_add_mutation
 1. **Use v2 format for new implementations**: Leverage helper functions for consistent cascade construction
 2. **Include all side effects**: Any data modified by the mutation should be included in cascade
 3. **Use appropriate operations**: `CREATED` for inserts, `UPDATED` for updates, `DELETED` for deletes
-4. **Use `__typename` for entity types**: CASCADE entities need explicit `__typename` (unlike queries where Rust auto-injects)
+4. **Use `__typename` for entity types**: CASCADE entities need explicit `__typename` (unlike queries, where Rust writes it from the schema when selected)
 5. **Use snake_case for other fields**: `query_name`, `affected_count`, etc. (Rust converts to camelCase)
 6. **Provide full entities**: Include complete entity data for cache updates
 7. **Add invalidations**: Include query invalidation hints for list views

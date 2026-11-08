@@ -88,7 +88,7 @@ fn test_error_with_conflict_entity() {
     //     "conflict_machine": {...}
     // }
     let json = r#"{
-        "status": "failed:conflict",
+        "status": "conflict:duplicate_serial_number",
         "message": "Machine with this serial number already exists",
         "entity_type": "Machine",
         "entity": {
@@ -120,7 +120,7 @@ fn test_error_with_conflict_entity() {
 
     // Auto-injected fields at root
     assert_eq!(error["__typename"], "CreateMachineError");
-    assert_eq!(error["status"], "failed:conflict");
+    assert_eq!(error["status"], "conflict:duplicate_serial_number");
     assert_eq!(error["message"], "Machine with this serial number already exists");
     assert_eq!(error["code"], 409); // Conflict
 
@@ -195,4 +195,67 @@ fn test_multiple_entities_field_selection() {
         success["previousLocation"].is_null(),
         "previousLocation should not be included (not selected)"
     );
+}
+
+/// An import mutation whose entity is a wrapper: `items` is the entity field,
+/// `summary` a sibling carried next to it (GitHub issue #594).
+const IMPORT_ITEMS_WRAPPER: &str = r#"{
+    "status": "created",
+    "message": "Items imported",
+    "entity_type": "Item",
+    "entity": {
+        "items": [{"id": "1", "name": "first"}],
+        "summary": {"created": 3, "skipped": 1}
+    }
+}"#;
+
+#[test]
+fn test_wrapper_sibling_selected_without_entity_field() {
+    let result = build_mutation_response(
+        IMPORT_ITEMS_WRAPPER,
+        "importItems",
+        "ImportItemsSuccess",
+        "ImportItemsError",
+        Some("items"),
+        Some("Item"),
+        None,
+        true,
+        Some(vec!["summary".to_string()]),
+        None,
+        None,
+    )
+    .unwrap();
+
+    let response: Value = serde_json::from_slice(&result).unwrap();
+    let success = &response["data"]["importItems"];
+
+    assert_eq!(success["summary"], json!({"created": 3, "skipped": 1}));
+    assert!(!success.as_object().unwrap().contains_key("items"));
+}
+
+#[test]
+fn test_selected_wrapper_sibling_without_entity_field() {
+    let document = json!({"format": 2, "error": null, "success": {"fields": [
+        {"name": "summary", "alias": "summary", "selections": {"fields": [
+            {"name": "created", "alias": "created"},
+            {"name": "skipped", "alias": "skipped"}]}}]}});
+
+    let result = build_mutation_response_selected(
+        IMPORT_ITEMS_WRAPPER,
+        "importItems",
+        "ImportItemsSuccess",
+        "ImportItemsError",
+        Some("items"),
+        Some("Item"),
+        None,
+        true,
+        &document,
+    )
+    .unwrap();
+
+    let response: Value = serde_json::from_slice(&result).unwrap();
+    let success = &response["data"]["importItems"];
+
+    assert_eq!(success["summary"], json!({"created": 3, "skipped": 1}));
+    assert!(!success.as_object().unwrap().contains_key("items"));
 }

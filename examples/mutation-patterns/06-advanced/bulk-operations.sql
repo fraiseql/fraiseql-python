@@ -158,12 +158,12 @@ SELECT * FROM bulk_create_users('{
 }'::jsonb);
 -- Returns: status='created', metadata with 3 successful results
 
--- Partial success
+-- Partial success: the second user's email already exists, the third has none
 SELECT * FROM bulk_create_users('{
     "users": [
         {"email": "partial1@example.com", "name": "Partial User 1"},
-        {"email": "john@example.com", "name": "Duplicate Email"},  -- duplicate
-        {"email": "", "name": "No Email"},                        -- invalid
+        {"email": "john@example.com", "name": "Duplicate Email"},
+        {"email": "", "name": "No Email"},
         {"email": "partial2@example.com", "name": "Partial User 2"}
     ]
 }'::jsonb);
@@ -190,7 +190,7 @@ DECLARE
     new_status text;
     updated_count int;
 BEGIN
-    user_ids := input_payload->'userIds';
+    user_ids := input_payload->'user_ids';
     new_status := input_payload->>'status';
 
     -- Validate status
@@ -232,7 +232,7 @@ $$ LANGUAGE plpgsql;
 
 -- Update multiple users to inactive
 SELECT * FROM bulk_update_user_status('{
-    "userIds": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"],
+    "user_ids": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"],
     "status": "inactive"
 }'::jsonb);
 -- Returns: status='updated', metadata with updated_count

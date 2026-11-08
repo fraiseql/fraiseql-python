@@ -1,7 +1,10 @@
 """Database utilities and repository layer for FraiseQL using psycopg and connection pooling."""
 
+import json
 import logging
 import re
+import types
+import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -20,10 +23,12 @@ from fraiseql.core.rust_pipeline import (
 )
 from fraiseql.sql.identifiers import qualified_identifier
 from fraiseql.sql.native_columns import resolve_native_column
+from fraiseql.types.scalars.vector import is_float_vector_type
 from fraiseql.utils.casing import to_snake_case
 from fraiseql.where_clause import WhereClause
 from fraiseql.where_normalization import (
     _apply_column_mapping,
+    annotate_temporal_casts,
     normalize_dict_where,
     normalize_whereinput,
 )
@@ -38,6 +43,11 @@ _type_registry: dict[str, type] = {}
 # Table metadata registry - stores column information at registration time
 # This avoids expensive runtime introspection
 _table_metadata: dict[str, dict[str, Any]] = {}
+
+# Development mode: the multi-word JSONB keys already probed for a camelCase
+# spelling, as (view, JSONB column, parent path, snake_case key). Each is probed
+# once per process; see FraiseQLRepository._warn_on_camel_case_keys.
+_camel_case_key_probes: set[tuple[str, str, tuple[str, ...], str]] = set()
 
 # Null response cache for RustResponseBytes optimization
 # Preloaded with common field name patterns (90%+ hit rate expected)
@@ -101,6 +111,100 @@ def _make_mandatory_conditions(
         parts.append(Composed([Identifier(col), SQL(" = "), SQL("%s")]))
         params.append(val)
     return parts, params
+
+
+def _where_sql(where_parts: list[Any]) -> SQL | Composed:
+    """`` WHERE a AND b`` from a read helper's WHERE parts, or nothing."""
+    if not where_parts:
+        return SQL("")
+    return SQL(" WHERE ") + SQL(" AND ").join(where_parts)
+
+
+class _FunctionResult(dict):
+    """The JSON object a function returned, read from its one column.
+
+    ``SELECT * FROM fn(...)`` names a scalar result's column after the function,
+    and execute_function used to return that row, ``{"fn_name": {...}}``. The
+    old key still answers, with the object itself, and a DeprecationWarning.
+    """
+
+    def __init__(self, data: dict[str, Any], column: str) -> None:
+        super().__init__(data)
+        self._column = column
+
+    def __missing__(self, key: Any) -> Any:
+        if key == self._column:
+            warnings.warn(
+                f"execute_function returns the object {self._column}() returned; "
+                f'read its keys directly instead of result["{self._column}"]',
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return self
+        raise KeyError(key)
+
+
+def _function_result(function_name: str, row: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Return execute_function's result for the row ``SELECT * FROM fn(...)`` gave.
+
+    A function returning a JSON object (``RETURNS jsonb``) comes back as one column
+    named after the function: that object is the result. Any other row (OUT
+    parameters, ``RETURNS TABLE``, a composite type) is returned as is.
+    """
+    if not row:
+        return {}
+    column = function_name.rsplit(".", 1)[-1].lower()
+    if len(row) == 1 and isinstance(row.get(column), dict):
+        return _FunctionResult(row[column], column)
+    return dict(row)
+
+
+def _root_response_key(info: Any) -> str | None:
+    """The response key (alias, or field name) of a root field's info, else None.
+
+    db.find's response is served as the whole HTTP body for a lone root field, so
+    its key must be the one the client asked for, not the ``field_name`` argument
+    (``"post_comments"`` for ``postComments``) or the field's name under an alias.
+    """
+    path = getattr(info, "path", None)
+    if path is None or path.prev is not None or not isinstance(path.key, str):
+        return None
+    return path.key
+
+
+def _response_goes_out_as_is(info: Any) -> bool:
+    """Whether db.find's response reaches the client as Rust writes it.
+
+    True for a root field answered alone: its fields are keyed by their response
+    keys (aliases). Below the root, or with several root fields (the response is
+    merged and completed again), graphql-core reads the fields by name.
+    """
+    if _root_response_key(info) is None:
+        return False
+    context = getattr(info, "context", None)
+    return not (isinstance(context, dict) and context.get("__has_multiple_root_fields__"))
+
+
+async def _typed_find_rows(conn: Any, query: "DatabaseQuery", row_type: type) -> list[Any]:
+    """The rows of a find query, each built as ``row_type`` (``from_dict``).
+
+    The query selects one JSON column per row, the one Rust builds the response
+    from; here graphql-core completes the objects instead.
+    """
+    from fraiseql.core.field_resolvers import typed_rows
+
+    async with conn.cursor() as cursor:
+        if query.params:
+            await cursor.execute(query.statement, query.params)
+        else:
+            await cursor.execute(query.statement)
+        rows = await cursor.fetchall()
+    values = [
+        json.loads(row[0]) if isinstance(row[0], str | bytes) else row[0]
+        for row in rows
+        if row[0] is not None
+    ]
+    return typed_rows(values, row_type)
 
 
 def _is_rust_response_null(response: RustResponseBytes) -> bool:
@@ -228,6 +332,66 @@ def _parse_aggregation_expr(expr: str) -> tuple[str, str]:
         )
         raise ValueError(msg)
     return func, field
+
+
+# One sort key of a string ``order_by``: a column name, optionally qualified
+# (``t.col``, ``s.t.col``), then optional ASC/DESC and NULLS FIRST/LAST. A name
+# is a plain ASCII identifier or a double-quoted one ("" escapes a quote).
+_ORDER_NAME = r'(?:[A-Za-z_][A-Za-z0-9_$]*|"(?:[^"\x00]|"")+")'
+_ORDER_KEY_RE = re.compile(
+    rf"\s*(?P<name>{_ORDER_NAME}(?:\s*\.\s*{_ORDER_NAME}){{0,2}})"
+    r"(?:\s+(?P<direction>ASC|DESC)\b)?"
+    r"(?:\s+NULLS\s+(?P<nulls>FIRST|LAST)\b)?"
+    r"\s*(?P<sep>,|\Z)",
+    re.IGNORECASE,
+)
+_ORDER_NAME_RE = re.compile(_ORDER_NAME)
+
+
+def _order_by_string_sql(order_by: str) -> Composed:
+    """Parse a string ``order_by`` into ``ORDER BY`` with each column name quoted.
+
+    The string is comma-separated sort keys, each ``name [ASC|DESC] [NULLS
+    FIRST|LAST]``, where ``name`` is a column, optionally qualified (``t.date``).
+    An unquoted name is folded to lower case, as PostgreSQL folds it, so
+    ``"createdAt DESC"`` sorts on the same column it always did; write
+    ``'"createdAt" DESC'`` for a mixed-case column.
+
+    The string never reaches the SQL as written: an expression, a JSONB path, a
+    position or anything else raises ``ValueError``.
+
+    Raises:
+        ValueError: If the string is not a list of sort keys.
+    """
+    from psycopg.sql import Identifier
+
+    keys: list[Composed] = []
+    pos = 0
+    while True:
+        match = _ORDER_KEY_RE.match(order_by, pos)
+        if match is None:
+            msg = (
+                f"order_by: cannot read {order_by!r} as a list of columns. A string "
+                "order_by takes comma-separated column names, each optionally followed "
+                "by ASC or DESC and NULLS FIRST or NULLS LAST, e.g. 'created_at DESC, id'. "
+                "To sort on a JSONB field, pass a dict or a list of dicts instead, "
+                "e.g. order_by={'created_at': 'DESC'}."
+            )
+            raise ValueError(msg)
+        names = [
+            name[1:-1].replace('""', '"') if name.startswith('"') else name.lower()
+            for name in _ORDER_NAME_RE.findall(match["name"])
+        ]
+        key: list[Any] = [Identifier(*names)]
+        if match["direction"]:
+            key.append(SQL(" " + match["direction"].upper()))
+        if match["nulls"]:
+            key.append(SQL(" NULLS " + match["nulls"].upper()))
+        keys.append(Composed(key))
+        if not match["sep"]:
+            break
+        pos = match.end()
+    return Composed([SQL("ORDER BY "), SQL(", ").join(keys)])
 
 
 def _build_jsonb_field_expr(field_path: str, jsonb_ref: str = "data") -> Composed:
@@ -1341,6 +1505,59 @@ class FraiseQLRepository:
         self._type_name_cache[view_name] = type_name
         return type_name
 
+    def _projects_for_view(self, info: Any, view_name: str) -> bool:
+        """Whether info's selection describes the rows of view_name.
+
+        False when info's field returns another type: a resolver reading a view to
+        build some other object (``return NotePage(notes=await db.find("v_note"))``,
+        or a mutation's success type). Its selection would project the rows onto
+        the wrong fields, so the rows are read whole. True when that can't be told.
+        """
+        type_name = self._get_cached_type_name(view_name)
+        return_type = getattr(info, "return_type", None)
+        schema = getattr(info, "schema", None)
+        if not type_name or return_type is None or schema is None:
+            return True
+        view_type = schema.get_type(type_name)
+        if view_type is None:
+            return True
+
+        from graphql import get_named_type, is_abstract_type
+
+        named = get_named_type(return_type)
+        if named is view_type:
+            return True
+        if is_abstract_type(named):
+            return view_type in schema.get_possible_types(named)
+        return False
+
+    def _resolver_row_type(self, info: Any, view_name: str) -> type | None:
+        """The class to build view_name's rows as, when info selects a field resolver.
+
+        None when it selects none: the rows go out as Rust writes them. A field
+        resolver (``@fraiseql.field``, ``@fraiseql.dataloader_field``) of the type
+        or of a type below it runs with the row as ``self``, so graphql-core has
+        to complete typed objects.
+        """
+        from fraiseql.core.field_resolvers import python_type, selects_field_resolver
+
+        if not selects_field_resolver(info):
+            return None
+        row_type = _type_registry.get(view_name) or python_type(
+            info.schema, getattr(info, "return_type", None)
+        )
+        if row_type is None or not hasattr(row_type, "from_dict"):
+            logger.warning(
+                "%s selects a field resolver, but no type is registered for %r "
+                "(@fraiseql.type(sql_source=%r)): the rows go out as the view has "
+                "them, and the field resolver is not run.",
+                getattr(info, "field_name", view_name),
+                view_name,
+                view_name,
+            )
+            return None
+        return row_type
+
     def _adopt_session_context(self, request_context: Mapping[str, Any]) -> None:
         """Copy the request values that session variables are read from.
 
@@ -1390,7 +1607,9 @@ class FraiseQLRepository:
 
         return settings
 
-    async def _set_session_variables(self, cursor_or_conn: Any) -> None:
+    async def _set_session_variables(
+        self, cursor_or_conn: Any, extra_settings: list[tuple[str, str]] | None = None
+    ) -> None:
         """Set this context's PostgreSQL session variables in a single round trip.
 
         Every setting from :meth:`_session_settings`, then ``fraiseql.started_at``, is
@@ -1404,8 +1623,10 @@ class FraiseQLRepository:
 
         Args:
             cursor_or_conn: Either a psycopg cursor or an asyncpg connection
+            extra_settings: ``(name, value)`` settings applied first, the same way
+                (``statement_timeout`` for :meth:`_session_connection`)
         """
-        settings = self._session_settings()
+        settings = [*(extra_settings or []), *self._session_settings()]
         params = [part for setting in settings for part in setting]
 
         # Check if this is a cursor (psycopg) or connection (asyncpg)
@@ -1427,16 +1648,148 @@ class FraiseQLRepository:
     async def _session_connection(self) -> AsyncIterator[AsyncConnection]:
         """Check out a pool connection with this context's session variables set on it.
 
-        The settings are transaction-local. A pool connection is not in autocommit, so
-        they open the transaction the caller's query then runs in, which ends when the
-        connection goes back to the pool. Nothing extra is sent when the context maps
-        no session variable.
+        ``statement_timeout`` (from ``query_timeout``) goes first, in the same
+        statement. The settings are transaction-local. A pool connection is not in
+        autocommit, so they open the transaction the caller's query then runs in,
+        which ends when the connection goes back to the pool. Nothing extra is sent
+        when there is no timeout and the context maps no session variable.
         """
         async with self._pool.connection() as conn:
+            timeout = self._statement_timeout_settings()
             if self._session_settings():
                 async with conn.cursor() as cursor:
-                    await self._set_session_variables(cursor)
+                    await self._set_session_variables(cursor, timeout)
+            elif timeout:
+                await conn.execute(
+                    "SELECT set_config(%s, %s, true)", [part for pair in timeout for part in pair]
+                )
             yield conn
+
+    def _statement_timeout_settings(self) -> list[tuple[str, str]]:
+        """``statement_timeout`` from ``query_timeout`` (seconds), unless it is unset or 0."""
+        if not self.query_timeout:
+            return []
+        return [("statement_timeout", f"{int(self.query_timeout * 1000)}ms")]
+
+    def _jsonb_key_paths(
+        self, view_name: str, jsonb_column: str | None, kwargs: Mapping[str, Any]
+    ) -> set[tuple[str, tuple[str, ...]]]:
+        """``(JSONB column, key path)`` of each JSONB key the query filters or sorts on.
+
+        Paths are spelled as the SQL looks them up: snake_case, as ``where`` and
+        ``order_by`` convert every field name before extracting it.
+        """
+        paths: set[tuple[str, tuple[str, ...]]] = set()
+
+        where = kwargs.get("where")
+        if where:
+            table_columns = None
+            if view_name in _table_metadata:
+                table_columns = _table_metadata[view_name].get("columns")
+            try:
+                clauses = [self._normalize_where(where, view_name, table_columns)]
+            except Exception:
+                clauses = []  # the query itself reports an unusable where
+            while clauses:
+                clause = clauses.pop()
+                paths.update(
+                    (condition.target_column, tuple(condition.jsonb_path))
+                    for condition in clause.conditions
+                    if condition.lookup_strategy == "jsonb_path" and condition.jsonb_path
+                )
+                clauses.extend(clause.nested_clauses)
+                if clause.not_clause is not None:
+                    clauses.append(clause.not_clause)
+
+        order_by = kwargs.get("order_by")
+        if order_by and jsonb_column is not None:
+            from fraiseql.sql.where.operators.vectors import VECTOR_DISTANCE_OPERATORS
+
+            try:
+                order_set = self._resolve_order_by_set(order_by, view_name)
+            except Exception:
+                order_set = None
+            native_columns = kwargs.get("native_dimensions") or None
+            column_mapping = _view_column_mapping(view_name) or None
+            for instruction in getattr(order_set, "instructions", ()):
+                if instruction._flat_column(native_columns, column_mapping) is not None:
+                    continue
+                path = instruction.field.split(".")
+                if instruction.value is not None and path[-1] in VECTOR_DISTANCE_OPERATORS:
+                    path = path[:-1]  # 'embedding.cosine_distance' sorts on 'embedding'
+                paths.add((jsonb_column, tuple(path)))
+
+        return paths
+
+    async def _warn_on_camel_case_keys(
+        self,
+        conn: AsyncConnection,
+        view_name: str,
+        jsonb_column: str | None,
+        kwargs: Mapping[str, Any],
+    ) -> None:
+        """In development, warn when a view's JSONB spells a filtered key in camelCase.
+
+        ``where`` and ``order_by`` read ``data ->> 'created_at'``. A view built
+        with ``jsonb_build_object('createdAt', ...)`` has no such key, so the
+        filter matches nothing and the sort does nothing, without an error. The
+        first query on each multi-word key probes one row of the view for the
+        camelCase key without the snake_case one, and logs a warning if so.
+        Every key is probed once per process; outside development, never.
+        """
+        config = self.context.get("config")
+        if getattr(config, "environment", None) != "development":
+            return
+
+        from psycopg.sql import Identifier, Literal
+
+        from fraiseql.utils.casing import to_camel_case
+
+        probes = []
+        for column, path in self._jsonb_key_paths(view_name, jsonb_column, kwargs):
+            for depth, key in enumerate(path):
+                probe = (view_name, column, path[:depth], key)
+                if "_" in key.strip("_") and probe not in _camel_case_key_probes:
+                    _camel_case_key_probes.add(probe)
+                    probes.append(probe)
+        if not probes:
+            return
+
+        # NULL (no such parent object) reads as "no warning"
+        checks = [
+            SQL("{obj} ? {camel} AND NOT {obj} ? {snake}").format(
+                obj=SQL("({} #> {})").format(Identifier(column), Literal(list(parent))),
+                camel=Literal(to_camel_case(key)),
+                snake=Literal(key),
+            )
+            for _, column, parent, key in probes
+        ]
+        statement = SQL("SELECT {} FROM {} LIMIT 1").format(
+            SQL(", ").join(checks), qualified_identifier(view_name)
+        )
+        try:
+            # A savepoint inside the query's transaction: a failed probe rolls
+            # back alone and leaves the query to run.
+            async with conn.transaction(), conn.cursor() as cursor:
+                await cursor.execute(statement)
+                row = await cursor.fetchone()
+        except Exception:
+            logger.debug("camelCase key probe failed for %s", view_name, exc_info=True)
+            return
+
+        for (_, column, parent, key), camel_only in zip(probes, row or (), strict=False):
+            if camel_only:
+                logger.warning(
+                    "View %r has the JSONB key %r in %s but not %r, the key where and "
+                    "orderBy on %r look up: they match nothing. Build the view's JSONB "
+                    "with snake_case keys (jsonb_build_object(%r, ...)).",
+                    view_name,
+                    ".".join((*parent, to_camel_case(key))),
+                    column,
+                    key,
+                    ".".join((*parent, key)),
+                    key,
+                )
 
     async def run(self, query: DatabaseQuery) -> list[dict[str, object]]:
         """Execute a SQL query using a connection from the pool.
@@ -1540,7 +1893,9 @@ class FraiseQLRepository:
             input_data: Dictionary to pass as JSONB to the function
 
         Returns:
-            Dictionary result from the function (mutation_result type)
+            The function's result: the JSON object a ``RETURNS jsonb`` function
+            returned, or the row of a function with OUT parameters or a composite
+            result (such as ``mutation_response``). ``{}`` when it returns no row.
         """
         import json
 
@@ -1573,7 +1928,7 @@ class FraiseQLRepository:
                     (json.dumps(input_data),),
                 )
                 result = await cursor.fetchone()
-                return result or {}
+                return _function_result(function_name, result)
         else:
             # asyncpg pool
             async with self._pool.acquire() as conn:
@@ -1593,7 +1948,7 @@ class FraiseQLRepository:
                     f"SELECT * FROM {function_name}($1::jsonb)",
                     input_data,  # Pass the dict directly, asyncpg will encode it
                 )
-                return dict(result) if result else {}
+                return _function_result(function_name, dict(result) if result else None)
 
     async def execute_function_with_context(
         self,
@@ -1651,7 +2006,7 @@ class FraiseQLRepository:
                     tuple(params),
                 )
                 result = await cursor.fetchone()
-                return result or {}
+                return _function_result(function_name, result)
         else:
             # asyncpg pool
             if context_args:
@@ -1679,34 +2034,7 @@ class FraiseQLRepository:
                     f"SELECT * FROM {function_name}({placeholders})",
                     *params,
                 )
-                return dict(result) if result else {}
-
-    async def _ensure_table_columns_cached(self, view_name: str) -> None:
-        """Ensure table columns are cached for hybrid table detection.
-
-        PERFORMANCE OPTIMIZATION:
-        - Only introspect once per table per repository instance
-        - Cache both successes and failures to avoid repeated queries
-        - Use connection pool efficiently
-        """
-        if not hasattr(self, "_introspected_columns"):
-            self._introspected_columns = {}
-            self._introspection_in_progress = set()
-
-        # Skip if already cached or being introspected (avoid race conditions)
-        if view_name in self._introspected_columns or view_name in self._introspection_in_progress:
-            return
-
-        # Mark as in progress to prevent concurrent introspections
-        self._introspection_in_progress.add(view_name)
-
-        try:
-            await self._introspect_table_columns(view_name)
-        except Exception:
-            # Cache failure to avoid repeated attempts
-            self._introspected_columns[view_name] = set()
-        finally:
-            self._introspection_in_progress.discard(view_name)
+                return _function_result(function_name, dict(result) if result else None)
 
     async def find(
         self, view_name: str, field_name: str | None = None, info: Any = None, **kwargs: Any
@@ -1719,7 +2047,9 @@ class FraiseQLRepository:
             view_name: Database table/view name
             field_name: GraphQL field name for response wrapping
             info: Optional GraphQL resolve info for field selection
-            **kwargs: Query parameters (where, limit, offset, order_by, group_by, aggregations)
+            **kwargs: Query parameters (where, limit, offset, order_by, group_by, aggregations).
+                A string ``order_by`` is column names only (``"created_at DESC, id"``);
+                anything else in a string raises ``ValueError``.
 
         Returns:
             RustResponseBytes ready for HTTP response
@@ -1727,6 +2057,15 @@ class FraiseQLRepository:
         # Auto-extract info from context if not explicitly provided
         if info is None and "graphql_info" in self.context:
             info = self.context["graphql_info"]
+
+        # where/order_by/limit/offset the client passed to a list query whose
+        # resolver doesn't take them (fraiseql adds them to every list query).
+        # What the caller passes explicitly wins.
+        if info is not None:
+            from fraiseql.gql.list_arguments import held_list_arguments
+
+            for name, value in held_list_arguments(info, view_name).items():
+                kwargs.setdefault(name, value)
 
         # Extract mandatory_filters before any dispatch path (#344)
         mandatory_filters = self._consume_mandatory_filters(kwargs)
@@ -1737,43 +2076,31 @@ class FraiseQLRepository:
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
         field_selections_json = None
-        if info:
+        row_type = None
+        if info and self._projects_for_view(info, view_name):
             from fraiseql.core.ast_parser import extract_field_paths_from_info
-            from fraiseql.core.selection_tree import GraphQLSchemaWrapper, build_selection_tree
+            from fraiseql.core.selection_tree import named_object_type, rust_field_selections
             from fraiseql.utils.casing import to_snake_case
 
             field_path_objects = extract_field_paths_from_info(info, transform_path=to_snake_case)
+            # A selected field resolver needs typed rows, not Rust's
+            row_type = self._resolver_row_type(info, view_name)
             # Convert from list[FieldPath] to list[list[str]] for Rust (backward compatibility)
             if field_path_objects:
                 field_paths = [fp.path for fp in field_path_objects]
 
-                # NEW: Build field selections with alias and type information
-                # Get type name for schema lookup
-                parent_type = self._get_cached_type_name(view_name)
-                if parent_type and info.schema:
-                    # Wrap schema for field type lookups
-                    schema_wrapper = GraphQLSchemaWrapper(info.schema)
-
-                    # Build selection tree with materialized paths
-                    field_selections = build_selection_tree(
+                # The selection Rust projects the rows on. A view without a
+                # registered type is read as the type the field returns.
+                parent_type = self._get_cached_type_name(view_name) or named_object_type(
+                    getattr(info, "return_type", None)
+                )
+                if parent_type and info.schema and row_type is None:
+                    field_selections_json = rust_field_selections(
                         field_path_objects,
-                        schema_wrapper,
-                        parent_type=parent_type,
+                        info.schema,
+                        parent_type,
+                        by_alias=_response_goes_out_as_is(info),
                     )
-
-                    # Serialize to JSON format for Rust
-                    # Use "materialized_path" (dot-separated string) as expected by Rust
-                    field_selections_json = [
-                        {
-                            "materialized_path": ".".join(sel.path)
-                            if isinstance(sel.path, list)
-                            else sel.path,
-                            "alias": sel.alias,
-                            "type_name": sel.type_name,
-                            "is_nested_object": sel.is_nested_object,
-                        }
-                        for sel in field_selections
-                    ]
 
                     # Store field selections in context for nested resolvers
                     # This allows nested_field_resolver to apply field filtering to embedded JSONB
@@ -1942,6 +2269,8 @@ class FraiseQLRepository:
         # Extract field_name from info if not explicitly provided
         if not field_name and info and hasattr(info, "field_name"):
             field_name = info.field_name
+        # A root field's response passes through as is: key it as the client asked
+        field_name = _root_response_key(info) or field_name
 
         # 5. Execute via Rust pipeline (ALWAYS)
         # Check if this is part of a multi-field query to use field-only mode
@@ -1950,6 +2279,10 @@ class FraiseQLRepository:
             include_wrapper = not info.context.get("__has_multiple_root_fields__", False)
 
         async with self._session_connection() as conn:
+            await self._warn_on_camel_case_keys(conn, view_name, jsonb_column, kwargs)
+            if row_type is not None:
+                # graphql-core completes these, running the selected field resolvers
+                return await _typed_find_rows(conn, query, row_type)
             result = await execute_via_rust_pipeline(
                 conn,
                 query.statement,
@@ -1960,6 +2293,9 @@ class FraiseQLRepository:
                 field_paths=field_paths,  # NEW: Pass field paths for Rust-side projection!
                 field_selections=field_selections_json,  # NEW: Pass field selections with aliases!
                 include_graphql_wrapper=include_wrapper,  # Field-only mode for multi-field
+                # Sent as is, the response holds the selected fields only; else
+                # graphql-core reads each object's __typename (unions, interfaces)
+                inject_typename=not _response_goes_out_as_is(info),
             )
 
             # Store RustResponseBytes in context for direct path
@@ -1979,7 +2315,9 @@ class FraiseQLRepository:
             view_name: Database table/view name
             field_name: GraphQL field name for response wrapping
             info: Optional GraphQL resolve info
-            **kwargs: Query parameters (id, where, mandatory_filters, etc.)
+            **kwargs: Query parameters: ``where`` and ``mandatory_filters`` (column
+                equality, e.g. ``mandatory_filters={"id": id}``). A bare filter such
+                as ``id=id`` raises TypeError.
 
         Returns:
             RustResponseBytes for non-null results, None for null results (no record found)
@@ -2002,43 +2340,31 @@ class FraiseQLRepository:
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
         field_selections_json = None
-        if info:
+        row_type = None
+        if info and self._projects_for_view(info, view_name):
             from fraiseql.core.ast_parser import extract_field_paths_from_info
-            from fraiseql.core.selection_tree import GraphQLSchemaWrapper, build_selection_tree
+            from fraiseql.core.selection_tree import named_object_type, rust_field_selections
             from fraiseql.utils.casing import to_snake_case
 
             field_path_objects = extract_field_paths_from_info(info, transform_path=to_snake_case)
+            # A selected field resolver needs a typed row, not Rust's
+            row_type = self._resolver_row_type(info, view_name)
             # Convert from list[FieldPath] to list[list[str]] for Rust (backward compatibility)
             if field_path_objects:
                 field_paths = [fp.path for fp in field_path_objects]
 
-                # NEW: Build field selections with alias and type information
-                # Get type name for schema lookup
-                parent_type = self._get_cached_type_name(view_name)
-                if parent_type and info.schema:
-                    # Wrap schema for field type lookups
-                    schema_wrapper = GraphQLSchemaWrapper(info.schema)
-
-                    # Build selection tree with materialized paths
-                    field_selections = build_selection_tree(
+                # The selection Rust projects the row on. A view without a
+                # registered type is read as the type the field returns.
+                parent_type = self._get_cached_type_name(view_name) or named_object_type(
+                    getattr(info, "return_type", None)
+                )
+                if parent_type and info.schema and row_type is None:
+                    field_selections_json = rust_field_selections(
                         field_path_objects,
-                        schema_wrapper,
-                        parent_type=parent_type,
+                        info.schema,
+                        parent_type,
+                        by_alias=_response_goes_out_as_is(info),
                     )
-
-                    # Serialize to JSON format for Rust
-                    # Use "materialized_path" (dot-separated string) as expected by Rust
-                    field_selections_json = [
-                        {
-                            "materialized_path": ".".join(sel.path)
-                            if isinstance(sel.path, list)
-                            else sel.path,
-                            "alias": sel.alias,
-                            "type_name": sel.type_name,
-                            "is_nested_object": sel.is_nested_object,
-                        }
-                        for sel in field_selections
-                    ]
 
         # 2. Get JSONB column from cached metadata
         jsonb_column = None  # default to None (use row_to_json)
@@ -2065,6 +2391,8 @@ class FraiseQLRepository:
         # Extract field_name from info if not explicitly provided
         if not field_name and info and hasattr(info, "field_name"):
             field_name = info.field_name
+        # A root field's response passes through as is: key it as the client asked
+        field_name = _root_response_key(info) or field_name
 
         # 5. Execute via Rust pipeline (ALWAYS)
         # Check if this is part of a multi-field query to use field-only mode
@@ -2073,6 +2401,11 @@ class FraiseQLRepository:
             include_wrapper = not info.context.get("__has_multiple_root_fields__", False)
 
         async with self._session_connection() as conn:
+            await self._warn_on_camel_case_keys(conn, view_name, jsonb_column, kwargs)
+            if row_type is not None:
+                # graphql-core completes it, running the selected field resolvers
+                rows = await _typed_find_rows(conn, query, row_type)
+                return rows[0] if rows else None
             result = await execute_via_rust_pipeline(
                 conn,
                 query.statement,
@@ -2083,6 +2416,9 @@ class FraiseQLRepository:
                 field_paths=field_paths,  # NEW: Pass field paths for Rust-side projection!
                 field_selections=field_selections_json,  # NEW: Pass field selections with aliases!
                 include_graphql_wrapper=include_wrapper,  # Field-only mode for multi-field
+                # Sent as is, the response holds the selected fields only; else
+                # graphql-core reads each object's __typename (unions, interfaces)
+                inject_typename=not _response_goes_out_as_is(info),
             )
 
             # In field-only mode (multi-field queries, include_wrapper=False),
@@ -2105,6 +2441,132 @@ class FraiseQLRepository:
 
             # Field-only mode: dict = found record; [] = not found (Rust's null sentinel).
             return None if result == [] else result
+
+    async def _view_shape(self, view_name: str) -> tuple[set[str] | None, str | None]:
+        """``(columns, JSONB column)`` of a view, for the read helpers below.
+
+        A registered view answers from its registration, as ``find`` reads it
+        (columns ``None`` when it registered none). An unregistered one is read
+        from the catalog, once per repository: its columns, and ``data`` as its
+        JSONB column when it has a ``jsonb`` column of that name. ``(None, None)``
+        when the catalog doesn't know the view.
+        """
+        metadata = _table_metadata.get(view_name)
+        if metadata is not None:
+            if metadata.get("has_jsonb_data", False):
+                jsonb_column = metadata.get("jsonb_column") or "data"
+            else:
+                jsonb_column = metadata.get("jsonb_column")
+            columns = metadata.get("columns")
+            return (set(columns) if columns else None), jsonb_column
+
+        shapes: dict[str, tuple[set[str] | None, str | None]] = self.__dict__.setdefault(
+            "_view_shapes", {}
+        )
+        if view_name not in shapes:
+            from psycopg.rows import tuple_row
+
+            names: set[str] = set()
+            jsonb_column = None
+            try:
+                async with (
+                    self._pool.connection() as conn,
+                    conn.cursor(row_factory=tuple_row) as cursor,
+                ):
+                    await cursor.execute(
+                        "SELECT attname, atttypid = 'jsonb'::regtype FROM pg_attribute "
+                        "WHERE attrelid = to_regclass(%s) AND attnum > 0 AND NOT attisdropped",
+                        (view_name,),
+                    )
+                    for name, is_jsonb in await cursor.fetchall():
+                        names.add(name)
+                        if name == "data" and is_jsonb:
+                            jsonb_column = "data"
+            except Exception:
+                logger.debug("Could not read the columns of %s", view_name, exc_info=True)
+                names = set()
+            shapes[view_name] = (names or None, jsonb_column)
+        return shapes[view_name]
+
+    async def _helper_where(self, view_name: str, kwargs: dict[str, Any]) -> tuple[list, list]:
+        """WHERE parts and parameters of a read helper (count, sum, aggregate...).
+
+        Merges ``mandatory_filters``, then builds ``where`` as ``find`` does. On an
+        unregistered view with a JSONB ``data`` column, ``where`` looks up the
+        fields that aren't columns of the view in ``data``.
+        """
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            parts, params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = parts
+            kwargs["_mandatory_params"] = params
+        if kwargs.get("where") and view_name not in _table_metadata:
+            columns, jsonb_column = await self._view_shape(view_name)
+            if jsonb_column is not None and columns is not None:
+                kwargs["_table_columns"] = columns
+        return self._build_where_clause(view_name, **kwargs)
+
+    async def _field_sql(
+        self, view_name: str, field: str, *, numeric: bool = False
+    ) -> tuple[Composed, bool]:
+        """The SQL of a read helper's ``field``, and whether it is read from JSONB.
+
+        A column of the view is read as is. On a view with a JSONB column (a
+        registered one, or ``data`` on an unregistered one), any other field is
+        the key of that name: ``data -> 'amount'``, or ``(data ->> 'amount')::numeric``
+        with ``numeric``. When the view's columns are unknown, only ``id`` counts
+        as a column.
+        """
+        from psycopg.sql import Identifier, Literal
+
+        columns, jsonb_column = await self._view_shape(view_name)
+        is_column = field == jsonb_column or (
+            field in columns if columns is not None else field == "id"
+        )
+        if jsonb_column is None or is_column:
+            return Composed([Identifier(field)]), False
+        if numeric:
+            template = SQL("({} ->> {})::numeric")
+        else:
+            template = SQL("({} -> {})")
+        return template.format(Identifier(jsonb_column), Literal(field)), True
+
+    async def _extreme(
+        self, view_name: str, field: str, function: str, kwargs: dict[str, Any]
+    ) -> Any:
+        """``min`` / ``max``: ``MIN``/``MAX`` of a column, the first JSON value in order.
+
+        PostgreSQL has no ``MIN(jsonb)``. A JSONB field's values are ordered as
+        jsonb orders them (numbers by value, strings as text), and its JSON
+        nulls and missing keys are left out, as ``MIN`` leaves out NULL.
+        """
+        from psycopg.sql import SQL, Composed
+
+        field_sql, in_jsonb = await self._field_sql(view_name, field)
+        where_parts, params = await self._helper_where(view_name, kwargs)
+        view = qualified_identifier(view_name)
+        if in_jsonb:
+            where_parts = [*where_parts, SQL("jsonb_typeof({}) <> 'null'").format(field_sql)]
+            direction = SQL("ASC" if function == "MIN" else "DESC")
+            query = Composed(
+                [
+                    SQL("SELECT {} FROM {}").format(field_sql, view),
+                    _where_sql(where_parts),
+                    SQL(" ORDER BY 1 {} LIMIT 1").format(direction),
+                ]
+            )
+        else:
+            query = Composed(
+                [
+                    SQL("SELECT {}({}) FROM {}").format(SQL(function), field_sql, view),
+                    _where_sql(where_parts),
+                ]
+            )
+
+        async with self._session_connection() as conn, conn.cursor() as cursor:
+            await cursor.execute(query, params or None)
+            result = await cursor.fetchone()
+            return result[0] if result else None
 
     async def count(
         self,
@@ -2131,15 +2593,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed
 
-        # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = mandatory_parts
-            kwargs["_mandatory_params"] = mandatory_params
-
-        # Build WHERE clause (extracted to helper method for reuse)
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2160,6 +2614,136 @@ class FraiseQLRepository:
                 await cursor.execute(query)
             result = await cursor.fetchone()
             return result[0] if result else 0
+
+    async def paginate(
+        self,
+        view_name: str,
+        *,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+        filters: Any = None,
+        order_by: str = "id",
+        order_direction: str = "ASC",
+        include_total: bool = True,
+        info: Any = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Page a view Relay-style: ``first``/``after`` forward, ``last``/``before`` back.
+
+        Reads a page with :meth:`find` and the total with :meth:`count`, so
+        ``filters`` takes any ``where`` ``find`` takes (a dict or a WhereInput),
+        and other keyword arguments (``mandatory_filters``) reach both.
+
+        Args:
+            view_name: Database view to page
+            first: Number of rows after ``after`` (20 when neither first nor last is given)
+            after: Cursor of the row the page starts after
+            last: Number of rows before ``before``
+            before: Cursor of the row the page ends before
+            filters: ``where`` filter for the page and the total
+            order_by: Field the rows are ordered and the cursors made from; its
+                values must be unique
+            order_direction: ``"ASC"`` or ``"DESC"``
+            include_total: Whether to count the rows ``filters`` matches
+            info: GraphQL resolve info, passed to :meth:`find`
+            **kwargs: Passed to :meth:`find` and :meth:`count`
+
+        Returns:
+            ``{"edges": [{"node": row, "cursor": str}], "page_info": {...},
+            "total_count": int | None}``, with each row keyed as GraphQL answers
+            it; ``create_connection(result, NodeType)`` makes it a ``Connection``.
+
+        Example:
+            result = await db.paginate("v_post", first=20, after=cursor, order_by="created_at")
+        """
+        import base64
+        import json
+
+        if first is not None and last is not None:
+            raise ValueError("Cannot specify both 'first' and 'last'")
+        if (first is not None and first < 0) or (last is not None and last < 0):
+            raise ValueError("'first' and 'last' must be non-negative")
+        direction = order_direction.upper()
+        if direction not in ("ASC", "DESC"):
+            raise ValueError("order_direction must be 'ASC' or 'DESC'")
+        backward = last is not None
+        size = last if backward else (first if first is not None else 20)
+
+        def decode(cursor: str) -> Any:
+            try:
+                return json.loads(base64.b64decode(cursor.encode(), validate=True))
+            except ValueError as e:
+                raise ValueError(f"Invalid cursor: {cursor!r}") from e
+
+        # The page reads toward ``before`` when going back: reverse the order
+        ascending = (direction == "ASC") != backward
+        conditions: list[Any] = []
+        if filters:
+            if hasattr(filters, "_to_whereinput_dict"):
+                filters = filters._to_whereinput_dict()
+            conditions.append(filters)
+        if after is not None:
+            op = "gt" if direction == "ASC" else "lt"
+            conditions.append({order_by: {op: decode(after)}})
+        if before is not None:
+            op = "lt" if direction == "ASC" else "gt"
+            conditions.append({order_by: {op: decode(before)}})
+        where: Any = None
+        if len(conditions) == 1:
+            where = conditions[0]
+        elif conditions:
+            where = {"AND": conditions}
+
+        result = await self.find(
+            view_name,
+            info=info,
+            where=where,
+            order_by={order_by: "ASC" if ascending else "DESC"},
+            limit=size + 1,
+            **dict(kwargs),
+        )
+        if isinstance(result, RustResponseBytes):
+            # find keeps its response for the router to send as is; this page
+            # isn't the response
+            resolve_info = info if info is not None else self.context.get("graphql_info")
+            stored = getattr(resolve_info, "context", None)
+            if isinstance(stored, dict) and isinstance(stored.get("_rust_response"), dict):
+                responses = stored["_rust_response"]
+                for key in [k for k, v in responses.items() if v is result]:
+                    del responses[key]
+            data = result.to_json().get("data") or {}
+            rows = next(iter(data.values()), None) or []
+        else:
+            rows = result or []
+
+        has_more = len(rows) > size
+        rows = list(rows[:size])
+        if backward:
+            rows.reverse()
+
+        from fraiseql.utils.casing import to_camel_case
+
+        keys = (to_camel_case(order_by), order_by)
+        edges = []
+        for row in rows:
+            value = next((row[k] for k in keys if k in row), None)
+            cursor = base64.b64encode(json.dumps(value).encode()).decode()
+            edges.append({"node": row, "cursor": cursor})
+
+        total_count = None
+        if include_total:
+            total_count = await self.count(view_name, where=filters or None, **dict(kwargs))
+
+        page_info = {
+            "has_next_page": before is not None if backward else has_more,
+            "has_previous_page": has_more if backward else after is not None,
+            "start_cursor": edges[0]["cursor"] if edges else None,
+            "end_cursor": edges[-1]["cursor"] if edges else None,
+            "total_count": total_count,
+        }
+        return {"edges": edges, "page_info": page_info, "total_count": total_count}
 
     async def exists(
         self,
@@ -2198,15 +2782,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed
 
-        # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = mandatory_parts
-            kwargs["_mandatory_params"] = mandatory_params
-
-        # Build WHERE clause using existing helper
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2261,36 +2837,21 @@ class FraiseQLRepository:
                 "v_orders", "amount", mandatory_filters={"tenant_id": tenant_id}
             )
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
-        # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = mandatory_parts
-            kwargs["_mandatory_params"] = mandatory_params
+        field_sql, _ = await self._field_sql(view_name, field, numeric=True)
+        where_parts, params = await self._helper_where(view_name, kwargs)
+        query = Composed(
+            [
+                SQL("SELECT COALESCE(SUM({}), 0) FROM {}").format(
+                    field_sql, qualified_identifier(view_name)
+                ),
+                _where_sql(where_parts),
+            ]
+        )
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
-
-        table_identifier = qualified_identifier(view_name)
-
-        # Build SUM query
-        query_parts = [
-            SQL("SELECT COALESCE(SUM("),
-            Identifier(field),
-            SQL("), 0) FROM "),
-            table_identifier,
-        ]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query = Composed(query_parts)
-
-        # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             result = await cursor.fetchone()
             return float(result[0]) if result and result[0] is not None else 0.0
 
@@ -2321,35 +2882,21 @@ class FraiseQLRepository:
                 where={"status": {"eq": "completed"}}
             )
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
+        field_sql, _ = await self._field_sql(view_name, field, numeric=True)
+        where_parts, params = await self._helper_where(view_name, kwargs)
+        query = Composed(
+            [
+                SQL("SELECT COALESCE(AVG({}), 0) FROM {}").format(
+                    field_sql, qualified_identifier(view_name)
+                ),
+                _where_sql(where_parts),
+            ]
+        )
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
-
-        table_identifier = qualified_identifier(view_name)
-
-        # Build AVG query
-        query_parts = [
-            SQL("SELECT COALESCE(AVG("),
-            Identifier(field),
-            SQL("), 0) FROM "),
-            table_identifier,
-        ]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query = Composed(query_parts)
-
-        # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             result = await cursor.fetchone()
             return float(result[0]) if result and result[0] is not None else 0.0
 
@@ -2376,32 +2923,7 @@ class FraiseQLRepository:
             # Earliest order date
             first_order = await db.min("v_orders", "created_at")
         """
-        from psycopg.sql import SQL, Composed, Identifier
-
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
-
-        table_identifier = qualified_identifier(view_name)
-
-        # Build MIN query
-        query_parts = [SQL("SELECT MIN("), Identifier(field), SQL(") FROM "), table_identifier]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query = Composed(query_parts)
-
-        # Execute query
-        async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
-            result = await cursor.fetchone()
-            return result[0] if result else None
+        return await self._extreme(view_name, field, "MIN", kwargs)
 
     async def max(
         self,
@@ -2426,32 +2948,7 @@ class FraiseQLRepository:
             # Latest order date
             last_order = await db.max("v_orders", "created_at")
         """
-        from psycopg.sql import SQL, Composed, Identifier
-
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
-
-        table_identifier = qualified_identifier(view_name)
-
-        # Build MAX query
-        query_parts = [SQL("SELECT MAX("), Identifier(field), SQL(") FROM "), table_identifier]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query = Composed(query_parts)
-
-        # Execute query
-        async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
-            result = await cursor.fetchone()
-            return result[0] if result else None
+        return await self._extreme(view_name, field, "MAX", kwargs)
 
     async def distinct(
         self,
@@ -2480,32 +2977,25 @@ class FraiseQLRepository:
             )
             # Returns: ["cancelled", "completed", "pending"]
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
+        field_sql, in_jsonb = await self._field_sql(view_name, field)
+        if in_jsonb:
+            # A JSON null and a missing key are one value, as NULL is for a column
+            field_sql = SQL("NULLIF({}, 'null'::jsonb)").format(field_sql)
+        where_parts, params = await self._helper_where(view_name, kwargs)
+        query = Composed(
+            [
+                SQL("SELECT DISTINCT {} FROM {}").format(
+                    field_sql, qualified_identifier(view_name)
+                ),
+                _where_sql(where_parts),
+                SQL(" ORDER BY 1"),
+            ]
+        )
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
-
-        table_identifier = qualified_identifier(view_name)
-
-        # Build DISTINCT query
-        query_parts = [SQL("SELECT DISTINCT "), Identifier(field), SQL(" FROM "), table_identifier]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query_parts.append(SQL(" ORDER BY "))
-        query_parts.append(Identifier(field))
-        query = Composed(query_parts)
-
-        # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             results = await cursor.fetchall()
             return [row[0] for row in results] if results else []
 
@@ -2522,7 +3012,8 @@ class FraiseQLRepository:
         Args:
             view_name: Database table/view name
             field: Field name to extract
-            **kwargs: Query parameters (where, limit, offset, order_by, etc.)
+            **kwargs: ``where``, ``mandatory_filters``, ``limit`` and ``offset``
+                (no ``order_by``: the values come in the database's order)
 
         Returns:
             List of field values (not full objects)
@@ -2543,40 +3034,29 @@ class FraiseQLRepository:
             # Get product names with limit
             names = await db.pluck("v_products", "name", limit=10)
         """
-        from psycopg.sql import SQL, Composed, Identifier
-
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
+        from psycopg.sql import SQL, Composed, Literal
 
         limit = kwargs.pop("limit", None)
         offset = kwargs.pop("offset", None)
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+        field_sql, _ = await self._field_sql(view_name, field)
+        where_parts, params = await self._helper_where(view_name, kwargs)
+        query_parts = [
+            SQL("SELECT {} FROM {}").format(field_sql, qualified_identifier(view_name)),
+            _where_sql(where_parts),
+        ]
 
-        table_identifier = qualified_identifier(view_name)
-
-        query_parts = [SQL("SELECT "), Identifier(field), SQL(" FROM "), table_identifier]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
+        # Bound as literals, like find(): a string here is a value, never SQL.
         if limit is not None:
-            query_parts.append(SQL(" LIMIT "))
-            query_parts.append(SQL(str(limit)))
+            query_parts.extend([SQL(" LIMIT "), Literal(limit)])
 
         if offset is not None:
-            query_parts.append(SQL(" OFFSET "))
-            query_parts.append(SQL(str(offset)))
+            query_parts.extend([SQL(" OFFSET "), Literal(offset)])
 
         query = Composed(query_parts)
 
-        # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             results = await cursor.fetchall()
             return [row[0] for row in results] if results else []
 
@@ -2588,9 +3068,15 @@ class FraiseQLRepository:
     ) -> dict[str, Any]:
         """Perform multiple aggregations in a single query.
 
+        The expressions are SQL, written into the query as they are (only the
+        result names are quoted): pass constants from your code, never text
+        from a request. ``find(group_by=..., aggregations=...)`` takes
+        ``FUNC(field)`` checked against an allowlist instead.
+
         Args:
             view_name: Database table/view name
             aggregations: Dict mapping result names to SQL aggregation expressions
+                (trusted input only)
             **kwargs: Query parameters (where, tenant_id, etc.)
 
         Returns:
@@ -2615,24 +3101,21 @@ class FraiseQLRepository:
             #     "order_count": 500
             # }
         """
-        from psycopg.sql import SQL, Composed
+        from psycopg.sql import SQL, Composed, Identifier
 
         if not aggregations:
             return {}
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
-        # Build SELECT clause with all aggregations
-        agg_clauses = [SQL(f"{expr} AS {name}") for name, expr in aggregations.items()]
-        select_clause = Composed(agg_clauses)
+        # Build SELECT clause with all aggregations. The expressions are SQL the
+        # caller writes; the result names are quoted.
+        select_clause = SQL(", ").join(
+            SQL("{} AS {}").format(SQL(expr), Identifier(name))
+            for name, expr in aggregations.items()
+        )
 
         # Build query
         query_parts = [SQL("SELECT "), select_clause, SQL(" FROM "), table_identifier]
@@ -2817,7 +3300,11 @@ class FraiseQLRepository:
                 f"Got: {type(where).__name__}"
             )
 
-        return _apply_view_column_mapping(result, view_name, table_columns)
+        result = _apply_view_column_mapping(result, view_name, table_columns)
+        annotate_temporal_casts(
+            result, _type_registry.get(view_name) or getattr(where, "_target_class", None)
+        )
+        return result
 
     def _build_where_clause(self, view_name: str, **kwargs: Any) -> tuple[list[Any], list[Any]]:
         """Build WHERE clause parts from kwargs.
@@ -2834,6 +3321,8 @@ class FraiseQLRepository:
         # Extract mandatory conditions (injected by find/find_one/count/exists)
         mandatory_parts = kwargs.pop("_mandatory_parts", [])
         mandatory_params = kwargs.pop("_mandatory_params", [])
+        # The view's columns, when the caller read them (_helper_where)
+        known_columns = kwargs.pop("_table_columns", None)
 
         where_parts = list(mandatory_parts)
         all_params = list(mandatory_params)
@@ -2846,9 +3335,8 @@ class FraiseQLRepository:
             # CRITICAL: table_columns must be provided for hybrid table FK detection
             table_columns = None
 
-            # Try introspection cache first
-            if hasattr(self, "_introspected_columns") and view_name in self._introspected_columns:
-                table_columns = self._introspected_columns[view_name]
+            if known_columns is not None:
+                table_columns = known_columns
             # Then try registered metadata
             elif view_name in _table_metadata:
                 metadata = _table_metadata[view_name]
@@ -2908,6 +3396,53 @@ class FraiseQLRepository:
                 return non_none_args[0]
         return field_type if origin is None else None
 
+    def _row_json(self, view_name: str) -> SQL | Composed:
+        """The JSON of a row of a view without a JSONB column: ``row_to_json(t)``.
+
+        row_to_json writes a pgvector ``vector`` (or ``halfvec``) column through
+        its text output, the string ``"[0.1,0.2]"``. That text is a JSON array, so
+        the columns the type reads as ``list[float]`` are re-read as JSON when
+        they hold such a string; an array column comes out the same either way.
+        A ``bit`` column, whose distance operators the docs put on a
+        ``list[float]`` field too, stays the string ``"0011"``, which isn't JSON.
+        """
+        from psycopg.sql import Literal
+
+        columns = self._float_list_columns(view_name)
+        if not columns:
+            return SQL("row_to_json(t)")
+        entries = SQL(", ").join(
+            SQL(
+                "{col}, CASE WHEN left(to_jsonb(t) ->> {col}, 1) = '[' "
+                "AND jsonb_typeof(to_jsonb(t) -> {col}) = 'string' "
+                "THEN (to_jsonb(t) ->> {col})::jsonb ELSE to_jsonb(t) -> {col} END"
+            ).format(col=Literal(column))
+            for column in columns
+        )
+        return SQL("(to_jsonb(t) || jsonb_build_object({}))").format(entries)
+
+    def _float_list_columns(self, view_name: str) -> list[str]:
+        """Columns of view_name that its registered type reads as ``list[float]``."""
+        try:
+            type_class = self._get_type_for_view(view_name)
+        except NotImplementedError:
+            return []
+        fields = getattr(type_class, "__gql_fields__", None) or {}
+        hints = getattr(type_class, "__gql_type_hints__", None) or {}
+        known_columns = _table_metadata.get(view_name, {}).get("columns") or None
+
+        columns = []
+        for name, field in fields.items():
+            field_type = getattr(field, "field_type", None) or hints.get(name)
+            if get_origin(field_type) in (Union, types.UnionType):
+                field_type = next((a for a in get_args(field_type) if a is not type(None)), None)
+            is_float_list = is_float_vector_type(field_type) or (
+                get_origin(field_type) is list and get_args(field_type) == (float,)
+            )
+            if is_float_list and (known_columns is None or name in known_columns):
+                columns.append(name)
+        return columns
+
     def _get_type_for_view(self, view_name: str) -> type:
         """Get the type class for a given view name."""
         # Check the global type registry
@@ -2920,8 +3455,9 @@ class FraiseQLRepository:
             if registered_view.lower().replace("_", "") == type_name.lower().replace("_", ""):
                 return type_class
 
+        # Not an error: find() asks for every view, and a view needs no registered type
         available_views = list(_type_registry.keys())
-        logger.error(f"Type registry state: {_type_registry}")
+        logger.debug("No type registered for view %s", view_name)
         raise NotImplementedError(
             f"Type registry lookup for {view_name} not implemented. "
             f"Available views: {available_views}. Registry size: {len(_type_registry)}",
@@ -2936,13 +3472,17 @@ class FraiseQLRepository:
 
         Returns:
             The ``OrderBySet``, or None for a falsy value or a shape with no
-            instructions to read (a raw SQL string, which callers pass through
-            untouched).
+            instructions to read (a string, a list of column names that
+            ``_build_find_query`` parses with ``_order_by_string_sql``).
         """
         if not order_by:
             return None
 
         order_set = order_by
+        if isinstance(order_set, tuple):
+            # ("created_at", "DESC") is one sort key; a tuple of keys is a list.
+            is_one_key = len(order_set) <= 2 and isinstance(order_set[0], str)
+            order_set = [order_set] if is_one_key else list(order_set)
         if not hasattr(order_set, "to_sql"):
             if hasattr(order_set, "_to_sql_order_by"):
                 order_set = order_set._to_sql_order_by(config=self.context.get("config"))
@@ -2962,12 +3502,26 @@ class FraiseQLRepository:
                     config=self.context.get("config"),
                     source_type=_type_registry.get(view_name) if view_name else None,
                 )
-            else:
-                # Raw SQL string, or something unrecognised — the caller handles it
+            elif isinstance(order_set, str):
+                # A list of column names, which _build_find_query parses
                 return None
+            else:
+                msg = (
+                    f"order_by: cannot read {type(order_by).__name__}; use a dict, a list of "
+                    "dicts or (field, direction) tuples, or an OrderBySet"
+                )
+                raise TypeError(msg)
 
         if not order_set or not hasattr(order_set, "to_sql"):
             return None
+        # A datetime / date JSONB key sorts as its instant, not its ISO text,
+        # whichever shape it arrived in (the where side does the same).
+        if hasattr(order_set, "with_temporal_casts"):
+            from fraiseql.sql.graphql_order_by_generator import _source_type_of
+
+            order_set = order_set.with_temporal_casts(
+                (_type_registry.get(view_name) if view_name else None) or _source_type_of(order_by)
+            )
         return order_set
 
     def _build_order_by_sql(
@@ -2977,6 +3531,7 @@ class FraiseQLRepository:
         native_columns: set[str] | None = None,
         column_mapping: dict[str, str] | None = None,
         view_name: str | None = None,
+        flat_view: bool = False,
     ) -> tuple[Any | None, bool]:
         """Resolve any accepted ``order_by`` shape to SQL, once, for every shape.
 
@@ -2987,12 +3542,22 @@ class FraiseQLRepository:
 
         Returns:
             ``(order_sql, needs_t_alias)``. A flat column renders ``t."col"``, so
-            the caller must ensure the FROM clause carries that alias; raw string
-            ``order_by`` is passed through untouched and reports ``(None, False)``.
+            the caller must ensure the FROM clause carries that alias; a string
+            ``order_by`` (parsed by ``_order_by_string_sql``) reports ``(None, False)``.
+
+        ``flat_view`` is for a view without a JSONB column: it has no document to
+        extract from, so each top-level sort field is one of its columns.
         """
         order_set = self._resolve_order_by_set(order_by, view_name)
         if order_set is None:
             return None, False
+
+        if flat_view:
+            native_columns = (native_columns or set()) | {
+                instr.field
+                for instr in getattr(order_set, "instructions", ())
+                if "." not in instr.field
+            }
 
         order_sql = order_set.to_sql(
             table_ref, native_columns=native_columns, column_mapping=column_mapping
@@ -3073,6 +3638,7 @@ class FraiseQLRepository:
             native_columns=native_dimensions or None,
             column_mapping=native_dimension_mapping,
             view_name=view_name,
+            flat_view=jsonb_column is None,
         )
 
         table_identifier = qualified_identifier(view_name)
@@ -3146,7 +3712,9 @@ class FraiseQLRepository:
             # For tables with jsonb_column=None, select all columns as JSON
             # This allows the Rust pipeline to extract individual fields
             query_parts = [
-                SQL("SELECT row_to_json(t)::text FROM "),
+                SQL("SELECT "),
+                self._row_json(view_name),
+                SQL("::text FROM "),
                 table_identifier,
                 SQL(" AS t"),
             ]
@@ -3185,7 +3753,8 @@ class FraiseQLRepository:
             query_parts.append(SQL(" "))
             query_parts.append(order_sql)
         elif isinstance(order_by, str):
-            query_parts.extend([SQL(" ORDER BY "), SQL(order_by)])
+            # Column names only, each quoted; anything else raises ValueError.
+            query_parts.extend([SQL(" "), _order_by_string_sql(order_by)])
 
         # Add LIMIT
         if limit is not None:
@@ -3216,24 +3785,6 @@ class FraiseQLRepository:
             jsonb_column=jsonb_column,
             **kwargs,
         )
-
-    async def _get_table_columns_cached(self, view_name: str) -> set[str] | None:
-        """Get table columns with caching.
-
-        Returns set of column names or None if unable to retrieve.
-        """
-        if not hasattr(self, "_introspected_columns"):
-            self._introspected_columns = {}
-
-        if view_name in self._introspected_columns:
-            return self._introspected_columns[view_name]
-
-        try:
-            columns = await self._introspect_table_columns(view_name)
-            self._introspected_columns[view_name] = columns
-            return columns
-        except Exception:
-            return None
 
     def _build_dict_where_condition(
         self,
@@ -3366,73 +3917,6 @@ class FraiseQLRepository:
         # Generate basic condition
         return basic_operators[operator](path_sql, value)
 
-    async def _introspect_table_columns(self, view_name: str) -> set[str]:
-        """Introspect actual table columns from database information_schema.
-
-        This provides accurate column information for hybrid tables.
-        Results are cached for performance.
-        """
-        if not hasattr(self, "_introspected_columns"):
-            self._introspected_columns = {}
-
-        if view_name in self._introspected_columns:
-            return self._introspected_columns[view_name]
-
-        try:
-            # Query information_schema to get actual columns
-            # PERFORMANCE: Use a single query to get all we need
-            query = """
-                SELECT
-                    column_name,
-                    data_type,
-                    udt_name
-                FROM information_schema.columns
-                WHERE table_name = %s
-                AND table_schema = 'public'
-                ORDER BY ordinal_position
-            """
-
-            async with self._pool.connection() as conn, conn.cursor() as cursor:
-                await cursor.execute(query, (view_name,))
-                rows = await cursor.fetchall()
-
-                # Extract column names and identify if JSONB exists
-                columns = set()
-                has_jsonb_data = False
-
-                for row in rows:
-                    # Handle both dict and tuple cursor results
-                    if isinstance(row, dict):
-                        col_name = row.get("column_name")
-                        udt_name = row.get("udt_name", "")
-                    else:
-                        # Tuple-based result (column_name, data_type, udt_name)
-                        col_name = row[0] if row else None
-                        udt_name = row[2] if len(row) > 2 else ""
-
-                    if col_name:
-                        columns.add(col_name)
-
-                        # Check if this is a JSONB data column
-                        if col_name == "data" and udt_name == "jsonb":
-                            has_jsonb_data = True
-
-                # Cache the result
-                self._introspected_columns[view_name] = columns
-
-                # Also cache whether this table has JSONB data column
-                if not hasattr(self, "_table_has_jsonb"):
-                    self._table_has_jsonb = {}
-                self._table_has_jsonb[view_name] = has_jsonb_data
-
-                return columns
-
-        except Exception as e:
-            logger.warning(f"Failed to introspect table {view_name}: {e}")
-            # Cache empty set to avoid repeated failures
-            self._introspected_columns[view_name] = set()
-            return set()
-
     def _should_use_jsonb_path_sync(self, view_name: str, field_name: str) -> bool:
         """Check if a field should use JSONB path or direct column access.
 
@@ -3458,17 +3942,6 @@ class FraiseQLRepository:
 
             # Use JSONB path only if: has data column AND field is not a regular column
             use_jsonb = has_jsonb and field_name not in columns
-            self._field_path_cache[cache_key] = use_jsonb
-            return use_jsonb
-
-        # SECOND BEST: Check if we have runtime introspected columns
-        if hasattr(self, "_introspected_columns") and view_name in self._introspected_columns:
-            columns = self._introspected_columns[view_name]
-            has_data_column = "data" in columns
-            is_regular_column = field_name in columns
-
-            # Use JSONB path only if: has data column AND field is not a regular column
-            use_jsonb = has_data_column and not is_regular_column
             self._field_path_cache[cache_key] = use_jsonb
             return use_jsonb
 

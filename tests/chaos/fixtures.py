@@ -15,7 +15,7 @@ class ToxiproxyManager:
     Supports both real Toxiproxy service and mock mode (when service unavailable).
     """
 
-    def __init__(self, host: str = "localhost", port: int = 8474, mock_mode: bool = None):
+    def __init__(self, host: str = "localhost", port: int = 8474, mock_mode: bool | None = None):
         self.base_url = f"http://{host}:{port}"
         self.proxies: Dict[str, Dict[str, Any]] = {}
         self.toxics: Dict[str, Dict[str, Any]] = {}
@@ -31,7 +31,7 @@ class ToxiproxyManager:
         try:
             response = requests.get(f"{self.base_url}/version", timeout=1)
             return response.status_code == 200
-        except:
+        except Exception:
             return False
 
     def create_proxy(self, name: str, listen_addr: str, upstream_addr: str) -> Dict[str, Any]:
@@ -52,7 +52,7 @@ class ToxiproxyManager:
                 "listen": listen_addr,
                 "upstream": upstream_addr,
                 "enabled": True,
-                "toxics": []
+                "toxics": [],
             }
             self.proxies[name] = proxy
             return proxy
@@ -69,7 +69,7 @@ class ToxiproxyManager:
                 "listen": listen_addr,
                 "upstream": upstream_addr,
                 "enabled": True,
-                "toxics": []
+                "toxics": [],
             }
             self.mock_mode = True
 
@@ -88,7 +88,7 @@ class ToxiproxyManager:
             if response.status_code == 200:
                 self.proxies.pop(name, None)
                 self.toxics.pop(name, None)
-        except:
+        except Exception:
             # Silently fail if not in real mode
             self.proxies.pop(name, None)
             self.toxics.pop(name, None)
@@ -102,7 +102,7 @@ class ToxiproxyManager:
             response = requests.get(f"{self.base_url}/proxies", timeout=2)
             response.raise_for_status()
             return response.json()
-        except:
+        except Exception:
             return self.proxies
 
     def get_proxy(self, name: str) -> Optional[Dict[str, Any]]:
@@ -114,7 +114,7 @@ class ToxiproxyManager:
             response = requests.get(f"{self.base_url}/proxies/{name}", timeout=2)
             if response.status_code == 200:
                 return response.json()
-        except:
+        except Exception:
             pass
 
         return self.proxies.get(name)
@@ -130,7 +130,7 @@ class ToxiproxyManager:
         try:
             response = requests.post(f"{self.base_url}/proxies/{name}/toxics", json=[], timeout=2)
             response.raise_for_status()
-        except:
+        except Exception:
             # Fallback to mock mode
             self.mock_mode = True
             if name in self.proxies:
@@ -148,7 +148,7 @@ class ToxiproxyManager:
             payload = {"upstream": "127.0.0.1:0"}
             response = requests.post(f"{self.base_url}/proxies/{name}", json=payload, timeout=2)
             response.raise_for_status()
-        except:
+        except Exception:
             # Fallback to mock mode
             self.mock_mode = True
             if name in self.proxies:
@@ -184,10 +184,12 @@ class ToxiproxyManager:
             return toxic
 
         try:
-            response = requests.post(f"{self.base_url}/proxies/{proxy_name}/toxics", json=toxic, timeout=2)
+            response = requests.post(
+                f"{self.base_url}/proxies/{proxy_name}/toxics", json=toxic, timeout=2
+            )
             response.raise_for_status()
             return response.json()
-        except:
+        except Exception:
             self.mock_mode = True
             if proxy_name not in self.toxics:
                 self.toxics[proxy_name] = []
@@ -225,10 +227,12 @@ class ToxiproxyManager:
             return toxic
 
         try:
-            response = requests.post(f"{self.base_url}/proxies/{proxy_name}/toxics", json=toxic, timeout=2)
+            response = requests.post(
+                f"{self.base_url}/proxies/{proxy_name}/toxics", json=toxic, timeout=2
+            )
             response.raise_for_status()
             return response.json()
-        except:
+        except Exception:
             self.mock_mode = True
             if proxy_name not in self.toxics:
                 self.toxics[proxy_name] = []
@@ -264,10 +268,12 @@ class ToxiproxyManager:
             return toxic
 
         try:
-            response = requests.post(f"{self.base_url}/proxies/{proxy_name}/toxics", json=toxic, timeout=2)
+            response = requests.post(
+                f"{self.base_url}/proxies/{proxy_name}/toxics", json=toxic, timeout=2
+            )
             response.raise_for_status()
             return response.json()
-        except:
+        except Exception:
             self.mock_mode = True
             if proxy_name not in self.toxics:
                 self.toxics[proxy_name] = []
@@ -287,7 +293,7 @@ class ToxiproxyManager:
         try:
             response = requests.delete(f"{self.base_url}/proxies/{proxy_name}/toxics", timeout=2)
             response.raise_for_status()
-        except:
+        except Exception:
             self.mock_mode = True
             self.toxics.pop(proxy_name, None)
             if proxy_name in self.proxies:
@@ -308,7 +314,7 @@ class ToxiproxyManager:
             try:
                 self.reset_proxy(proxy_name)
                 self.delete_proxy(proxy_name)
-            except:
+            except Exception:
                 pass  # Ignore cleanup errors
 
 

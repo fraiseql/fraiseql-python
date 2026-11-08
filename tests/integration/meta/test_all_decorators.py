@@ -116,7 +116,7 @@ def decorator_test_schema(meta_test_schema):
     return meta_test_schema
 
 
-@pytest.mark.parametrize("decorator_name,decorator_fn", get_all_decorators().items())
+@pytest.mark.parametrize(("decorator_name", "decorator_fn"), get_all_decorators().items())
 async def test_decorator_registers_with_schema(decorator_name, decorator_fn, decorator_test_schema):
     """Every decorator should successfully register with the GraphQL schema."""
     # Build the schema - this should not raise any errors
@@ -149,7 +149,7 @@ async def test_decorator_registers_with_schema(decorator_name, decorator_fn, dec
 
 
 @pytest.mark.parametrize(
-    "decorator_name,decorator_fn",
+    ("decorator_name", "decorator_fn"),
     [
         ("query", query_decorator),
         ("subscription", subscription),
@@ -207,7 +207,7 @@ async def test_decorator_executes_in_graphql(decorator_name, decorator_fn, decor
 
 
 @pytest.mark.parametrize(
-    "decorator_name,decorator_fn",
+    ("decorator_name", "decorator_fn"),
     [
         ("mutation", mutation),
         ("success", success),
@@ -240,7 +240,7 @@ async def test_mutation_decorators_build_schema(
 
 
 @pytest.mark.parametrize(
-    "decorator_name,decorator_fn",
+    ("decorator_name", "decorator_fn"),
     [
         ("field", field),
     ],
@@ -265,7 +265,7 @@ async def test_field_decorator_in_schema(decorator_name, decorator_fn, decorator
 
 
 @pytest.mark.parametrize(
-    "decorator_name,decorator_fn",
+    ("decorator_name", "decorator_fn"),
     [
         ("query", query_decorator),
         ("connection", connection),

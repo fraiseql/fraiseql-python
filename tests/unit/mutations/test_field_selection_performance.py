@@ -6,6 +6,7 @@ import time
 import pytest
 
 from fraiseql import _get_fraiseql_rs
+from tests.unit.mutations.selection_document import legacy_document
 
 
 @pytest.fixture
@@ -17,7 +18,7 @@ def fraiseql_rs():
     return rs
 
 
-def test_performance_small_response_field_filtering(fraiseql_rs, benchmark=None):
+def test_performance_small_response_field_filtering(fraiseql_rs):
     """Benchmark field filtering on small response (5 fields, request 2)."""
     fake_result = {
         "status": "success",
@@ -43,24 +44,21 @@ def test_performance_small_response_field_filtering(fraiseql_rs, benchmark=None)
             "Machine",
             None,
             True,
-            selected_fields,
+            None,
+            None,
+            legacy_document(selected_fields, None, "machine", None),
         )
 
-    if benchmark:
-        # Using pytest-benchmark
-        result = benchmark(run_filtering)
-    else:
-        # Manual timing
-        start = time.perf_counter()
-        iterations = 10000
-        for _ in range(iterations):
-            run_filtering()
-        end = time.perf_counter()
-        avg_time = (end - start) / iterations
-        print(f"✅ Small response: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
+    start = time.perf_counter()
+    iterations = 10000
+    for _ in range(iterations):
+        run_filtering()
+    end = time.perf_counter()
+    avg_time = (end - start) / iterations
+    print(f"✅ Small response: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
 
 
-def test_performance_medium_response_field_filtering(fraiseql_rs, benchmark=None):
+def test_performance_medium_response_field_filtering(fraiseql_rs):
     """Benchmark field filtering on medium response (20 fields, request 5)."""
     # Create response with many auto-injected fields + entity
     fake_result = {
@@ -99,22 +97,21 @@ def test_performance_medium_response_field_filtering(fraiseql_rs, benchmark=None
             "Machine",
             None,
             True,
-            selected_fields,
+            None,
+            None,
+            legacy_document(selected_fields, None, "machine", None),
         )
 
-    if benchmark:
-        result = benchmark(run_filtering)
-    else:
-        start = time.perf_counter()
-        iterations = 5000
-        for _ in range(iterations):
-            run_filtering()
-        end = time.perf_counter()
-        avg_time = (end - start) / iterations
-        print(f"✅ Medium response: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
+    start = time.perf_counter()
+    iterations = 5000
+    for _ in range(iterations):
+        run_filtering()
+    end = time.perf_counter()
+    avg_time = (end - start) / iterations
+    print(f"✅ Medium response: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
 
 
-def test_performance_large_cascade_field_filtering(fraiseql_rs, benchmark=None):
+def test_performance_large_cascade_field_filtering(fraiseql_rs):
     """Benchmark field filtering on response with large cascade (100 entities)."""
     # Create 100 reservation entities in cascade
     cascade_entities = [
@@ -155,71 +152,75 @@ def test_performance_large_cascade_field_filtering(fraiseql_rs, benchmark=None):
             "Machine",
             json.dumps(cascade_selections),
             True,
-            selected_fields,
+            None,
+            None,
+            legacy_document(selected_fields, None, "machine", None),
         )
 
-    if benchmark:
-        result = benchmark(run_filtering)
-    else:
-        start = time.perf_counter()
-        iterations = 1000
-        for _ in range(iterations):
-            run_filtering()
-        end = time.perf_counter()
-        avg_time = (end - start) / iterations
-        print(f"✅ Large cascade: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
+    start = time.perf_counter()
+    iterations = 1000
+    for _ in range(iterations):
+        run_filtering()
+    end = time.perf_counter()
+    avg_time = (end - start) / iterations
+    print(f"✅ Large cascade: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
 
 
 def test_performance_no_filtering_vs_filtering(fraiseql_rs):
-    """Compare performance: filtering vs no filtering."""
-    fake_result = {
-        "status": "success",
-        "message": "Created",
-        "entity_id": "123",
-        "entity_type": "Test",
-        "entity": {"id": "123", "name": "Test", "serial": "SN-001", "model": "A"},
-        "updated_fields": ["name", "serial"],
-        "cascade": None,
-        "metadata": None,
-        "is_simple_format": False,
-    }
+    """Compare performance: filtering vs no filtering.
 
-    # Test 1: No filtering (None)
-    iterations = 5000
-    start = time.perf_counter()
-    for _ in range(iterations):
-        fraiseql_rs.build_mutation_response(
-            json.dumps(fake_result),
-            "createMachine",
-            "CreateMachineSuccess",
-            "CreateMachineError",
-            "machine",
-            "Machine",
-            None,
-            True,
-            None,  # No filtering
-        )
-    no_filter_time = time.perf_counter() - start
+    Timed in thread CPU time, not wall time, so time the thread spends descheduled
+    (pytest-xdist workers, CI neighbours) isn't counted: on a saturated machine wall time
+    put the overhead anywhere from -36% to +47%. CPU time still varies when other
+    processes share the core, so the two variants run in alternating batches, each scored
+    by its fastest batch, and the comparison is re-measured up to three times. A real
+    regression fails every attempt; a burst of contention doesn't.
+    """
+    fake_result = json.dumps(
+        {
+            "status": "success",
+            "message": "Created",
+            "entity_id": "123",
+            "entity_type": "Test",
+            "entity": {"id": "123", "name": "Test", "serial": "SN-001", "model": "A"},
+            "updated_fields": ["name", "serial"],
+            "cascade": None,
+            "metadata": None,
+            "is_simple_format": False,
+        }
+    )
 
-    # Test 2: With filtering (request 2 fields)
-    start = time.perf_counter()
-    for _ in range(iterations):
-        fraiseql_rs.build_mutation_response(
-            json.dumps(fake_result),
-            "createMachine",
-            "CreateMachineSuccess",
-            "CreateMachineError",
-            "machine",
-            "Machine",
-            None,
-            True,
-            ["status", "machine"],  # Filtering
-        )
-    with_filter_time = time.perf_counter() - start
+    def run(selected_fields, iterations):
+        document = legacy_document(selected_fields, None, "machine", None)
+        start = time.thread_time()
+        for _ in range(iterations):
+            fraiseql_rs.build_mutation_response(
+                fake_result,
+                "createMachine",
+                "CreateMachineSuccess",
+                "CreateMachineError",
+                "machine",
+                "Machine",
+                None,
+                True,
+                None,
+                None,
+                document,
+            )
+        return time.thread_time() - start
 
-    no_filter_avg = (no_filter_time / iterations) * 1000
-    with_filter_avg = (with_filter_time / iterations) * 1000
-    overhead = with_filter_avg - no_filter_avg
+    batches, batch_size = 10, 2000
+    for _attempt in range(3):
+        no_filter_time = with_filter_time = float("inf")
+        for _ in range(batches):
+            no_filter_time = min(no_filter_time, run(None, batch_size))
+            with_filter_time = min(with_filter_time, run(["status", "machine"], batch_size))
+
+        no_filter_avg = (no_filter_time / batch_size) * 1000
+        with_filter_avg = (with_filter_time / batch_size) * 1000
+        overhead = with_filter_avg - no_filter_avg
+        if overhead < no_filter_avg * 0.2:
+            break
 
     print(f"✅ No filtering: {no_filter_avg:.3f}ms avg")
     print(f"✅ With filtering: {with_filter_avg:.3f}ms avg")
@@ -262,7 +263,9 @@ def test_performance_canary():
         "Test",
         None,
         True,
-        ["status"],
+        None,
+        None,
+        legacy_document(["status"], None, "entity", None),
     )
     elapsed = (time.perf_counter() - start) * 1000
 

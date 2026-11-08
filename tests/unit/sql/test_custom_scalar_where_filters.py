@@ -229,5 +229,5 @@ def test_built_in_scalar_types_unchanged():
 
     # Should use existing filter types (not break existing behavior)
     assert get_filter_name("id") in ["UUIDFilter", "IDFilter"]
-    assert get_filter_name("created_at") in ["DateTimeFilter"]
+    assert get_filter_name("created_at") == "DateTimeFilter"
     assert get_filter_name("name") == "StringFilter"

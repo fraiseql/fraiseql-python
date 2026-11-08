@@ -50,7 +50,7 @@ from fraiseql.types import ID
 async def get_user(info, id: ID) -> User:
     db = info.context["db"]
     # Returns RustResponseBytes - automatically processed by exclusive Rust pipeline
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 Query with multiple parameters:
@@ -65,11 +65,9 @@ async def search_users(
     limit: int = 10
 ) -> list[User]:
     db = info.context["db"]
-    filters = {}
-    if name_filter:
-        filters["name__icontains"] = name_filter
-    # Exclusive Rust pipeline handles camelCase conversion and __typename injection
-    return await db.find("v_user", **filters, limit=limit)
+    where = {"name": {"icontains": name_filter}} if name_filter else None
+    # The Rust pipeline converts to camelCase and writes __typename where it is selected
+    return await db.find("v_user", where=where, limit=limit)
 ```
 
 Query with authentication:
@@ -87,7 +85,7 @@ async def get_my_profile(info) -> User:
 
     db = info.context["db"]
     # Exclusive Rust pipeline works with authentication automatically
-    return await db.find_one("v_user", id=user_context.user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user_context.user_id})
 ```
 
 Query with error handling:
@@ -105,13 +103,14 @@ async def get_post(info, id: ID) -> Post | None:
     try:
         db = info.context["db"]
         # Exclusive Rust pipeline handles JSON processing automatically
-        return await db.find_one("v_post", id=id)
+        return await db.find_one("v_post", mandatory_filters={"id": id})
     except Exception as e:
         logger.error(f"Failed to fetch post {id}: {e}")
         return None
 ```
 
-Query using custom repository methods:
+Query using a repository aggregate helper (`count`, `sum`, `avg`, `min`, `max`,
+`aggregate`; they return plain Python values):
 
 ```python
 import fraiseql
@@ -121,13 +120,8 @@ from fraiseql.types import ID
 @fraiseql.query
 async def get_user_stats(info, user_id: ID) -> UserStats:
     db = info.context["db"]
-    # Custom SQL query for complex aggregations
-    # Exclusive Rust pipeline handles result processing automatically
-    result = await db.execute_raw(
-        "SELECT count(*) as post_count FROM posts WHERE user_id = $1",
-        user_id
-    )
-    return UserStats(post_count=result[0]["post_count"])
+    post_count = await db.count("v_post", where={"author_id": {"eq": user_id}})
+    return UserStats(post_count=post_count)
 ```
 
 **Notes**:
@@ -138,7 +132,7 @@ async def get_user_stats(info, user_id: ID) -> UserStats:
 - Use async/await for database operations
 - Access repository via `info.context["db"]` (provides exclusive Rust pipeline integration)
 - Access user context via `info.context["user"]` (if authentication enabled)
-- Exclusive Rust pipeline automatically handles camelCase conversion and __typename injection
+- The Rust pipeline converts keys to camelCase and writes `__typename` where the query selects it
 
 ## Auto-Wired Query Parameters
 
@@ -206,16 +200,10 @@ Queries returning `Connection[FraiseType]` automatically get Relay pagination pa
 | `where` | `{TypeName}WhereInput` | Filter conditions |
 | `orderBy` | `[{TypeName}OrderByInput!]` | Sort criteria |
 
-**Example**:
-
-```python
-from fraiseql.types.generic import Connection
-
-@fraiseql.query
-async def users_connection(info) -> Connection[User]:
-    db = info.context["db"]
-    return await db.paginate("v_user", info=info)
-```
+The resolver receives these arguments and returns the `Connection`; the
+[`@connection` decorator](#connection-decorator) builds such
+resolvers. For offset pages, return `list[User]` and use the `limit` / `offset`
+arguments above.
 
 ### Manual Parameter Override
 
@@ -387,7 +375,7 @@ class User:
     @fraiseql.field(description="Posts authored by this user")
     async def posts(self, info) -> list[Post]:
         db = info.context["db"]
-        return await db.find("v_post", user_id=self.id)
+        return await db.find("v_post", mandatory_filters={"user_id": self.id})
 ```
 
 Field with custom resolver function:
@@ -437,7 +425,7 @@ class User:
         filters = {"user_id": self.id}
         if published_only:
             filters["status"] = "published"
-        return await db.find("v_post", **filters, limit=limit)
+        return await db.find("v_post", mandatory_filters=filters, limit=limit)
 ```
 
 Field with authentication/authorization:
@@ -457,13 +445,16 @@ class User:
             return None  # Don't expose private data
 
         db = info.context["db"]
-        return await db.find_one("v_user_settings", user_id=self.id)
+        return await db.find_one("v_user_settings", mandatory_filters={"user_id": self.id})
 ```
 
 Field with caching:
 
 ```python
+from psycopg.sql import SQL
+
 import fraiseql
+from fraiseql.db import DatabaseQuery
 from fraiseql.types import ID
 
 @fraiseql.type
@@ -483,11 +474,13 @@ class Post:
 
         # Fallback to database
         db = info.context["db"]
-        result = await db.execute_raw(
-            "SELECT count(*) FROM likes WHERE post_id = $1",
-            self.id
+        rows = await db.run(
+            DatabaseQuery(
+                SQL("SELECT count(*) AS n FROM tb_like WHERE post_id = %(post_id)s"),
+                {"post_id": self.id},
+            )
         )
-        count = result[0]["count"]
+        count = rows[0]["n"]
 
         # Cache for 5 minutes
         if cache:
@@ -545,8 +538,8 @@ async def query_name(
 | max_page_size | int | 100 | Maximum allowed page size |
 | include_total_count | bool | True | Include total count in results |
 | cursor_field | str | "id" | Field to use for cursor ordering |
-| jsonb_extraction | bool \| None | None | Enable JSONB field extraction (inherits from global config if None) |
-| jsonb_column | str \| None | None | JSONB column name (inherits from global config if None) |
+| jsonb_extraction | bool \| None | None | No effect: recorded in `__fraiseql_connection__` only; rows are read as `db.find` reads them |
+| jsonb_column | str \| None | None | No effect: recorded only; the JSONB column is the one registered for the view |
 
 **Returns**: Connection[T] with edges, page_info, and total_count
 
@@ -584,8 +577,6 @@ import fraiseql
     default_page_size=25,
     max_page_size=50,
     cursor_field="created_at",
-    jsonb_extraction=True,
-    jsonb_column="data"
 )
 @fraiseql.query
 async def posts_connection(
@@ -642,7 +633,7 @@ query {
 
 - Functions must be async and take 'info' as first parameter
 - The decorator handles all pagination logic automatically
-- Uses existing repository.paginate() method
+- Pages with the repository's `paginate()` (`find` for the page, `count` for the total; see [Database API](../reference/database.md#paginate))
 - Returns properly typed Connection[T] objects
 - Supports all Relay connection specification features
 - View name is inferred from function name (e.g., users_connection → v_users)
@@ -677,7 +668,7 @@ import fraiseql
 class MutationName:
     input: InputType
     success: SuccessType
-    failure: FailureType  # or error: ErrorType
+    error: ErrorType
 ```
 
 **Parameters (Class-based)**:
@@ -703,7 +694,7 @@ async def create_user(info, input: CreateUserInput) -> User:
         "name": input.name,
         "email": input.email
     })
-    return await db.find_one("v_user", id=result["id"])
+    return await db.find_one("v_user", mandatory_filters={"id": result["id"]})
 ```
 
 Basic class-based mutation:
@@ -731,7 +722,7 @@ class CreateUserError:
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
 
 # Automatically calls PostgreSQL function: public.create_user(input)
 # and parses result into CreateUserSuccess or CreateUserError
@@ -742,13 +733,15 @@ Mutation with custom PostgreSQL function:
 ```python
 import fraiseql
 
-@fraiseql.mutation(function="register_new_user", schema="auth")
+@fraiseql.mutation(function="register_new_user", schema="auth", name="registerUser")
 class RegisterUser:
     input: RegistrationInput
-    success: RegistrationSuccess
-    failure: RegistrationError
+    success: RegisterUserSuccess
+    error: RegisterUserError
 
 # Calls: auth.register_new_user(input) instead of default name
+# (name= sets the GraphQL field to "registerUser"; without it, fraiseql 1.x names
+# the field after the function, "registerNewUser", and warns)
 ```
 
 Mutation with context parameters:
@@ -767,7 +760,7 @@ import fraiseql
 class CreateLocation:
     input: CreateLocationInput
     success: CreateLocationSuccess
-    failure: CreateLocationError
+    error: CreateLocationError
 
 # Calls: app.create_location(tenant_id, user_id, input)
 # Where tenant_id comes from info.context["tenant_id"]
@@ -779,8 +772,9 @@ Mutation with validation:
 ```python
 import fraiseql
 from fraiseql.types import ID
+from graphql import GraphQLError
 
-@input
+@fraiseql.input
 class UpdateUserInput:
     id: ID
     name: str | None = None
@@ -795,7 +789,7 @@ async def update_user(info, input: UpdateUserInput) -> User:
     if not user_context:
         raise GraphQLError("Authentication required")
 
-    # Validation
+    # Validation (is_valid_email is your own check)
     if input.email and not is_valid_email(input.email):
         raise GraphQLError("Invalid email format")
 
@@ -809,13 +803,18 @@ async def update_user(info, input: UpdateUserInput) -> User:
     if not updates:
         raise GraphQLError("No fields to update")
 
-    return await db.update_one("v_user", where={"id": input.id}, updates=updates)
+    # The write runs in a PostgreSQL function; fn_update_user sets the keys it is given
+    await db.execute_function("fn_update_user", {"id": str(input.id), **updates})
+    # Read the result back from the view
+    return await db.find_one("v_user", "updateUser", info, mandatory_filters={"id": input.id})
 ```
 
 Multi-step mutation with transaction:
 
 ```python
 import fraiseql
+from graphql import GraphQLError
+from psycopg.rows import dict_row
 
 @fraiseql.mutation
 async def transfer_funds(
@@ -824,48 +823,49 @@ async def transfer_funds(
 ) -> TransferResult:
     db = info.context["db"]
 
-    async with db.transaction():
-        # Validate source account
-        source = await db.find_one(
-            "v_account",
-            where={"id": input.source_account_id}
-        )
-        if not source or source.balance < input.amount:
-            raise GraphQLError("Insufficient funds")
+    async def transfer(conn) -> TransferResult:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            # Lock both accounts until the transaction ends
+            await cur.execute(
+                "SELECT id, balance FROM tb_account WHERE id = ANY(%s) FOR UPDATE",
+                ([input.source_account_id, input.destination_account_id],),
+            )
+            accounts = {str(row["id"]): row for row in await cur.fetchall()}
+            source = accounts.get(str(input.source_account_id))
+            dest = accounts.get(str(input.destination_account_id))
 
-        # Validate destination account
-        dest = await db.find_one(
-            "v_account",
-            where={"id": input.destination_account_id}
-        )
-        if not dest:
-            raise GraphQLError("Destination account not found")
+            if not source or source["balance"] < input.amount:
+                raise GraphQLError("Insufficient funds")
+            if not dest:
+                raise GraphQLError("Destination account not found")
 
-        # Perform transfer
-        await db.update_one(
-            "v_account",
-            where={"id": source.id},
-            updates={"balance": source.balance - input.amount}
-        )
-        await db.update_one(
-            "v_account",
-            where={"id": dest.id},
-            updates={"balance": dest.balance + input.amount}
-        )
+            # Perform transfer
+            await cur.execute(
+                "UPDATE tb_account SET balance = balance - %s WHERE id = %s",
+                (input.amount, source["id"]),
+            )
+            await cur.execute(
+                "UPDATE tb_account SET balance = balance + %s WHERE id = %s",
+                (input.amount, dest["id"]),
+            )
 
-        # Log transaction
-        transfer = await db.create_one("v_transfer", data={
-            "source_account_id": input.source_account_id,
-            "destination_account_id": input.destination_account_id,
-            "amount": input.amount,
-            "created_at": datetime.utcnow()
-        })
+            # Log transaction (tb_transfer.created_at defaults to now())
+            await cur.execute(
+                "INSERT INTO tb_transfer (source_account_id, destination_account_id, amount) "
+                "VALUES (%s, %s, %s) RETURNING id",
+                (source["id"], dest["id"], input.amount),
+            )
+            transfer_id = (await cur.fetchone())["id"]
 
         return TransferResult(
-            transfer=transfer,
-            new_source_balance=source.balance - input.amount,
-            new_dest_balance=dest.balance + input.amount
+            transfer_id=transfer_id,
+            new_source_balance=source["balance"] - input.amount,
+            new_dest_balance=dest["balance"] + input.amount,
         )
+
+    # One transaction: every statement commits together, and a raised error rolls
+    # them all back
+    return await db.run_in_transaction(transfer)
 ```
 
 Mutation with input transformation (prepare_input hook):
@@ -881,8 +881,8 @@ class NetworkConfigInput:
 @fraiseql.mutation
 class CreateNetworkConfig:
     input: NetworkConfigInput
-    success: NetworkConfigSuccess
-    failure: NetworkConfigError
+    success: CreateNetworkConfigSuccess
+    error: CreateNetworkConfigError
 
     @staticmethod
     def prepare_input(input_data: dict) -> dict:
@@ -907,6 +907,25 @@ class CreateNetworkConfig:
 # Frontend sends: { ipAddress: "192.168.1.1", subnetMask: "255.255.255.0" }
 # Database receives: { ip_address: "192.168.1.1/24" }
 ```
+
+`prepare_input` can also be `async`, and it can take the resolver's `info` as a second argument, for example to call an outside service with a client from the GraphQL context:
+
+```python
+@fraiseql.mutation(enable_cascade=True)
+class CreateContract:
+    input: CreateContractInput
+    success: CreateContractSuccess
+    error: CreateContractError
+
+    @staticmethod
+    async def prepare_input(input_data: dict, info: GraphQLResolveInfo) -> dict:
+        """Resolve the provider's company identifier before the SQL call."""
+        registry = info.context["company_registry"]
+        provider = await registry.lookup(input_data["siret"])
+        return {**input_data, "provider": provider}
+```
+
+The hook receives `info` when it takes a second positional parameter (or `*args`). It runs before a database connection is taken from the pool, so a slow call doesn't hold one. An exception it raises becomes a top-level GraphQL error.
 
 **PostgreSQL Function Requirements**:
 
@@ -975,6 +994,7 @@ $$;
 - All mutations are automatically registered with GraphQL schema
 - prepare_input hook allows transforming input data before database calls
 - prepare_input is called after GraphQL validation but before PostgreSQL function
+- prepare_input may be sync or async, and may take `info` as a second argument
 
 ## @subscription Decorator
 
@@ -1038,6 +1058,13 @@ Subscription with database polling:
 
 ```python
 import asyncio
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
+
+from psycopg.sql import SQL
+
+from fraiseql import subscription
+from fraiseql.db import DatabaseQuery
 from fraiseql.types import ID
 
 @subscription
@@ -1046,22 +1073,26 @@ async def on_task_updates(
     project_id: ID
 ) -> AsyncGenerator[Task, None]:
     db = info.context["db"]
-    last_check = datetime.utcnow()
+    last_check = datetime.now(UTC)
+    query = SQL(
+        "SELECT data FROM v_task"
+        " WHERE data->>'project_id' = %(project_id)s"
+        " AND (data->>'updated_at')::timestamptz > %(since)s"
+        " ORDER BY data->>'updated_at'"
+    )
 
     while True:
-        # Poll for new/updated tasks
-        updated_tasks = await db.find(
-            "v_task",
-            where={
-                "project_id": project_id,
-                "updated_at__gt": last_check
-            }
+        # Poll for new/updated tasks: db.run returns plain rows (find() returns
+        # a ready-made GraphQL response, which a subscription can't yield)
+        checked_at = datetime.now(UTC)
+        rows = await db.run(
+            DatabaseQuery(query, {"project_id": str(project_id), "since": last_check})
         )
 
-        for task in updated_tasks:
-            yield task
+        for row in rows:
+            yield Task(**row["data"])  # v_task's data keys are Task's fields
 
-        last_check = datetime.utcnow()
+        last_check = checked_at
         await asyncio.sleep(1)  # Poll every second
 ```
 

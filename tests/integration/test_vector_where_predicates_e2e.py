@@ -134,23 +134,6 @@ class TestVectorFilterInputShapes:
             cur = await conn.execute(stmt)
             assert [row[0] async for row in cur] == [1]
 
-    async def test_sparse_vector_shape_renders(self) -> None:
-        """A sparse ``{indices, values}`` payload must not be mistaken for a dense filter."""
-        from dataclasses import dataclass
-
-        from fraiseql.types.scalars.vector import SparseVectorField
-
-        @dataclass
-        class SparseDoc:
-            sparse_emb: SparseVectorField
-
-        where = safe_create_where_type(SparseDoc)()
-        where.sparse_emb = {"cosine_distance": {"indices": [1, 3], "values": [0.1, 0.2]}}
-
-        rendered = where.to_sql()
-        assert rendered is not None
-        assert "sparsevec" in rendered.as_string(None)
-
 
 class TestVectorFilterRejectsBadInput:
     """A malformed vector filter must fail loudly, never vanish from the WHERE clause."""
@@ -160,6 +143,18 @@ class TestVectorFilterRejectsBadInput:
         with pytest.raises(WhereClauseError):
             render("embedding", "cosine_distance", {"nonsense": 1})
 
+    @pytest.mark.parametrize(
+        ("value", "extra"),
+        [
+            ({"sparse": {"indices": [0], "values": [1.0]}}, {"distance_within": 0.5}),
+            ({"indices": [0], "values": [1.0], "threshold": 0.5}, {}),
+        ],
+    )
+    def test_sparse_operand_raises(self, value, extra) -> None:
+        """There are no sparse builders: the operand would render as a dense vector."""
+        with pytest.raises(WhereClauseError, match="sparse"):
+            render("embedding", "cosine_distance", value, **extra)
+
     def test_unknown_comparison_raises(self) -> None:
         """An unsupported comparison must not fall back to a default operator."""
         with pytest.raises(WhereClauseError):
@@ -167,11 +162,11 @@ class TestVectorFilterRejectsBadInput:
 
     def test_sibling_filters_do_not_mask_a_bad_vector_filter(self) -> None:
         """The scoping filter surviving alone is exactly the dangerous outcome."""
+        where = WhereType()
+        where.OR = [
+            {"tenant": {"eq": "acme"}, "embedding": {"cosine_distance": {"bad": 1}}},
+        ]
         with pytest.raises(WhereClauseError):
-            where = WhereType()
-            where.OR = [
-                {"tenant": {"eq": "acme"}, "embedding": {"cosine_distance": {"bad": 1}}},
-            ]
             where.to_sql()
 
 
@@ -194,10 +189,9 @@ async def scoped_docs(class_db_pool, test_schema, pgvector_available) -> None:
 
 @pytest.mark.usefixtures("scoped_docs")
 class TestNonPredicateOperatorsNeverReachTheDatabase:
-    """Four registry entries rendered an expression, not a predicate (#510).
+    """Two registry entries render an expression, not a predicate (#510).
 
-    ``custom_distance``, ``vector_norm``, ``quantized_distance`` and
-    ``reconstruct`` are refused in a WHERE clause. Each test here first
+    ``custom_distance`` and ``vector_norm`` are refused in a WHERE clause. Each test here first
     *executes* the outcome being prevented, so the assertion that the fix
     raises is anchored to a demonstrated result set rather than to a string.
     """
@@ -257,8 +251,7 @@ class TestNonPredicateOperatorsNeverReachTheDatabase:
         """``vector_norm(col, 'l2')`` is not a function at any arity.
 
         pgvector declares ``vector_norm(vector)``. The two-argument form the
-        operator emitted -- against an uncast ``text`` column, and registered
-        for sparse fields where pgvector names the function ``l2_norm`` --
+        operator emitted -- against an uncast ``text`` column --
         failed on every execution, so no caller can be relying on it.
         """
         import psycopg

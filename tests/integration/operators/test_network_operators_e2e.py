@@ -94,7 +94,7 @@ class TestNetworkOperatorsE2E:
             await conn.commit()
 
     @pytest.mark.parametrize(
-        "ip_address,expected_is_ipv4",
+        ("ip_address", "expected_is_ipv4"),
         [
             ("192.168.1.1", True),
             ("10.0.0.1", True),
@@ -137,7 +137,7 @@ class TestNetworkOperatorsE2E:
             await conn.commit()
 
     @pytest.mark.parametrize(
-        "ip_address,subnet,expected_in_subnet",
+        ("ip_address", "subnet", "expected_in_subnet"),
         [
             ("192.168.1.1", "192.168.1.0/24", True),
             ("192.168.1.1", "192.168.2.0/24", False),
@@ -378,7 +378,6 @@ class TestNetworkOperatorsE2E:
         )
 
         # Also check camelCase variants
-        camel_case_op = operator_name  # Most are already camelCase
         if operator_name in ["isipv4", "isipv6", "isprivate", "ispublic", "insubnet", "inrange"]:
             # These have camelCase equivalents
             camel_equivalent = {

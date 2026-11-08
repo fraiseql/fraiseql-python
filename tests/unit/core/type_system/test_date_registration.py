@@ -1,6 +1,6 @@
 """Test Date scalar type registration to prevent duplicates."""
 
-import datetime
+import datetime as dt
 
 import pytest
 
@@ -23,20 +23,20 @@ def test_date_scalar_single_registration() -> None:
     @fraiseql.type
     class Model1:
         name: str
-        date1: datetime.date
+        date1: dt.date
 
     @fraiseql.type
     class Model2:
         title: str
-        date2: datetime.date
+        date2: dt.date
 
     @fraiseql.query
     async def get_model1(info) -> Model1:
-        return Model1(name="Test", date1=datetime.date.today())
+        return Model1(name="Test", date1=dt.date.today())
 
     @fraiseql.query
     async def get_model2(info) -> Model2:
-        return Model2(title="Test", date2=datetime.date.today())
+        return Model2(title="Test", date2=dt.date.today())
 
     # This should not raise a duplicate type error
     registry = SchemaRegistry.get_instance()
@@ -58,13 +58,13 @@ def test_multiple_date_fields_in_single_type() -> None:
     @fraiseql.type
     class Event:
         name: str
-        start_date: datetime.date
-        end_date: datetime.date
-        created_date: datetime.date
+        start_date: dt.date
+        end_date: dt.date
+        created_date: dt.date
 
     @fraiseql.query
     async def get_event(info) -> Event:
-        today = datetime.date.today()
+        today = dt.date.today()
         return Event(name="Conference", start_date=today, end_date=today, created_date=today)
 
     # Should not raise duplicate type error
@@ -81,20 +81,20 @@ def test_date_in_nested_types() -> None:
     @fraiseql.type
     class Person:
         name: str
-        birth_date: datetime.date
+        birth_date: dt.date
 
     @fraiseql.type
     class Company:
         name: str
-        founded_date: datetime.date
+        founded_date: dt.date
         ceo: Person
 
     @fraiseql.query
     async def get_company(info) -> Company:
         return Company(
             name="TechCorp",
-            founded_date=datetime.date(2020, 1, 1),
-            ceo=Person(name="Jane Doe", birth_date=datetime.date(1980, 5, 15)),
+            founded_date=dt.date(2020, 1, 1),
+            ceo=Person(name="Jane Doe", birth_date=dt.date(1980, 5, 15)),
         )
 
     # Should not raise duplicate type error

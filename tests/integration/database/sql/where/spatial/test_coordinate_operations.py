@@ -28,7 +28,7 @@ class TestCoordinateFilterOperations:
 
         sql_str = sql.as_string(None)  # type: ignore
         assert "::point" in sql_str, "Missing point cast"
-        assert " = " in sql_str, "Missing equality operator"
+        assert " ~= " in sql_str, "Missing equality operator (point has ~=, not =)"
         # Should convert (lat, lng) to POINT(lng, lat)
         assert "POINT( -122.6, 45.5)" in sql_str, "Wrong coordinate order"
 
@@ -42,7 +42,7 @@ class TestCoordinateFilterOperations:
 
         sql_str = sql.as_string(None)  # type: ignore  # type: ignore
         assert "::point" in sql_str
-        assert "!=" in sql_str
+        assert sql_str.startswith("NOT (")
         assert "POINT( -122.3425, 47.6097)" in sql_str
 
     def test_coordinate_in_operation(self) -> None:
@@ -60,7 +60,7 @@ class TestCoordinateFilterOperations:
 
         sql_str = sql.as_string(None)  # type: ignore
         assert "::point" in sql_str
-        assert "IN (" in sql_str
+        assert sql_str.count(" OR ") == 2
         # Check that all coordinates are present with correct lng,lat order
         assert "POINT( -122.6, 45.5)" in sql_str
         assert "POINT( -122.3425, 47.6097)" in sql_str
@@ -77,7 +77,7 @@ class TestCoordinateFilterOperations:
 
         sql_str = sql.as_string(None)  # type: ignore
         assert "::point" in sql_str
-        assert "NOT IN (" in sql_str
+        assert sql_str.startswith("NOT (")
         assert "POINT(0, 0)" in sql_str
         assert "POINT(180, 90)" in sql_str
 

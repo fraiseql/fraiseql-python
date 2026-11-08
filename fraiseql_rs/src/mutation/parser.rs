@@ -19,7 +19,7 @@ pub fn parse_mutation_response(
 
     // Detect format
     if is_full_format(&value) {
-        parse_full(value, default_entity_type).map(MutationResponse::Full)
+        parse_full(value, default_entity_type).map(|full| MutationResponse::Full(Box::new(full)))
     } else {
         parse_simple(value).map(MutationResponse::Simple)
     }

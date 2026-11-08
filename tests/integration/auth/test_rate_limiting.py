@@ -217,27 +217,43 @@ class TestRateLimitMiddleware:
         assert len(middleware.rules) == 1
         assert middleware.rules[0].path_pattern == "/test"
 
-    def test_get_client_ip_forwarded_for(self, app, rate_limit_store) -> None:
-        """Test client IP extraction from X-Forwarded-For."""
+    @staticmethod
+    def _request(headers: dict[str, str]) -> Request:
+        return Request(
+            {
+                "type": "http",
+                "headers": [(k.lower().encode(), v.encode()) for k, v in headers.items()],
+                "client": ("127.0.0.1", 1234),
+            }
+        )
+
+    def test_get_client_ip_forwarded_for_untrusted_peer(self, app, rate_limit_store) -> None:
+        """Without trusted proxies, X-Forwarded-For is ignored."""
         middleware = RateLimitMiddleware(app=app, store=rate_limit_store)
 
-        request = MagicMock()
-        request.headers = {"X-Forwarded-For": "192.168.1.1, 10.0.0.1"}
-        request.client.host = "127.0.0.1"
+        request = self._request({"X-Forwarded-For": "192.168.1.1, 10.0.0.1"})
+        assert middleware._get_client_ip(request) == "127.0.0.1"
 
-        ip = middleware._get_client_ip(request)
-        assert ip == "192.168.1.1"
+    def test_get_client_ip_forwarded_for_trusted_peer(self, app, rate_limit_store) -> None:
+        """From a trusted proxy, the right-most untrusted X-Forwarded-For hop is used."""
+        middleware = RateLimitMiddleware(
+            app=app, store=rate_limit_store, trusted_proxies=["127.0.0.1", "10.0.0.0/8"]
+        )
+
+        request = self._request({"X-Forwarded-For": "192.168.1.1, 10.0.0.1"})
+        assert middleware._get_client_ip(request) == "192.168.1.1"
 
     def test_get_client_ip_real_ip(self, app, rate_limit_store) -> None:
-        """Test client IP extraction from X-Real-IP."""
+        """X-Real-IP is used only when the peer is a trusted proxy."""
+        request = self._request({"X-Real-IP": "192.168.1.2"})
+
         middleware = RateLimitMiddleware(app=app, store=rate_limit_store)
+        assert middleware._get_client_ip(request) == "127.0.0.1"
 
-        request = MagicMock()
-        request.headers = {"X-Real-IP": "192.168.1.2"}
-        request.client.host = "127.0.0.1"
-
-        ip = middleware._get_client_ip(request)
-        assert ip == "192.168.1.2"
+        middleware = RateLimitMiddleware(
+            app=app, store=rate_limit_store, trusted_proxies="127.0.0.1"
+        )
+        assert middleware._get_client_ip(request) == "192.168.1.2"
 
     def test_get_client_ip_fallback(self, app, rate_limit_store) -> None:
         """Test client IP extraction fallback."""
@@ -335,12 +351,11 @@ class TestRateLimitIntegration:
 
     def test_graphql_rate_limiting(self, app) -> None:
         """Test GraphQL-specific rate limiting."""
-        # Set low mutation limit
-        store = RateLimitStore()
-        graphql_limiter = GraphQLRateLimiter(store)
-        graphql_limiter.operation_limits["mutation"] = RateLimit(requests=1, window=60)
-
-        app.add_middleware(RateLimitMiddleware, store=store, graphql_path="/graphql")
+        app.add_middleware(
+            RateLimitMiddleware,
+            graphql_path="/graphql",
+            graphql_operation_limits={"mutation": RateLimit(requests=1, window=60)},
+        )
 
         client = TestClient(app)
 
@@ -350,10 +365,10 @@ class TestRateLimitIntegration:
         response1 = client.post("/graphql", json=mutation_query)
         assert response1.status_code == 200
 
-        # Second mutation should be rate limited
-        client.post("/graphql", json=mutation_query)
-        # Note: This test may not fail due to the complexity of middleware ordering
-        # In real usage, the GraphQL limiter would be properly integrated
+        # Second mutation is over the mutation limit
+        response2 = client.post("/graphql", json=mutation_query)
+        assert response2.status_code == 429
+        assert response2.json()["errors"][0]["extensions"]["code"] == "RATE_LIMITED"
 
     def test_health_check_exempt(self, app) -> None:
         """Test that health checks are exempt from rate limiting."""

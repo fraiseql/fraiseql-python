@@ -17,14 +17,14 @@ class Auth0ProviderWithRevocation(TokenRevocationMixin, Auth0Provider):
         from fraiseql.auth import Auth0ProviderWithRevocation
         from fraiseql.auth.token_revocation import (
             InMemoryRevocationStore,
-            RedisRevocationStore,
+            PostgreSQLRevocationStore,
             TokenRevocationService,
             RevocationConfig
         )
 
-        # Create revocation store (in-memory for dev, Redis for production)
+        # Create revocation store (in-memory for dev, PostgreSQL for production)
         if production:
-            store = RedisRevocationStore(redis_client)
+            store = PostgreSQLRevocationStore(pool)  # a psycopg AsyncConnectionPool
         else:
             store = InMemoryRevocationStore()
 
@@ -88,8 +88,13 @@ class Auth0ProviderWithRevocation(TokenRevocationMixin, Auth0Provider):
             TokenExpiredError: If token has expired
             InvalidTokenError: If token is invalid or revoked
         """
-        # Store reference to parent's validate_token
-        self._original_validate_token = super().validate_token
-
-        # Use mixin's validate_token which adds revocation checking
+        # The mixin checks revocation around _original_validate_token (below)
         return await TokenRevocationMixin.validate_token(self, token)
+
+    async def _original_validate_token(self, token: str) -> dict[str, Any]:
+        """Auth0's own validation, which the mixin's revocation check wraps.
+
+        Named explicitly: super().validate_token here is the mixin's, which would
+        call back into this method forever.
+        """
+        return await Auth0Provider.validate_token(self, token)

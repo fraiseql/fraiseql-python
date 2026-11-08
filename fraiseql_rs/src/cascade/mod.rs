@@ -38,29 +38,18 @@ pub struct CascadeSelections {
 #[derive(Debug, Deserialize)]
 pub struct FieldSelections {
     pub fields: Vec<String>,
-    #[serde(default)]
-    pub entity_selections: Option<EntitySelections>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct EntitySelections {
-    #[serde(flatten)]
-    pub type_selections: std::collections::HashMap<String, Vec<String>>,
 }
 
 impl CascadeSelections {
     /// Parse cascade selections from GraphQL field selection JSON
     ///
-    /// Expected JSON format from Python:
+    /// Expected JSON format from Python (field names only; any other key is
+    /// ignored):
     /// ```json
     /// {
     ///   "fields": ["updated", "deleted", "invalidations"],
     ///   "updated": {
-    ///     "fields": ["__typename", "id", "operation", "entity"],
-    ///     "entity_selections": {
-    ///       "Post": ["id", "title", "content"],
-    ///       "User": ["id", "name", "postCount"]
-    ///     }
+    ///     "fields": ["__typename", "id", "operation", "entity"]
     ///   },
     ///   "deleted": {
     ///     "fields": ["__typename", "id"]

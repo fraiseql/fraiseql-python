@@ -77,7 +77,7 @@ import fraiseql
 @fraiseql.dataloader_field
 async def posts(user: User, info) -> list[Post]:
     db = info.context["db"]
-    return await db.find("v_post", fk_user=user.id)
+    return await db.find("v_post", mandatory_filters={"fk_user": user.id})
 ```
 
 **Result:** ~2 queries total (users + batched posts)
@@ -254,49 +254,49 @@ query {
 }
 ```
 
-**Why:** The cached query result was not invalidated by the write. FraiseQL's PostgreSQL-backed cache (`ResultCache`/`CachedRepository`) needs a cascade rule that links the mutation's table to the cached query.
+**Why:** The cached query result was not invalidated by the write. FraiseQL's
+result cache (`ResultCache`, see the [Caching Specification](../specs/caching.md))
+invalidates nothing on its own when a mutation runs: an entry stays until its TTL
+expires or your code deletes it. (The CASCADE rules of `setup_auto_cascade_rules`
+don't delete `ResultCache` entries.)
 
 ### Solutions
 
-**Solution 1: Configure cascade invalidation rules**
+**Solution 1: Invalidate in the mutation**
 
-Use `setup_auto_cascade_rules` (with the `SchemaAnalyzer`) so writes to a table automatically invalidate the query results that depend on it:
-
-```python
-from fraiseql.caching import setup_auto_cascade_rules
-
-await setup_auto_cascade_rules(cache, schema_analyzer)
-```
-
-**Solution 2: TTL-based invalidation**
-
-Set a short cache TTL so stale entries expire on their own:
-
-```python
-from fraiseql.fastapi import create_fraiseql_app
-
-app = create_fraiseql_app(
-    database_url="postgresql://localhost/mydb",
-    types=[User],
-    cache_ttl=60,  # All cached query results expire after 60 seconds
-)
-```
-
-`cache_ttl` is also settable via the `FRAISEQL_CACHE_TTL` environment variable.
-
-**Solution 3: Manual invalidation in the mutation**
+Key the cached reads so one pattern covers what the write changes, and invalidate
+it after the write (`cache` is your `ResultCache`; see
+[Server-Side Cache Invalidation](../performance/server-cache-invalidation.md) for the
+whole app):
 
 ```python
 import fraiseql
 
+
 @fraiseql.mutation
-async def update_user(info, input: UpdateUserInput) -> UpdateUserSuccess | UpdateUserError:
+async def rename_user(info, id: int, name: str) -> bool:
     db = info.context["db"]
-    cache = info.context["cache"]
-    result = await db.execute_function("fn_update_user", {"id": input.id, "name": input.name})
-    await cache.invalidate(User, id=input.id)  # Drop stale query results for this user
-    return UpdateUserSuccess(user=User(**result["user"]))
+    await db.execute_function("fn_rename_user", {"id": id, "name": name})
+    tenant_id = str(info.context.get("tenant_id", "public"))
+    await cache.invalidate_pattern(f"fraiseql:{tenant_id}:user:*")  # drop this tenant's cached user reads
+    return True
 ```
+
+**Solution 2: TTL-based invalidation**
+
+Set a short TTL so stale entries expire on their own:
+
+```python
+from fraiseql.caching import CacheConfig, PostgresCache, ResultCache
+
+cache = ResultCache(
+    backend=PostgresCache(connection_pool=pool),
+    config=CacheConfig(default_ttl=60),  # entries expire after 60 seconds
+)
+```
+
+`FraiseQLConfig.cache_ttl` (and `FRAISEQL_CACHE_TTL`) is deprecated and has no
+effect: no cache reads it.
 
 ### Gotcha: Cache Hit When You Need Fresh Data
 
@@ -316,7 +316,7 @@ query {
 
 **Solution 1: Skip caching for volatile reads**
 
-Don't wrap volatile queries in `CachedRepository`; read straight from the view via `db.find` so every request hits PostgreSQL.
+Don't put volatile reads through `ResultCache`; read straight from the view via `db.find` so every request hits PostgreSQL.
 
 **Solution 2: Use subscriptions for real-time data**
 
@@ -378,7 +378,7 @@ import fraiseql
 @fraiseql.query(authorizer=salary_authorizer)
 async def user_compensation(info, id: ID) -> Compensation | None:
     db = info.context["db"]
-    return await db.find_one("v_compensation", id=id)
+    return await db.find_one("v_compensation", mandatory_filters={"id": id})
 ```
 
 **Or enforce row visibility with PostgreSQL Row-Level Security (RLS):**
@@ -660,7 +660,7 @@ async def users(info, status: str | None = None) -> list[User]:
     Response key: "users" (an array of User objects) unless aliased.
     """
     db = info.context["db"]
-    return await db.find("v_user", status=status)
+    return await db.find("v_user", mandatory_filters={"status": status})
 ```
 
 ---
@@ -732,16 +732,21 @@ query {
 **Set a maximum query depth in the app config:**
 
 ```python
-from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
 app = create_fraiseql_app(
-    database_url="postgresql://localhost/mydb",
+    config=FraiseQLConfig(
+        database_url="postgresql://localhost/mydb",
+        max_query_depth=15,  # Reject queries nested deeper than 15 levels
+    ),
     types=[User],
-    max_query_depth=15,  # Reject queries nested deeper than 15 levels
 )
 ```
 
-`max_query_depth` is also settable via `FRAISEQL_MAX_QUERY_DEPTH`. FraiseQL additionally runs query-complexity analysis (`complexity_max_depth`, `complexity_max_score`) that you can tune the same way.
+A deeper query gets a `QUERY_TOO_DEEP` GraphQL error before anything runs.
+`max_query_depth` is also settable via `FRAISEQL_MAX_QUERY_DEPTH`. To cap the size of a
+query as well, set `complexity_max_score` (each list multiplies the cost of what it
+selects by its `limit`, or by `complexity_default_list_size`).
 
 **Or bound the recursion explicitly in the query:**
 

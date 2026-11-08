@@ -9,7 +9,7 @@ path (``websocket.py:256``).
 from __future__ import annotations
 
 import inspect
-from collections.abc import AsyncGenerator  # noqa: TC003 — runtime hint for get_type_hints
+from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from typing import Any
 

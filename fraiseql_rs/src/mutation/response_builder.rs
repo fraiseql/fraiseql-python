@@ -152,7 +152,9 @@ pub fn build_success_response(
 
     // Add entity with __typename and camelCase keys ONLY if selected
     if let Some(entity) = &result.entity {
-        let entity_type = result.entity_type.as_deref().unwrap_or("Entity");
+        // Without a type from SQL or from the caller, the entity gets no __typename (unless
+        // its data has one): there is no type name to give that the schema would know.
+        let entity_type = result.entity_type.as_deref();
 
         // Determine the field name for the entity in the response
         let field_name = entity_field_name
@@ -164,75 +166,54 @@ pub fn build_success_response(
                     name.to_string()
                 }
             })
-            .unwrap_or_else(|| {
+            .unwrap_or_else(|| match entity_type {
                 // No entity_field_name provided, derive from type
-                if auto_camel_case {
-                    to_camel_case(&entity_type.to_lowercase())
-                } else {
-                    entity_type.to_lowercase()
-                }
+                Some(entity_type) if auto_camel_case => to_camel_case(&entity_type.to_lowercase()),
+                Some(entity_type) => entity_type.to_lowercase(),
+                None => "entity".to_string(),
             });
 
-        // Only add entity if the field is selected
-        if is_selected(&field_name) {
-            // Check if entity is a wrapper object containing entity_field_name
-            // This happens when Python entity_flattener skips flattening (CASCADE case)
-            // The entity looks like: {"post": {...}, "message": "..."}
-            let actual_entity = if let Value::Object(entity_map) = entity {
-                // Check if the entity wrapper contains a field matching entity_field_name
-                if let Some(entity_field_name_raw) = entity_field_name {
-                    if let Some(nested_entity) = entity_map.get(entity_field_name_raw) {
-                        // Found nested entity - extract it
-                        nested_entity
-                    } else {
-                        // No nested field, use entire entity
-                        entity
-                    }
-                } else {
-                    // No entity_field_name hint, use entire entity
-                    entity
-                }
-            } else {
-                // Entity is not an object (array or primitive), use as-is
-                entity
-            };
+        // A wrapper holds the entity under entity_field_name, next to sibling fields:
+        // {"post": {...}, "message": "..."}
+        let wrapper = match (entity, entity_field_name) {
+            (Value::Object(entity_map), Some(raw_name)) if entity_map.contains_key(raw_name) => {
+                Some((entity_map, raw_name))
+            },
+            _ => None,
+        };
 
+        if is_selected(&field_name) {
+            let actual_entity =
+                wrapper.map_or(entity, |(entity_map, raw_name)| &entity_map[raw_name]);
             let mut transformed = transform_entity(actual_entity, entity_type, auto_camel_case);
 
             // Apply entity field filtering if selections provided (GitHub issue #525)
             if let Some(selections_json) = entity_selections {
-                // Parse selections JSON
+                // If parsing fails, silently skip filtering (backward compat)
                 if let Ok(selections) = serde_json::from_str::<Value>(selections_json) {
-                    // Filter entity fields based on GraphQL query
                     transformed = filter_entity_fields(&transformed, &selections);
                 }
-                // If parsing fails, silently skip filtering (backward compat)
             }
 
             obj.insert(field_name, transformed);
+        }
 
-            // If entity was a wrapper, copy other fields from it (like "message")
-            // But only if those fields are also selected
-            if let Value::Object(entity_map) = entity {
-                if let Some(entity_field_name_raw) = entity_field_name {
-                    if entity_map.contains_key(entity_field_name_raw) {
-                        // Entity was a wrapper - copy other fields
-                        for (key, value) in entity_map {
-                            if key != entity_field_name_raw && key != "entity" && key != "cascade" {
-                                // Don't copy the entity field itself, nested "entity", or CASCADE
-                                // CASCADE must only appear at success type level, never in entity
-                                let field_key = if auto_camel_case {
-                                    to_camel_case(key)
-                                } else {
-                                    key.clone()
-                                };
-                                // Only add if not already present AND field is selected
-                                if !obj.contains_key(&field_key) && is_selected(&field_key) {
-                                    obj.insert(field_key, transform_value(value, auto_camel_case));
-                                }
-                            }
-                        }
-                    }
+        // Copy a wrapper's siblings that are selected, whether or not the entity field is
+        // (GitHub issue #594). Never the entity field itself, a nested "entity", or
+        // CASCADE (CASCADE only appears at success type level), and never over a field
+        // the result already set.
+        if let Some((entity_map, raw_name)) = wrapper {
+            for (key, value) in entity_map {
+                if key == raw_name || key == "entity" || key == "cascade" {
+                    continue;
+                }
+                let field_key = if auto_camel_case {
+                    to_camel_case(key)
+                } else {
+                    key.clone()
+                };
+                if !obj.contains_key(&field_key) && is_selected(&field_key) {
+                    obj.insert(field_key, transform_value(value, auto_camel_case));
                 }
             }
         }
@@ -452,20 +433,12 @@ pub fn generate_errors_array(result: &MutationResult, code: i32) -> Result<Value
 /// - "failed" -> "general_error"
 pub fn extract_identifier_from_status(status: &MutationStatus) -> String {
     match status {
-        MutationStatus::Noop(reason) => {
-            // Extract part after colon: "noop:already_exists" -> "already_exists"
-            if let Some((_prefix, identifier)) = reason.split_once(':') {
-                identifier.to_string()
-            } else {
-                "general_error".to_string()
-            }
-        },
-        MutationStatus::Error(reason) => {
-            // Extract part after colon: "validation:invalid_input" -> "invalid_input"
-            if let Some((_prefix, identifier)) = reason.split_once(':') {
-                identifier.to_string()
-            } else {
-                "general_error".to_string()
+        // Part after the colon: "noop:already_exists" -> "already_exists",
+        // "validation:invalid_input" -> "invalid_input"; none or empty -> general_error
+        MutationStatus::Noop(reason) | MutationStatus::Error(reason) => {
+            match reason.split_once(':') {
+                Some((_prefix, identifier)) if !identifier.is_empty() => identifier.to_string(),
+                _ => "general_error".to_string(),
             }
         },
         MutationStatus::Success(_) => {
@@ -475,14 +448,16 @@ pub fn extract_identifier_from_status(status: &MutationStatus) -> String {
     }
 }
 
-/// Transform entity: add __typename and convert keys to camelCase
-fn transform_entity(entity: &Value, entity_type: &str, auto_camel_case: bool) -> Value {
+/// Transform entity: add __typename (when the type is known) and convert keys to camelCase
+fn transform_entity(entity: &Value, entity_type: Option<&str>, auto_camel_case: bool) -> Value {
     match entity {
         Value::Object(map) => {
             let mut result = Map::with_capacity(map.len() + 1);
 
-            // Add __typename first
-            result.insert("__typename".to_string(), json!(entity_type));
+            // Add __typename first; a __typename in the data replaces it below
+            if let Some(entity_type) = entity_type {
+                result.insert("__typename".to_string(), json!(entity_type));
+            }
 
             // Transform each field to camelCase
             for (key, val) in map {
@@ -585,15 +560,14 @@ mod tests {
             Some("user"),
             true,
             None,
-            None,
+            Some(r#"{"fields": ["updated"]}"#),
             None,
         )
         .unwrap();
         let obj = response.as_object().unwrap();
 
-        // CASCADE at success level
+        // CASCADE at success level (written only when selected)
         assert!(obj.contains_key("cascade"));
-        assert_eq!(obj["cascade"]["__typename"], "Cascade");
         assert!(obj["cascade"]["updated"].is_array());
 
         // NOT in entity
@@ -607,7 +581,9 @@ mod tests {
             message: "Success".to_string(),
             entity_id: None,
             entity_type: Some("Post".to_string()),
-            entity: Some(json!({"post": {"id": "456", "title": "Hello"}, "message": "Created"})),
+            entity: Some(
+                json!({"post": {"id": "456", "title": "Hello"}, "message": "Created", "extra_info": "x"}),
+            ),
             updated_fields: None,
             cascade: None,
             metadata: None,
@@ -616,8 +592,8 @@ mod tests {
 
         let response = build_success_response(
             &result,
-            "CreateUserSuccess",
-            Some("user"),
+            "CreatePostSuccess",
+            Some("post"),
             true,
             None,
             None,
@@ -631,8 +607,9 @@ mod tests {
         assert_eq!(obj["post"]["id"], "456");
         assert_eq!(obj["post"]["title"], "Hello");
 
-        // Wrapper field promoted to success level
-        assert_eq!(obj["message"], "Created");
+        // Wrapper fields promoted to success level, unless the result already sets them
+        assert_eq!(obj["extraInfo"], "x");
+        assert_eq!(obj["message"], "Success");
     }
 
     #[test]
@@ -686,10 +663,11 @@ mod tests {
                 .unwrap();
         let obj = response.as_object().unwrap();
 
-        // Auto-generated error with extracted code
+        // Auto-generated error: numeric code, identifier from the status
         let errors = obj["errors"].as_array().unwrap();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0]["code"], "invalid_input");
+        assert_eq!(errors[0]["code"], 422);
+        assert_eq!(errors[0]["identifier"], "invalid_input");
         assert_eq!(errors[0]["message"], "Validation failed");
     }
 

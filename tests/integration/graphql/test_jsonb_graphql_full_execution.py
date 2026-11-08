@@ -68,7 +68,9 @@ async def product_with_jsonb(info, id: ID) -> ProductWithJSONB | None:
     pool = info.context.get("pool")
     test_schema = info.context.get("test_schema")
     repo = FraiseQLRepository(pool, context={"mode": "development"})
-    return await repo.find_one(f"{test_schema}.test_products_graphql_jsonb_view", mandatory_filters={"id": id})
+    return await repo.find_one(
+        f"{test_schema}.test_products_graphql_jsonb_view", mandatory_filters={"id": id}
+    )
 
 
 @fraiseql.mutation
@@ -103,7 +105,9 @@ async def create_product_with_jsonb(
     # This will return RustResponseBytes which should be passed through by execute_graphql()
     repo = FraiseQLRepository(pool, context={"mode": "development"})
 
-    return await repo.find_one(f"{test_schema}.test_products_graphql_jsonb_view", mandatory_filters={"id": id})
+    return await repo.find_one(
+        f"{test_schema}.test_products_graphql_jsonb_view", mandatory_filters={"id": id}
+    )
 
 
 class TestJSONBFullGraphQLExecution:
@@ -115,7 +119,7 @@ class TestJSONBFullGraphQLExecution:
     """
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
-    async def setup_graphql_jsonb_test(self, class_db_pool, test_schema):
+    async def setup_graphql_jsonb_test(self, clear_registry_class, class_db_pool, test_schema):
         """Create test data and register types for GraphQL execution."""
         # Register type with has_jsonb_data=True
         register_type_for_view(

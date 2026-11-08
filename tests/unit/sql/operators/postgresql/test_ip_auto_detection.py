@@ -202,7 +202,7 @@ class TestIPAutoDetection:
             ("Public IP Detection", "eq", "1.1.1.1", "::inet"),
         ]
 
-        for test_name, op, test_value, expected_cast in production_tests:
+        for test_name, op, test_value, _expected_cast in production_tests:
             strategy = registry.get_strategy(op, field_type=None)
             result = strategy.build_sql(op, test_value, jsonb_path, field_type=None)
             sql_str = render_sql_for_testing(result)
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     logger.info("Testing comprehensive special types fix...")
 
-    test_instance = TestAllSpecialTypesFix()
+    test_instance = TestIPAutoDetection()
 
     logger.info("\n1. Testing all special types comprehensive fix...")
     test_instance.test_all_special_types_comprehensive_fix()

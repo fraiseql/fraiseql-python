@@ -25,7 +25,10 @@ import asyncio
 import uuid
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from psycopg.sql import SQL, Composable, Composed, Identifier
 from psycopg.types.json import Json
+
+from fraiseql.sql.identifiers import qualified_identifier
 
 if TYPE_CHECKING:
     from llama_index.core.schema import BaseNode  # type: ignore[import-untyped]
@@ -184,14 +187,16 @@ class FraiseQLReader(BaseReader if LLAMAINDEX_AVAILABLE else object):  # type: i
             select_columns.append(self.metadata_column)
         select_columns.extend(self.metadata_columns)
 
-        query = f"""
-        SELECT {", ".join(select_columns)}
-        FROM {self.table_name}
-        """
+        query_parts: list[Composable] = [
+            SQL("SELECT {} FROM {}").format(
+                SQL(", ").join(Identifier(column) for column in select_columns),
+                qualified_identifier(self.table_name),
+            )
+        ]
 
-        params = []
+        params: list[Any] = []
         if where_clause:
-            conditions = []
+            conditions: list[Composable] = []
             for key, value in where_clause.items():
                 # Support both direct column access and JSONB field access
                 if self.metadata_column and key not in [
@@ -199,22 +204,26 @@ class FraiseQLReader(BaseReader if LLAMAINDEX_AVAILABLE else object):  # type: i
                     self.content_column,
                     *self.metadata_columns,
                 ]:
-                    # Assume it's a JSONB field
-                    condition = f"{self.metadata_column}->>'{{key}}' = %s"
-                    conditions.append(condition.replace("{key}", key))
+                    # A JSONB field: the key is a parameter, not SQL
+                    conditions.append(
+                        SQL("{} ->> %s = %s").format(Identifier(self.metadata_column))
+                    )
+                    params.extend([key, value])
                 else:
-                    conditions.append(f"{key} = %s")
-                params.append(value)
+                    conditions.append(SQL("{} = %s").format(Identifier(key)))
+                    params.append(value)
             if conditions:
-                query += f" WHERE {' AND '.join(conditions)}"
+                query_parts.append(SQL(" WHERE ") + SQL(" AND ").join(conditions))
 
         if limit:
-            query += " LIMIT %s"
+            query_parts.append(SQL(" LIMIT %s"))
             params.append(limit)
 
         if offset:
-            query += " OFFSET %s"
+            query_parts.append(SQL(" OFFSET %s"))
             params.append(offset)
+
+        query = Composed(query_parts)
 
         # Execute query
         async with self.db_pool.connection() as conn, conn.cursor() as cursor:

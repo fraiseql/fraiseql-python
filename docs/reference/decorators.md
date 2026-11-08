@@ -139,7 +139,7 @@ async def search_users(
     db = info.context["db"]
     filters = {}
     if name_filter:
-        filters["name__icontains"] = name_filter
+        filters["name"] = {"icontains": name_filter}
     return await db.find("v_user", where=filters, limit=limit)
 ```
 
@@ -176,8 +176,8 @@ import fraiseql
 | max_page_size | int | 100 | No | Maximum allowed page size |
 | include_total_count | bool | True | No | Include total count in results |
 | cursor_field | str | "id" | No | Field to use for cursor ordering |
-| jsonb_extraction | bool \| None | None | No | Enable JSONB field extraction (inherits from global config) |
-| jsonb_column | str \| None | None | No | JSONB column name (inherits from global config) |
+| jsonb_extraction | bool \| None | None | No | No effect: recorded in `__fraiseql_connection__` only; rows are read as `db.find` reads them |
+| jsonb_column | str \| None | None | No | No effect: recorded only; the JSONB column is the one registered for the view |
 
 **Must be used with**: @fraiseql.query decorator
 
@@ -243,22 +243,90 @@ import fraiseql
     function: str | None = None,
     schema: str | None = None,
     context_params: dict[str, str] | None = None,
-    error_config: MutationErrorConfig | None = None
+    error_config: MutationErrorConfig | None = None,
+    name: str | None = None,
+    result_name: str | None = None,
 )
 class MutationName:
     input: InputType
     success: SuccessType
-    failure: FailureType
+    error: ErrorType
 ```
 
 **Parameters (Class-based)**:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| function | str \| None | None | PostgreSQL function name (defaults to snake_case of class name) |
+| function | str \| None | None | PostgreSQL function name (defaults to snake_case of class name). It only picks the SQL function: several mutations may share one |
 | schema | str \| None | "public" | PostgreSQL schema containing the function |
 | context_params | dict[str, str] \| None | None | Maps GraphQL context keys to PostgreSQL function parameters |
 | error_config | MutationErrorConfig \| None | None | Error configuration for this mutation. If not specified, uses `default_error_config` from `FraiseQLConfig` (if set). **DEPRECATED** - Only used in non-HTTP mode. HTTP mode uses [status string taxonomy](../archive/mutations/status-strings.md) |
+| name | str \| None | None | GraphQL field name, used as given. See [Field names](#mutation-field-names) |
+| result_name | str \| None | None | GraphQL name of the result union, used as given. See [Result union names](#mutation-result-union-names) |
+
+#### Mutation field names
+
+A class mutation's GraphQL field is named after the class: `CreateUser` becomes
+`createUser` (`create_user` with `camel_case_fields=False`). A function
+mutation is named after the function. `name=` sets the field name directly.
+`function=` doesn't change the field name.
+
+Two mutations with the same field name make the schema build raise a
+`ValueError` that names both. Give one of them a different `name=`.
+
+!!! warning "Names taken from `function=`"
+    Up to fraiseql 1.28, a class mutation was named after its `function=`:
+    `RegisterUser` with `function="register_new_user"` was served as
+    `registerNewUser`. fraiseql 1.x keeps that name, so upgrading renames
+    nothing, and the schema build emits one `FutureWarning` listing every field
+    still named this way, with its preferred name:
+
+    ```text
+    These mutations are named by fraiseql's legacy rule (a field after its function=, a result union after its success type):
+      field 'registerNewUser' (preferred: 'registerUser')
+    fraiseql 1.x keeps these names. To choose a name and silence this warning, pass name="..." (field) or result_name="..." (union) to @mutation.
+    ```
+
+    To keep the current name, pass it: `@fraiseql.mutation(function="register_new_user", name="registerNewUser")`.
+    To switch to the preferred name, pass `name="registerUser"`. Either removes
+    the mutation from the warning. (fraiseql 2.x on PyPI is the separate
+    FraiseQL v2 project; it is not a later version of these names.)
+
+    Mutations that shared a `function=` lost a field before 1.29. They get the
+    class-derived names straight away, with no warning.
+
+    For an auto-discovered mutation, the preferred name is the `name:` in its
+    `@fraiseql:mutation` comment; set it to the current name to keep it.
+
+#### Mutation result union names
+
+A mutation whose success and error types differ returns a union of the two.
+Each mutation gets its own union, named after its field: `createUser` returns
+`CreateUserResult`. `result_name=` sets the union name directly. Several
+mutations may share success and error types; each still gets its own union.
+When the success and error types are the same class, there is no union and
+`result_name=` is ignored.
+
+Two mutations with the same union name make the schema build raise a
+`ValueError` that names both. Give one of them a different `result_name=`.
+
+!!! warning "Names taken from the success type"
+    Up to fraiseql 1.28, the union was named after the success type:
+    `UpdatePostTitle` with `success: PostSuccess` returned `PostResult`, and two
+    mutations sharing a success type failed the schema build with
+    `multiple types named '...Result'`. fraiseql 1.x keeps the union name of a
+    mutation that works, and the same `FutureWarning` as for field names lists it:
+
+    ```text
+      result union 'PostResult' (preferred: 'UpdatePostTitleResult')
+    ```
+
+    Pass `result_name="PostResult"` to keep the current name, or
+    `result_name="UpdatePostTitleResult"` to switch to the preferred one.
+    Mutations that shared a success type get the preferred names straight away,
+    with no warning.
+    An auto-discovered mutation takes `result_name:` in its `@fraiseql:mutation`
+    comment.
 
 **Global Default**: If you don't specify `error_config` on a mutation, FraiseQL will use `default_error_config` from your `FraiseQLConfig` (if set). This allows you to set a global error handling strategy and override it per-mutation when needed.
 
@@ -276,7 +344,7 @@ config = FraiseQLConfig(
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
 
 # Overrides global default
 @fraiseql.mutation(
@@ -286,7 +354,7 @@ class CreateUser:
 class DeleteUser:
     input: DeleteUserInput
     success: DeleteUserSuccess
-    failure: DeleteUserError
+    error: DeleteUserError
 ```
 
 **See**: [FraiseQLConfig.default_error_config](./config.md#default_error_config) for details.
@@ -296,25 +364,29 @@ class DeleteUser:
 ```python
 import fraiseql
 
-# Function-based
+# Function-based: call the PostgreSQL function, then read the row back from the view
 @fraiseql.mutation
-async def create_user(info, input: CreateUserInput) -> User:
+async def create_user_account(info, input: CreateUserInput) -> User:
     db = info.context["db"]
-    return await db.create_one("v_user", data=input.__dict__)
+    result = await db.execute_function("fn_create_user", input.to_dict())
+    return await db.find_one(
+        "v_user", "createUserAccount", info, mandatory_filters={"id": result["id"]}
+    )
 
 # Class-based
 @fraiseql.mutation
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
 
-# With custom function
-@fraiseql.mutation(function="register_new_user", schema="auth")
+# With custom function (name= sets the field to "registerUser"; without it,
+# fraiseql 1.x names the field after the function, "registerNewUser", and warns)
+@fraiseql.mutation(function="register_new_user", schema="auth", name="registerUser")
 class RegisterUser:
     input: RegistrationInput
-    success: RegistrationSuccess
-    failure: RegistrationError
+    success: RegisterUserSuccess
+    error: RegisterUserError
 
 # With context parameters - maps context to PostgreSQL function params
 @fraiseql.mutation(
@@ -327,7 +399,7 @@ class RegisterUser:
 class CreateLocation:
     input: CreateLocationInput
     success: CreateLocationSuccess
-    failure: CreateLocationError
+    error: CreateLocationError
 ```
 
 **How context_params Works**:
@@ -348,7 +420,7 @@ import fraiseql
 class CreateLocation:
     input: CreateLocationInput
     success: CreateLocationSuccess
-    failure: CreateLocationError
+    error: CreateLocationError
 
 # PostgreSQL function signature
 # CREATE FUNCTION create_location(
@@ -382,7 +454,7 @@ async def get_context(request: Request) -> dict:
 class CreateOrder:
     input: CreateOrderInput
     success: CreateOrderSuccess
-    failure: CreateOrderFailure
+    error: CreateOrderError
 
 # PostgreSQL function
 # CREATE FUNCTION create_order(
@@ -415,7 +487,7 @@ class CreateOrder:
 **Usage**:
 
 ```python
-from fraiseql.mutations.decorators import success, failure, result
+from fraiseql.mutations.decorators import success, error
 
 @success
 class CreateUserSuccess:
@@ -428,13 +500,18 @@ class CreateUserError:
     message: str
     field: str | None = None
 
-@result
-class CreateUserResult:
-    success: CreateUserSuccess | None = None
-    error: CreateUserError | None = None
+@fraiseql.mutation
+async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | CreateUserError:
+    ...
 ```
 
 **Note**: These are type markers, not required for mutations. Use @fraiseql.type instead for most cases.
+
+!!! warning "`result()` is deprecated"
+    `fraiseql.result(success_cls, error_cls)` builds a union type from a success
+    and an error class. It is deprecated since 1.29 and keeps working in
+    fraiseql 1.x: annotate `Success | Error` instead, and the mutation's union is named as
+    described in [Result union names](#mutation-result-union-names).
 
 ## Field Decorators
 
@@ -494,7 +571,7 @@ class User:
         return await db.find(
             "v_post",
             where={"user_id": self.id},
-            order_by="created_at DESC",
+            order_by=[{"created_at": "DESC"}],
             limit=limit
         )
 ```
@@ -536,7 +613,7 @@ from fraiseql.types import ID
 class UserDataLoader(DataLoader):
     async def batch_load(self, keys: list[UUID]) -> list[User | None]:
         db = self.context["db"]
-        users = await db.find("v_user", where={"id__in": keys})
+        users = await db.find("v_user", where={"id": {"in": keys}})
         # Return in same order as keys
         user_map = {user.id: user for user in users}
         return [user_map.get(key) for key in keys]
@@ -639,17 +716,20 @@ from fraiseql.auth import requires_auth
 async def get_my_profile(info) -> User:
     user = info.context["user"]  # Guaranteed to be authenticated
     db = info.context["db"]
-    return await db.find_one("v_user", where={"id": user.user_id})
+    return await db.find_one(
+        "v_user", "getMyProfile", info, mandatory_filters={"id": user.user_id}
+    )
 
 @fraiseql.mutation
 @requires_auth
 async def update_profile(info, input: UpdateProfileInput) -> User:
     user = info.context["user"]
     db = info.context["db"]
-    return await db.update_one(
-        "v_user",
-        where={"id": user.user_id},
-        updates=input.__dict__
+    await db.execute_function(
+        "fn_update_user", {"id": str(user.user_id), **input.to_dict()}
+    )
+    return await db.find_one(
+        "v_user", "updateProfile", info, mandatory_filters={"id": user.user_id}
     )
 ```
 
@@ -685,14 +765,18 @@ from fraiseql.types import ID
 @requires_permission("users:write")
 async def create_user(info, input: CreateUserInput) -> User:
     db = info.context["db"]
-    return await db.create_one("v_user", data=input.__dict__)
+    result = await db.execute_function("fn_create_user", input.to_dict())
+    return await db.find_one(
+        "v_user", "createUser", info, mandatory_filters={"id": result["id"]}
+    )
 
 @fraiseql.mutation
 @requires_permission("users:delete")
 async def delete_user(info, id: ID) -> bool:
     db = info.context["db"]
-    await db.delete_one("v_user", where={"id": id})
-    return True
+    # fn_delete_user(input jsonb, OUT deleted boolean)
+    result = await db.execute_function("fn_delete_user", {"id": str(id)})
+    return result["deleted"]
 ```
 
 **Raises**:
@@ -774,7 +858,8 @@ from fraiseql.types import ID
 async def update_user(info, id: ID, input: UpdateUserInput) -> User:
     # Can be performed by users:write OR admin:all
     db = info.context["db"]
-    return await db.update_one("v_user", where={"id": id}, updates=input.__dict__)
+    await db.execute_function("fn_update_user", {"id": str(id), **input.to_dict()})
+    return await db.find_one("v_user", "updateUser", info, mandatory_filters={"id": id})
 ```
 
 **Raises**:

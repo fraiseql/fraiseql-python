@@ -391,7 +391,7 @@ from fraiseql.caching import cached_query
 @cached_query(cache, ttl=300)
 async def expensive_user_stats(info, user_id: ID) -> UserStats:
     db = info.context["db"]
-    return await db.find_one("v_user_stats", id=user_id)
+    return await db.find_one("v_user_stats", mandatory_filters={"id": user_id})
 ```
 
 ---

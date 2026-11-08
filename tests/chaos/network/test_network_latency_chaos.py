@@ -5,7 +5,6 @@ Validates performance degradation handling and timeout behavior.
 """
 
 import statistics
-import time
 
 import pytest
 from chaos.base import ChaosTestCase
@@ -26,7 +25,7 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         Expected: FraiseQL adapts gracefully to increasing latency.
         """
         toxiproxy = ToxiproxyManager()
-        proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
         # Create FraiseQL client for testing
         client = MockFraiseQLClient()
@@ -49,7 +48,7 @@ class TestNetworkLatencyChaos(ChaosTestCase):
             # Uses multiplier-based formula to ensure meaningful test on all hardware
             iterations = max(3, int(3 * self.chaos_config.load_multiplier))
 
-            for i in range(iterations):
+            for _i in range(iterations):
                 result = client.execute_query(operation)
                 execution_time = result.get("_execution_time_ms", 10.0)
                 query_times.append(execution_time)
@@ -84,12 +83,15 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         Expected: FraiseQL maintains functionality under consistent latency.
         """
         toxiproxy = ToxiproxyManager()
-        proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
         self.metrics.start_test()
 
         # Add consistent 500ms latency
         toxiproxy.add_latency_toxic("fraiseql_postgres", 500)
+        client = MockFraiseQLClient()
+        client.inject_latency(500)
+        operation = FraiseQLTestScenarios.simple_user_query()
 
         # Test under consistent latency for multiple operations
         consistent_times = []
@@ -97,10 +99,9 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(5, int(10 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
-            start = time.time()
-            time.sleep(0.510)  # 10ms base + 500ms latency
-            query_time = (time.time() - start) * 1000
+        for _i in range(iterations):
+            # 500ms latency + ~10ms base, simulated by the client
+            query_time = client.execute_query(operation)["_execution_time_ms"]
             consistent_times.append(query_time)
             self.metrics.record_query_time(query_time)
 
@@ -135,12 +136,14 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         Expected: FraiseQL handles variable network conditions.
         """
         toxiproxy = ToxiproxyManager()
-        proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
         self.metrics.start_test()
 
         # Add latency with jitter
         toxiproxy.add_latency_toxic("fraiseql_postgres", latency_ms=200, jitter_ms=100)
+        client = MockFraiseQLClient()
+        operation = FraiseQLTestScenarios.simple_user_query()
 
         # Test under jittery conditions
         jitter_times = []
@@ -149,13 +152,11 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         iterations = max(7, int(15 * self.chaos_config.load_multiplier))
 
         for i in range(iterations):  # More samples for statistical significance
-            start = time.time()
             # Simulate variable network delay
-            base_delay = 0.200  # 200ms base (matching test description)
-            jitter = (time.time() * 1000) % 200  # Pseudo-random jitter 0-200ms
-            total_delay = base_delay + (jitter / 1000.0)
-            time.sleep(total_delay)
-            query_time = (time.time() - start) * 1000
+            base_delay_ms = 200  # 200ms base (matching test description)
+            jitter_ms = (i * 73) % 200  # Deterministic jitter spread over 0-200ms
+            client.inject_latency(base_delay_ms + jitter_ms)
+            query_time = client.execute_query(operation)["_execution_time_ms"]
             jitter_times.append(query_time)
             self.metrics.record_query_time(query_time)
 
@@ -181,27 +182,26 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         Expected: FraiseQL handles asymmetric network conditions.
         """
         toxiproxy = ToxiproxyManager()
-        proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
         self.metrics.start_test()
 
         # For asymmetric latency, we'd need more sophisticated toxics
         # For now, simulate with different latency patterns
         asymmetric_times = []
+        client = MockFraiseQLClient()
+        operation = FraiseQLTestScenarios.simple_user_query()
+        client.inject_latency(300)  # 300ms inbound
 
         # Simulate asymmetric: fast outbound, slow inbound
         # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(4, int(8 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
-            # Fast "request" phase
-            time.sleep(0.010)  # 10ms outbound
-
-            # Slow "response" phase
-            start = time.time()
-            time.sleep(0.300)  # 300ms inbound
-            response_time = (time.time() - start) * 1000
+        for _i in range(iterations):
+            # Fast "request" phase, slow "response" phase: ~10ms base + 300ms
+            # inbound, simulated by the client
+            response_time = client.execute_query(operation)["_execution_time_ms"]
             asymmetric_times.append(response_time)
             self.metrics.record_query_time(response_time)
 
@@ -235,13 +235,16 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
-            start = time.time()
+        client = MockFraiseQLClient()
+        operation = FraiseQLTestScenarios.simple_user_query()
+        client.inject_latency(2000)
+
+        for _i in range(iterations):
             try:
                 # Simulate operation with 2-second latency
-                time.sleep(2.0)
+                query_time = client.execute_query(operation)["_execution_time_ms"]
                 # This should timeout in real scenarios
-                if (time.time() - start) * 1000 > 1500:  # 1.5s timeout
+                if query_time > 1500:  # 1.5s timeout
                     raise TimeoutError("Query timeout under high latency")
                 success_count += 1
             except TimeoutError:
@@ -263,9 +266,12 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         Expected: Performance returns to baseline within acceptable time.
         """
         toxiproxy = ToxiproxyManager()
-        proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
         self.metrics.start_test()
+
+        client = MockFraiseQLClient()
+        operation = FraiseQLTestScenarios.simple_user_query()
 
         # Baseline measurement
         baseline_times = []
@@ -273,15 +279,14 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
-            start = time.time()
-            time.sleep(0.010)
-            baseline_times.append((time.time() - start) * 1000)
+        for _i in range(iterations):
+            baseline_times.append(client.execute_query(operation)["_execution_time_ms"])
 
         avg_baseline = statistics.mean(baseline_times)
 
         # Inject high latency
         toxiproxy.add_latency_toxic("fraiseql_postgres", 1000)  # 1 second latency
+        client.inject_latency(1000)
 
         # Measure under chaos
         chaos_times = []
@@ -289,13 +294,13 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(3 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
-            start = time.time()
-            time.sleep(1.010)  # 1s latency + 10ms base
-            chaos_times.append((time.time() - start) * 1000)
+        for _i in range(iterations):
+            # 1s latency + ~10ms base
+            chaos_times.append(client.execute_query(operation)["_execution_time_ms"])
 
         # Remove chaos
         toxiproxy.remove_all_toxics("fraiseql_postgres")
+        client.reset_chaos()
 
         # Measure recovery (immediate next operations)
         recovery_times = []
@@ -303,10 +308,9 @@ class TestNetworkLatencyChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
-            start = time.time()
-            time.sleep(0.010)  # Should be back to baseline
-            recovery_times.append((time.time() - start) * 1000)
+        for _i in range(iterations):
+            # Should be back to baseline
+            recovery_times.append(client.execute_query(operation)["_execution_time_ms"])
 
         avg_recovery = statistics.mean(recovery_times)
 

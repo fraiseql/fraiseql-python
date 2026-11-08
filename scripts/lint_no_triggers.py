@@ -40,7 +40,6 @@ ALLOWED_TRIGGER_FILES = [
 
 # Documentation files that should show BOTH patterns (commented out bad patterns)
 DOCUMENTATION_EXCEPTION_FILES = [
-    'examples/blog_enterprise/README.md',  # Shows BAD pattern commented out
     'docs/database/avoid-triggers.md',     # Educational guide showing bad patterns
 ]
 

@@ -6,6 +6,8 @@ in v0.7.15 with built-in JSON serialization support for FraiseQL input objects.
 
 import json
 
+import pytest
+
 import fraiseql
 from fraiseql.fastapi.json_encoder import FraiseQLJSONEncoder
 from fraiseql.types.definitions import UNSET
@@ -114,10 +116,8 @@ class TestNestedInputJSONSerialization:
         )
 
         # Standard JSON.dumps still fails, which is expected - users should use FraiseQLJSONEncoder
-        try:
+        with pytest.raises(
+            TypeError,
+            match="Object of type CreateNestedPublicAddressInput is not JSON serializable",
+        ):
             json.dumps(nested_address)
-            assert False, "Standard JSON should still fail without custom encoder"
-        except TypeError as e:
-            assert "Object of type CreateNestedPublicAddressInput is not JSON serializable" in str(
-                e
-            )

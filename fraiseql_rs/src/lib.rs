@@ -26,7 +26,6 @@ pub mod mutations;
 pub mod pipeline;
 pub mod query;
 pub mod rbac;
-pub mod response;
 pub mod schema_registry;
 pub mod security;
 
@@ -156,37 +155,6 @@ fn test_function() -> PyResult<&'static str> {
     Ok("Hello from Rust!")
 }
 
-//----------------------------------------------------------------------------
-// Internal testing exports (for unit tests)
-//----------------------------------------------------------------------------
-
-/// Python wrapper for Arena (for testing)
-///
-/// This is NOT thread-safe and should only be used for testing!
-#[pyclass(unsendable)]
-struct Arena {
-    inner: core::Arena,
-}
-
-#[pymethods]
-impl Arena {
-    #[new]
-    fn new() -> Self {
-        Arena {
-            inner: core::Arena::with_capacity(8192),
-        }
-    }
-}
-
-/// Multi-architecture snake_to_camel (for testing)
-///
-/// This automatically dispatches to the best implementation for the current CPU.
-#[pyfunction]
-fn test_snake_to_camel(input: &[u8], arena: &Arena) -> Vec<u8> {
-    let result = core::camel::snake_to_camel(input, &arena.inner);
-    result.to_vec()
-}
-
 /// Convert a Python object to serde_json::Value recursively
 ///
 /// Handles all Python types comprehensively:
@@ -265,11 +233,15 @@ fn python_to_json(value: &Bound<'_, pyo3::types::PyAny>) -> PyResult<serde_json:
 /// alias, type_name)     is_list: True for list responses (always array), False for single object
 /// responses     include_graphql_wrapper: True to wrap in {"data":{"field_name":...}} (default),
 /// False for field-only mode
+///     inject_typename: True (default) gives every object of a known type its
+/// __typename; False writes __typename only where field_selections select it, for a
+/// response that goes to the client as is
 ///
 /// Returns:
 ///     UTF-8 encoded GraphQL response bytes ready for HTTP
 #[pyfunction]
-#[pyo3(signature = (json_strings, field_name, type_name=None, field_paths=None, field_selections=None, is_list=None, include_graphql_wrapper=None))]
+#[pyo3(signature = (json_strings, field_name, type_name=None, field_paths=None, field_selections=None, is_list=None, include_graphql_wrapper=None, inject_typename=None))]
+#[allow(clippy::too_many_arguments)]
 pub fn build_graphql_response(
     json_strings: Vec<String>,
     field_name: &str,
@@ -278,6 +250,7 @@ pub fn build_graphql_response(
     field_selections: Option<Bound<'_, pyo3::types::PyList>>,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
+    inject_typename: Option<bool>,
 ) -> PyResult<Vec<u8>> {
     // Convert Python list to Vec<Value> if provided using the helper function
     let selections_json = if let Some(py_list) = field_selections {
@@ -300,6 +273,7 @@ pub fn build_graphql_response(
         selections_opt,
         is_list,
         include_graphql_wrapper,
+        inject_typename,
     )
 }
 
@@ -380,7 +354,7 @@ pub fn initialize_schema_registry(schema_json: String) -> PyResult<()> {
 ///
 /// Examples:
 ///     >>> cascade_json = '{"updated": [{"__typename": "Post", "id": "1"}]}'
-///     >>> selections = '{"fields": ["updated"], "updated": {"include": ["Post"]}}'
+///     >>> selections = '{"fields": ["updated"], "updated": {"fields": ["__typename", "id"]}}'
 ///     >>> result = filter_cascade_data(cascade_json, selections)
 ///
 /// Args:
@@ -404,8 +378,14 @@ pub fn filter_cascade_data(cascade_json: &str, selections_json: Option<&str>) ->
 /// This function transforms PostgreSQL mutation_response JSON into GraphQL responses.
 /// It supports both simple format (just entity JSONB) and full format with status.
 ///
+/// The response holds only what the query selected, under its response keys, as
+/// described by the selection document in `entity_selections` (format
+/// `MUTATION_SELECTION_FORMAT`): `{"format": 2, "success": Selection | null,
+/// "error": Selection | null}`, `null` meaning unfiltered. See
+/// `mutation::project_selection` for a Selection.
+///
 /// Examples:
-///     >>> # Simple format
+///     >>> # Simple format, unfiltered
 ///     >>> result = build_mutation_response(
 ///     ...     '{"id": "123", "name": "John"}',
 ///     ...     "createUser",
@@ -413,23 +393,28 @@ pub fn filter_cascade_data(cascade_json: &str, selections_json: Option<&str>) ->
 ///     ...     "CreateUserError",
 ///     ...     "user",
 ///     ...     "User",
-///     ...     None
+///     ...     entity_selections='{"format": 2, "success": null, "error": null}',
 ///     ... )
 ///
 /// Args:
 ///     mutation_json: Raw JSON from PostgreSQL (simple or full format)
-///     field_name: GraphQL field name (e.g., "createUser")
+///     field_name: The response key of the mutation field (its alias, or its name)
 ///     success_type: Success type name (e.g., "CreateUserSuccess")
 ///     error_type: Error type name (e.g., "CreateUserError")
 ///     entity_field_name: Field name for entity (e.g., "user")
 ///     entity_type: Entity type for __typename (e.g., "User") - REQUIRED for simple format
 ///     cascade_selections: Optional cascade selections JSON string
+///     auto_camel_case: Whether to convert keys to camelCase
+///     success_type_fields: Unused since the selection document (format 2)
+///     error_type_fields: Unused since the selection document (format 2)
+///     entity_selections: The selection document (JSON), required
 ///
 /// Returns:
 ///     UTF-8 encoded GraphQL response bytes ready for HTTP
 ///
 /// Raises:
-///     ValueError: If JSON is malformed or transformation fails
+///     ValueError: If JSON is malformed, the selection document is missing or of
+///         another format, or transformation fails
 #[pyfunction]
 #[pyo3(signature = (mutation_json, field_name, success_type, error_type, entity_field_name=None, entity_type=None, cascade_selections=None, auto_camel_case=true, success_type_fields=None, error_type_fields=None, entity_selections=None))]
 #[allow(clippy::too_many_arguments)]
@@ -446,7 +431,11 @@ pub fn build_mutation_response(
     error_type_fields: Option<Vec<String>>,
     entity_selections: Option<&str>,
 ) -> PyResult<Vec<u8>> {
-    mutation::build_mutation_response(
+    // Field lists from before the selection document; the document replaces them
+    let _ = (success_type_fields, error_type_fields);
+    let document = mutation::parse_selection_document(entity_selections)
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    mutation::build_mutation_response_selected(
         mutation_json,
         field_name,
         success_type,
@@ -455,11 +444,34 @@ pub fn build_mutation_response(
         entity_type,
         cascade_selections,
         auto_camel_case,
-        success_type_fields,
-        error_type_fields,
-        entity_selections,
+        &document,
     )
     .map_err(pyo3::exceptions::PyValueError::new_err)
+}
+
+/// The type name a mutation result answers with: the success type or the error type
+///
+/// It is the type `build_mutation_response` builds for the same `mutation_json`,
+/// for a caller to check the response when the query doesn't select `__typename`
+/// (so the response doesn't hold it).
+///
+/// Examples:
+///     >>> mutation_response_type('{"status": "created", "entity": {}}', "S", "E")
+///     'S'
+///
+/// Raises:
+///     ValueError: If mutation_json is malformed
+#[pyfunction]
+#[pyo3(signature = (mutation_json, success_type, error_type, entity_type=None))]
+pub fn mutation_response_type(
+    mutation_json: &str,
+    success_type: &str,
+    error_type: &str,
+    entity_type: Option<&str>,
+) -> PyResult<String> {
+    mutation::response_type_name(mutation_json, success_type, error_type, entity_type)
+        .map(str::to_string)
+        .map_err(pyo3::exceptions::PyValueError::new_err)
 }
 
 /// Reset the schema registry for testing purposes
@@ -696,6 +708,8 @@ fn fraiseql_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Add mutation response building
     m.add_function(wrap_pyfunction!(build_mutation_response, m)?)?;
+    m.add_function(wrap_pyfunction!(mutation_response_type, m)?)?;
+    m.add("MUTATION_SELECTION_FORMAT", mutation::SELECTION_FORMAT)?;
 
     // Add GraphQL execution functions (Phase 4)
     m.add_function(wrap_pyfunction!(execute_query_async, m)?)?;
@@ -734,10 +748,6 @@ fn fraiseql_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Add database pool (Phase 1)
     m.add_class::<db::pool::DatabasePool>()?;
-
-    // Add internal testing exports (not in __all__)
-    m.add_class::<Arena>()?;
-    m.add_function(wrap_pyfunction!(test_snake_to_camel, m)?)?;
 
     // Add testing utilities (for pytest fixtures)
     m.add_function(wrap_pyfunction!(reset_schema_registry_for_testing, m)?)?;

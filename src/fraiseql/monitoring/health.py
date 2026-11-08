@@ -252,39 +252,41 @@ async def check_database(pool: Any | None = None, timeout_seconds: float = 5.0) 
         # Get a connection from the pool with timeout
         import asyncio
 
-        async with asyncio.timeout(timeout_seconds):
-            async with pool.connection() as conn:
-                # Execute simple query to verify connectivity
-                async with conn.cursor() as cursor:
-                    await cursor.execute("SELECT 1")
-                    result = await cursor.fetchone()
+        # Execute simple query to verify connectivity
+        async with (
+            asyncio.timeout(timeout_seconds),
+            pool.connection() as conn,
+            conn.cursor() as cursor,
+        ):
+            await cursor.execute("SELECT 1")
+            result = await cursor.fetchone()
 
-                    if result and result[0] == 1:
-                        # Database is responsive - collect pool stats
-                        metadata = {}
+            if result and result[0] == 1:
+                # Database is responsive - collect pool stats
+                metadata = {}
 
-                        # Get pool statistics if available
-                        if hasattr(pool, "_pool"):
-                            # psycopg3 AsyncConnectionPool internals
-                            p = pool._pool
-                            if hasattr(p, "_nconns"):
-                                metadata["pool_size"] = p._nconns
-                            if hasattr(p, "_connections"):
-                                metadata["pool_connections"] = len(p._connections)
+                # Get pool statistics if available
+                if hasattr(pool, "_pool"):
+                    # psycopg3 AsyncConnectionPool internals
+                    p = pool._pool
+                    if hasattr(p, "_nconns"):
+                        metadata["pool_size"] = p._nconns
+                    if hasattr(p, "_connections"):
+                        metadata["pool_connections"] = len(p._connections)
 
-                        return CheckResult(
-                            name="database",
-                            status=HealthStatus.HEALTHY,
-                            message="Database connection successful",
-                            metadata=metadata,
-                        )
+                return CheckResult(
+                    name="database",
+                    status=HealthStatus.HEALTHY,
+                    message="Database connection successful",
+                    metadata=metadata,
+                )
 
-                    # SELECT 1 returned unexpected result
-                    return CheckResult(
-                        name="database",
-                        status=HealthStatus.UNHEALTHY,
-                        message=f"Unexpected database response: {result}",
-                    )
+            # SELECT 1 returned unexpected result
+            return CheckResult(
+                name="database",
+                status=HealthStatus.UNHEALTHY,
+                message=f"Unexpected database response: {result}",
+            )
 
     except TimeoutError:
         return CheckResult(

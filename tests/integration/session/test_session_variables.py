@@ -125,7 +125,7 @@ class TestSessionVariablesAcrossExecutionModes:
             if hasattr(stmt, "as_string"):
                 try:
                     executed_sql_str.append(stmt.as_string(None))
-                except:
+                except Exception:
                     executed_sql_str.append(str(stmt))
             else:
                 executed_sql_str.append(str(stmt))

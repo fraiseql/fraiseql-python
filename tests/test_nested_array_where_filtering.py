@@ -294,11 +294,10 @@ def _apply_field_filter(item_value, filter_dict) -> None:
             or (operator == "in_" and item_value not in filter_value)
         ):
             return False
-        if operator == "isnull":
-            if (filter_value and item_value is not None) or (
-                not filter_value and item_value is None
-            ):
-                return False
+        if operator == "isnull" and (
+            (filter_value and item_value is not None) or (not filter_value and item_value is None)
+        ):
+            return False
 
     return True
 

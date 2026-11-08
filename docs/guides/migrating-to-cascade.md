@@ -721,17 +721,10 @@ describe('Cascade Integration', () => {
 
 #### 5.1 Feature Flags
 
-**Environment Variable Control**:
+Cascade is switched on per mutation; there is no global setting or environment
+variable for it.
 
-```bash
-# Enable cascade globally
-export FRAISEQL_ENABLE_CASCADE=true
-
-# Or disable for safety
-export FRAISEQL_ENABLE_CASCADE=false
-```
-
-**Per-Mutation Control** (recommended):
+**Per-Mutation Control**:
 
 ```python
 import fraiseql

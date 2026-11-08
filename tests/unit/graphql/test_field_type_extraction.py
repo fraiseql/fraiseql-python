@@ -117,8 +117,8 @@ class TestFieldTypeExtraction:
         )
 
         # Should preserve existing hints
-        assert enhanced_hints["id"] == int
-        assert enhanced_hints["name"] == str
+        assert enhanced_hints["id"] is int
+        assert enhanced_hints["name"] is str
 
         # Should add extracted types
         assert enhanced_hints["ipAddress"] == IpAddress
@@ -162,7 +162,7 @@ class TestFieldTypeExtraction:
 
         # Should override generic str with specific IpAddress for IP address fields
         assert enhanced_hints["ipAddress"] == IpAddress  # Upgraded from str
-        assert enhanced_hints["name"] == str  # No specific type detected, stays str
+        assert enhanced_hints["name"] is str  # No specific type detected, stays str
 
         # Should add new extracted type
         assert enhanced_hints["macAddress"] == MacAddress

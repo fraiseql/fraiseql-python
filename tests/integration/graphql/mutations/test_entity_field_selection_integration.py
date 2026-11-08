@@ -7,6 +7,9 @@ reducing payload size and matching query behavior.
 import json
 
 import pytest
+from tests.unit.mutations.selection_document import info_for, legacy_document
+
+from fraiseql.mutations.mutation_decorator import _response_selections
 
 pytestmark = pytest.mark.integration
 
@@ -206,52 +209,19 @@ class TestEntityFieldSelectionIntegration:
     ):
         """Verify that entity field selection filters simple fields (GitHub issue #525)."""
         from types import SimpleNamespace
-        from unittest.mock import MagicMock
 
         from fraiseql.mutations.rust_executor import execute_mutation_rust
 
         # Create mock info object with field selections
         # Simulates GraphQL query: location { id, name }
-        info = MagicMock()
-
-        # Mock field nodes for entity selection extraction
-        # This would normally be parsed from the actual GraphQL query
-        location_field = MagicMock()
-        location_field.name.value = "location"
-        location_field.selection_set = MagicMock()
-
-        id_field = MagicMock()
-        id_field.name.value = "id"
-        id_field.selection_set = None
-
-        name_field = MagicMock()
-        name_field.name.value = "name"
-        name_field.selection_set = None
-
-        location_field.selection_set.selections = [id_field, name_field]
-
-        success_fragment = MagicMock()
-        type_condition = MagicMock()
-        name_mock = MagicMock()
-        name_mock.value = "CreateLocationSuccess"
-        type_condition.name = name_mock
-        success_fragment.type_condition = type_condition
-        success_fragment.selection_set = MagicMock()
-        success_fragment.selection_set.selections = [location_field]
-
-        mutation_field = MagicMock()
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
-
-        info.field_nodes = [mutation_field]
-
-        # Extract entity selections using our implementation
-        from fraiseql.mutations.mutation_decorator import _extract_entity_field_selections
-
-        entity_selections = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
+        info = info_for(
+            "mutation { createLocation { ... on CreateLocationSuccess { location { id name } } } }"
         )
-        entity_selections_json = json.dumps(entity_selections) if entity_selections else None
+        selections = json.dumps(
+            _response_selections(
+                info, "CreateLocationSuccess", "CreateLocationError", by_alias=True
+            )
+        )
 
         config = SimpleNamespace(auto_camel_case=True)
 
@@ -266,9 +236,7 @@ class TestEntityFieldSelectionIntegration:
             entity_field_name="location",
             entity_type="Location",
             config=config,
-            success_type_fields=["location"],  # Only select location field
-            error_type_fields=None,
-            entity_selections=entity_selections_json,  # Apply entity filtering
+            selections=selections,
         )
 
         # Parse response using to_json() method for testing
@@ -300,64 +268,19 @@ class TestEntityFieldSelectionIntegration:
     ):
         """Verify that entity field selection works for nested objects."""
         from types import SimpleNamespace
-        from unittest.mock import MagicMock
 
         from fraiseql.mutations.rust_executor import execute_mutation_rust
 
         # Create mock info with nested selections
         # Simulates: location { id, name, address { id, city } }
-        info = MagicMock()
-
-        # Create address field with sub-selections
-        addr_id_field = MagicMock()
-        addr_id_field.name.value = "id"
-        addr_id_field.selection_set = None
-
-        addr_city_field = MagicMock()
-        addr_city_field.name.value = "city"
-        addr_city_field.selection_set = None
-
-        address_field = MagicMock()
-        address_field.name.value = "address"
-        address_field.selection_set = MagicMock()
-        address_field.selection_set.selections = [addr_id_field, addr_city_field]
-
-        # Create location fields
-        id_field = MagicMock()
-        id_field.name.value = "id"
-        id_field.selection_set = None
-
-        name_field = MagicMock()
-        name_field.name.value = "name"
-        name_field.selection_set = None
-
-        location_field = MagicMock()
-        location_field.name.value = "location"
-        location_field.selection_set = MagicMock()
-        location_field.selection_set.selections = [id_field, name_field, address_field]
-
-        success_fragment = MagicMock()
-        type_condition = MagicMock()
-        name_mock = MagicMock()
-        name_mock.value = "CreateLocationSuccess"
-        type_condition.name = name_mock
-        success_fragment.type_condition = type_condition
-        success_fragment.selection_set = MagicMock()
-        success_fragment.selection_set.selections = [location_field]
-
-        mutation_field = MagicMock()
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
-
-        info.field_nodes = [mutation_field]
-
-        # Extract entity selections
-        from fraiseql.mutations.mutation_decorator import _extract_entity_field_selections
-
-        entity_selections = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
+        info = info_for(
+            "mutation { createLocation { ... on CreateLocationSuccess { location { id name address { id city } } } } }"
         )
-        entity_selections_json = json.dumps(entity_selections) if entity_selections else None
+        selections = json.dumps(
+            _response_selections(
+                info, "CreateLocationSuccess", "CreateLocationError", by_alias=True
+            )
+        )
 
         config = SimpleNamespace(auto_camel_case=True)
 
@@ -372,9 +295,7 @@ class TestEntityFieldSelectionIntegration:
             entity_field_name="location",
             entity_type="Location",
             config=config,
-            success_type_fields=["location"],
-            error_type_fields=None,
-            entity_selections=entity_selections_json,
+            selections=selections,
         )
 
         # Parse response using to_json() method for testing
@@ -405,17 +326,17 @@ class TestEntityFieldSelectionIntegration:
         print(f"   Location fields: {list(location.keys())}")
         print(f"   Address fields: {list(address.keys())}")
 
-    async def test_backward_compat_no_entity_selections(
+    async def test_no_selections_returns_all_fields(
         self, db_connection, setup_location_schema, test_schema
     ):
-        """Verify backward compatibility: No entity_selections = return all fields."""
+        """Without a selection document, the response is unfiltered."""
         from types import SimpleNamespace
 
         from fraiseql.mutations.rust_executor import execute_mutation_rust
 
         config = SimpleNamespace(auto_camel_case=True)
 
-        # Execute mutation WITHOUT entity_selections parameter
+        # Execute mutation WITHOUT selections
         result = await execute_mutation_rust(
             conn=db_connection,
             function_name=f"{test_schema}.create_location",
@@ -426,9 +347,7 @@ class TestEntityFieldSelectionIntegration:
             entity_field_name="location",
             entity_type="Location",
             config=config,
-            success_type_fields=None,
-            error_type_fields=None,
-            entity_selections=None,  # No filtering
+            # No selections: the response is unfiltered
         )
 
         # Parse response using to_json() method for testing
@@ -448,18 +367,17 @@ class TestEntityFieldSelectionIntegration:
 
         print(f"✅ Backward compatibility: All {len(location)} fields returned when no filtering")
 
-    async def test_empty_entity_selection_returns_all_fields(
+    async def test_entity_without_sub_selection_returns_all_fields(
         self, db_connection, setup_location_schema, test_schema
     ):
-        """Verify empty selection {} returns all fields (GraphQL spec)."""
+        """A field selected without a sub-selection is copied whole."""
         from types import SimpleNamespace
 
         from fraiseql.mutations.rust_executor import execute_mutation_rust
 
         config = SimpleNamespace(auto_camel_case=True)
 
-        # Empty selection = GraphQL default behavior (all fields)
-        entity_selections_json = json.dumps({"fields": []})
+        selections = legacy_document(["location"], None, "location", None)
 
         result = await execute_mutation_rust(
             conn=db_connection,
@@ -471,9 +389,7 @@ class TestEntityFieldSelectionIntegration:
             entity_field_name="location",
             entity_type="Location",
             config=config,
-            success_type_fields=None,
-            error_type_fields=None,
-            entity_selections=entity_selections_json,  # Empty selection
+            selections=selections,
         )
 
         # Parse response using to_json() method for testing
@@ -481,9 +397,7 @@ class TestEntityFieldSelectionIntegration:
         data = response["data"]["createLocation"]
         location = data["location"]
 
-        # Empty selection should return all fields
+        # The whole entity
         assert "id" in location
         assert "name" in location
         assert "city" in location
-
-        print("✅ Empty selection returns all fields (GraphQL spec)")

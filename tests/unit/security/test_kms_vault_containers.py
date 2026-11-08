@@ -243,6 +243,6 @@ class TestVaultKMSProviderContainers:
             encrypted_messages.append(encrypted)
 
         # Decrypt all messages
-        for original, encrypted in zip(messages, encrypted_messages):
+        for original, encrypted in zip(messages, encrypted_messages, strict=False):
             decrypted = await vault_provider.decrypt(encrypted)
             assert decrypted == original

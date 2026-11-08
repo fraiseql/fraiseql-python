@@ -152,7 +152,7 @@ result.status := 'not_found:user';  -- → 404
 Check your Python type definitions match SQL output:
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError:
     status: str
     message: str
@@ -166,7 +166,7 @@ class CreateUserError:
 
 ```python
 # ❌ WRONG: No errors field
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError:
     status: str
     message: str
@@ -174,7 +174,7 @@ class CreateUserError:
     # Missing: errors: list[Error]
 
 # ✅ CORRECT: Include errors
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError:
     status: str
     message: str
@@ -516,7 +516,7 @@ SELECT validate_mutation_response(your_function(...)::mutation_response);
 **Error types must have:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class YourError:
     status: str
     message: str

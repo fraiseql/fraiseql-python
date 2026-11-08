@@ -26,7 +26,7 @@ from fraiseql.types import ID
 async def user(info, id: ID) -> User:
     db = info.context["db"]
     # field_name auto-inferred as "user" from function name
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 > **Note**: FraiseQL has two repository classes: `FraiseQLRepository` (modern, recommended) and `CQRSRepository` (legacy). See [Repository Classes Comparison](repositories.md) for details on when to use each.
@@ -64,6 +64,14 @@ async def find(
 | view_name | str | Yes | Database view or table name (e.g., "v_user") |
 | field_name | str \| None | No | GraphQL field name for response wrapping. **Auto-inferred** from `info.field_name` (your resolver function name). Only specify if you need to override. |
 | **kwargs | Any | No | Query parameters: `where`, `limit`, `offset`, `order_by` |
+
+`order_by` takes a dict (`{"created_at": "DESC"}`), a list of dicts or of
+`(field, direction)` tuples, an `OrderBySet`, or the GraphQL `orderBy` input; these
+read JSONB fields. It also takes a string of the view's column names,
+`"created_at DESC, id"`: each name (optionally qualified, `t.col`, or double-quoted for a
+mixed-case column) may be followed by `ASC`/`DESC` and `NULLS FIRST`/`NULLS LAST`. The
+names are quoted into the SQL; any other string (an expression, a JSONB path such as
+`data->>'name'`, a column position) raises `ValueError`.
 
 > **Note**: The `info` parameter is automatically injected from the GraphQL context. The `field_name` is also **automatically extracted from `info.field_name`**, so you typically don't need to specify it!
 
@@ -108,13 +116,15 @@ async def paginated_users(info, page: int = 1, page_size: int = 20) -> list[User
     offset = (page - 1) * page_size
     return await db.find("v_user", limit=page_size, offset=offset)
 
-# With ordering (list of tuples format)
+# With ordering: a list of {field: direction} dicts. ("created_at", "DESC")
+# tuples and bare field names (ascending) work too; a direction other than
+# ASC/DESC raises.
 @fraiseql.query
 async def recent_users(info, limit: int = 10) -> list[User]:
     db = info.context["db"]
     return await db.find(
         "v_user",
-        order_by=[("created_at", "DESC")],
+        order_by=[{"created_at": "DESC"}],
         limit=limit
     )
 
@@ -125,8 +135,8 @@ async def search_users(info, name: str) -> list[User]:
     return await db.find(
         "v_user",
         where={
-            "name__icontains": name,
-            "created_at__gte": datetime(2025, 1, 1)
+            "name": {"icontains": name},
+            "created_at": {"gte": "2025-01-01"},
         }
     )
 
@@ -137,23 +147,28 @@ async def filtered_users(info, where: UserWhereInput | None = None) -> list[User
     return await db.find("v_user", where=where)
 ```
 
-**Filter Operators** (dict-based):
+**Filter Operators** (dict-based): each field maps to `{operator: value}`
 
 | Operator | Description | Example |
 |----------|-------------|---------|
-| `field` | Exact match | `{"status": "active"}` |
-| `field__eq` | Equals | `{"age__eq": 25}` |
-| `field__neq` | Not equals | `{"status__neq": "deleted"}` |
-| `field__gt` | Greater than | `{"age__gt": 18}` |
-| `field__gte` | Greater than or equal | `{"age__gte": 18}` |
-| `field__lt` | Less than | `{"age__lt": 65}` |
-| `field__lte` | Less than or equal | `{"age__lte": 65}` |
-| `field__in` | In list | `{"status__in": ["active", "pending"]}` |
-| `field__contains` | Contains substring (case-sensitive) | `{"name__contains": "John"}` |
-| `field__icontains` | Contains substring (case-insensitive) | `{"name__icontains": "john"}` |
-| `field__startswith` | Starts with | `{"email__startswith": "admin"}` |
-| `field__endswith` | Ends with | `{"email__endswith": "@example.com"}` |
-| `field__isnull` | Is null | `{"deleted_at__isnull": True}` |
+| (plain value) | Exact match | `{"status": "active"}` |
+| `eq` | Equals | `{"age": {"eq": 25}}` |
+| `neq` | Not equals | `{"status": {"neq": "deleted"}}` |
+| `gt` | Greater than | `{"age": {"gt": 18}}` |
+| `gte` | Greater than or equal | `{"age": {"gte": 18}}` |
+| `lt` | Less than | `{"age": {"lt": 65}}` |
+| `lte` | Less than or equal | `{"age": {"lte": 65}}` |
+| `in` | In list | `{"status": {"in": ["active", "pending"]}}` |
+| `contains` | Contains substring (case-sensitive) | `{"name": {"contains": "John"}}` |
+| `icontains` | Contains substring (case-insensitive) | `{"name": {"icontains": "john"}}` |
+| `startswith` | Starts with | `{"email": {"startswith": "admin"}}` |
+| `endswith` | Ends with | `{"email": {"endswith": "@example.com"}}` |
+| `isnull` | Is null | `{"deleted_at": {"isnull": True}}` |
+
+Django-style suffixes (`"age__gte"`) are not operators: such a key raises a
+`ValueError` that names the supported form, `{"age": {"gte": 18}}` (unless the view
+has a column, or its type a field, really named `age__gte`). See
+[Filter Operators](../advanced/filter-operators.md) for the full list.
 
 ### find_one()
 
@@ -190,7 +205,7 @@ from fraiseql.types import ID
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 
 # Using where parameter
 @fraiseql.query
@@ -211,7 +226,7 @@ async def active_user_by_email(info, email: str) -> User | None:
 @fraiseql.query
 async def get_user(info, id: ID) -> User:
     db = info.context["db"]
-    user = await db.find_one("v_user", id=id)
+    user = await db.find_one("v_user", mandatory_filters={"id": id})
     if user is None:
         raise GraphQLError("User not found")
     return user
@@ -305,95 +320,94 @@ async def tenant_stats(info) -> TenantStats:
 
 **Note**: Unlike `find()` and `find_one()`, `count()` returns a plain Python `int` instead of `RustResponseBytes` because count is a simple scalar value.
 
-## Pagination Methods
+## Pagination
+
+`FraiseQLRepository` pages with `limit` and `offset` on `find()`, and `count()` gives
+the total for the same filter. Order by a stable key so pages don't overlap:
+
+```python
+import fraiseql
+
+
+@fraiseql.query
+async def active_users(info, page: int = 1, page_size: int = 20) -> list[User]:
+    db = info.context["db"]
+    return await db.find(
+        "v_user",
+        where={"is_active": {"eq": True}},
+        order_by=[{"created_at": "DESC"}, {"id": "ASC"}],
+        limit=page_size,
+        offset=(page - 1) * page_size,
+    )
+
+
+@fraiseql.query
+async def active_user_count(info) -> int:
+    db = info.context["db"]
+    return await db.count("v_user", where={"is_active": {"eq": True}})
+```
+
+List queries also get `limit` and `offset` GraphQL arguments automatically (see
+[Auto-Wired Query Parameters](../core/queries-and-mutations.md#auto-wired-query-parameters)),
+so `db.find("v_user")` in a resolver that doesn't declare them already pages as
+the client asks.
 
 ### paginate()
 
-**Purpose**: Cursor-based pagination following Relay specification
+Cursor pagination, Relay style: `first`/`after` page forward, `last`/`before` page
+back. `@fraiseql.connection` calls it for you; call it yourself to page a view in
+your own resolver.
 
 **Signature**:
 
 ```python
 async def paginate(
     view_name: str,
+    *,
     first: int | None = None,
     after: str | None = None,
     last: int | None = None,
     before: str | None = None,
-    filters: dict | None = None,
+    filters: Any = None,
     order_by: str = "id",
+    order_direction: str = "ASC",
     include_total: bool = True,
-    jsonb_extraction: bool | None = None,
-    jsonb_column: str | None = None
+    info: Any = None,
+    **kwargs: Any,
 ) -> dict[str, Any]
 ```
 
 **Parameters**:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| view_name | str | - | Database view or table name |
-| first | int \| None | None | Number of items to fetch forward |
-| after | str \| None | None | Cursor to fetch after |
-| last | int \| None | None | Number of items to fetch backward |
-| before | str \| None | None | Cursor to fetch before |
-| filters | dict \| None | None | Filter conditions |
-| order_by | str | "id" | Field to order by |
-| include_total | bool | True | Include total count in result |
-| jsonb_extraction | bool \| None | None | Enable JSONB extraction |
-| jsonb_column | str \| None | None | JSONB column name |
+| Parameter | Description |
+|-----------|-------------|
+| `first` / `after` | Rows after the `after` cursor (20 when neither `first` nor `last` is given) |
+| `last` / `before` | Rows before the `before` cursor. `first` and `last` can't both be given |
+| `filters` | A `where` filter (a dict or a WhereInput), for the page and the total |
+| `order_by` | The field rows are ordered by and cursors are made from; its values must be unique |
+| `order_direction` | `"ASC"` or `"DESC"` |
+| `include_total` | Count the rows `filters` matches (one `count()` query) |
+| `info` | GraphQL resolve info, passed to `find()` |
+| `**kwargs` | Passed to `find()` and `count()`, e.g. `mandatory_filters` |
 
-**Returns**: Dictionary with edges, page_info, and total_count
-
-**Result Structure**:
-
-```python
-{
-    "edges": [
-        {
-            "node": {"id": "...", "name": "...", ...},
-            "cursor": "cursor_string"
-        },
-        ...
-    ],
-    "page_info": {
-        "has_next_page": True,
-        "has_previous_page": False,
-        "start_cursor": "first_cursor",
-        "end_cursor": "last_cursor",
-        "total_count": 100
-    },
-    "total_count": 100
-}
-```
-
-**Examples**:
+**Returns**: `{"edges": [{"node": row, "cursor": str}], "page_info": {...},
+"total_count": int | None}`. `page_info` has `has_next_page`, `has_previous_page`,
+`start_cursor`, `end_cursor` and `total_count`; each row is keyed as GraphQL answers
+it (camelCase). `create_connection(result, NodeType)` (from
+`fraiseql.types.generic`) turns the result into a typed `Connection`.
 
 ```python
-# Forward pagination
-result = await db.paginate("v_user", first=20)
-
-# With cursor
-result = await db.paginate("v_user", first=20, after="cursor_xyz")
-
-# Backward pagination
-result = await db.paginate("v_user", last=10, before="cursor_abc")
-
-# With filters
-result = await db.paginate(
+page = await db.paginate(
     "v_user",
     first=20,
-    filters={"is_active": True},
-    order_by="created_at"
+    after=cursor,  # end_cursor of the previous page, or None
+    filters={"is_active": {"eq": True}},
+    order_by="id",
 )
-
-# Convert to typed Connection
-from fraiseql.types import create_connection
-
-connection = create_connection(result, User)
+next_cursor = page["page_info"]["end_cursor"]
 ```
 
-**Note**: Usually accessed via `@connection` decorator rather than directly
+Cursors are opaque: base64 JSON of the row's `order_by` value.
 
 ## Mutation Patterns
 
@@ -418,7 +432,7 @@ async def create_user(info, input: CreateUserInput) -> User:
 
     # Fetch created record via Rust pipeline
     # field_name auto-inferred from function name "create_user" → "user"
-    return await db.find_one("v_user", id=result["id"])
+    return await db.find_one("v_user", mandatory_filters={"id": result["id"]})
 ```
 
 **PostgreSQL Function**:
@@ -455,7 +469,7 @@ async def update_user(info, id: ID, input: UpdateUserInput) -> User:
     })
 
     # Fetch updated record
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 ### Deleting Records
@@ -495,7 +509,11 @@ async def execute_function(
 | function_name | str | Yes | Fully qualified function name (e.g., 'graphql.create_user') |
 | input_data | dict | Yes | Dictionary to pass as JSONB to the function |
 
-**Returns**: Dictionary result from the function
+**Returns**: The function's result as a dict. It runs
+`SELECT * FROM function_name(%s::jsonb)`: for a function `RETURNS jsonb`, the JSON
+object it returns; for a function with OUT parameters, `RETURNS TABLE` or a
+composite type, its first row, keyed by column. `{}` when it returns no row. (A
+`jsonb` array or scalar stays under a key named after the function.)
 
 **Examples**:
 
@@ -576,54 +594,72 @@ result = await db.execute_function_with_context(
 
 ## Raw SQL Execution
 
-### execute_raw()
+### run()
 
-**Purpose**: Execute raw SQL queries
+**Purpose**: Execute a SQL statement on a pool connection, with the request's session
+variables and query timeout applied
 
 **Signature**:
 
 ```python
-async def execute_raw(
-    query: str,
-    *params
-) -> list[dict[str, Any]]
+async def run(query: DatabaseQuery) -> list[dict[str, object]]
 ```
 
-**Parameters**:
+`DatabaseQuery` (from `fraiseql.db`) holds the statement, its parameters, and whether
+to fetch rows:
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| query | str | Yes | SQL query with parameter placeholders ($1, $2, etc.) |
-| *params | Any | No | Query parameters |
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| statement | `psycopg.sql.SQL` \| `Composed` | - | The SQL, with psycopg `%(name)s` (or `%s`) placeholders |
+| params | Mapping | - | Parameter values (`{}` for none) |
+| fetch_result | bool | True | Return the rows; `False` returns `[]` |
 
-**Returns**: List of dictionaries (query results)
+**Returns**: List of rows as dictionaries (column name to value)
 
 **Examples**:
 
 ```python
+from datetime import UTC, datetime
+
+from psycopg.sql import SQL
+
+from fraiseql.db import DatabaseQuery
+
 # Simple query
-results = await db.execute_raw("SELECT * FROM users")
+rows = await db.run(DatabaseQuery(SQL("SELECT id, email FROM tb_user"), {}))
 
 # With parameters
-results = await db.execute_raw(
-    "SELECT * FROM users WHERE id = $1",
-    user_id
+rows = await db.run(
+    DatabaseQuery(
+        SQL("SELECT id, email FROM tb_user WHERE id = %(id)s"),
+        {"id": user_id},
+    )
 )
 
-# Complex aggregation
-stats = await db.execute_raw(
-    """
-    SELECT
-        count(*) as total_users,
-        count(*) FILTER (WHERE is_active) as active_users
-    FROM users
-    WHERE created_at > $1
-    """,
-    datetime(2025, 1, 1)
+# Aggregation
+rows = await db.run(
+    DatabaseQuery(
+        SQL(
+            """
+            SELECT
+                count(*) AS total_users,
+                count(*) FILTER (WHERE is_active) AS active_users
+            FROM tb_user
+            WHERE created_at > %(since)s
+            """
+        ),
+        {"since": datetime(2025, 1, 1, tzinfo=UTC)},
+    )
 )
+stats = rows[0]  # {"total_users": ..., "active_users": ...}
 ```
 
-**Security**: Always use parameterized queries to prevent SQL injection
+The rows are plain dicts, not `RustResponseBytes`: use `run()` for internal reads and
+statistics, and `find()` / `find_one()` for what a resolver returns. For a single
+aggregate over a view, `count()`, `sum()`, `avg()`, `min()`, `max()` and
+`aggregate()` build the SQL for you.
+
+**Security**: Pass values as parameters, never by formatting them into the SQL string
 
 ## Transaction Methods
 
@@ -659,16 +695,14 @@ import fraiseql
 async def transfer_funds(conn, source_id, dest_id, amount):
     # Deduct from source
     await conn.execute(
-        "UPDATE accounts SET balance = balance - $1 WHERE id = $2",
-        amount,
-        source_id
+        "UPDATE accounts SET balance = balance - %s WHERE id = %s",
+        (amount, source_id),
     )
 
     # Add to destination
     await conn.execute(
-        "UPDATE accounts SET balance = balance + $1 WHERE id = $2",
-        amount,
-        dest_id
+        "UPDATE accounts SET balance = balance + %s WHERE id = %s",
+        (amount, dest_id),
     )
 
     return True
@@ -1015,8 +1049,8 @@ context = {
 # Use specific fields instead of SELECT *
 users = await db.find("v_user", where={"is_active": True}, limit=100)
 
-# Use pagination for large datasets
-result = await db.paginate("v_user", first=50)
+# Page through large datasets
+users = await db.find("v_user", order_by=[{"id": "ASC"}], limit=50, offset=100)
 
 # Use database views for complex queries
 # Create view: CREATE VIEW v_user_stats AS SELECT ...
@@ -1033,7 +1067,7 @@ from fraiseql.types import ID
 async def get_user(info, id: ID) -> User | None:
     try:
         db = info.context["db"]
-        return await db.find_one("v_user", id=id)
+        return await db.find_one("v_user", mandatory_filters={"id": id})
     except Exception as e:
         logger.error(f"Failed to fetch user {id}: {e}")
         raise GraphQLError("Failed to fetch user")
@@ -1042,14 +1076,13 @@ async def get_user(info, id: ID) -> User | None:
 **Security**:
 
 ```python
-# Always use parameterized queries
-results = await db.execute_raw(
-    "SELECT * FROM users WHERE email = $1",  # Safe
-    email
+# Always pass values as parameters
+rows = await db.run(
+    DatabaseQuery(SQL("SELECT id FROM tb_user WHERE email = %(email)s"), {"email": email})
 )
 
 # NEVER do this (SQL injection risk):
-# results = await db.execute_raw(f"SELECT * FROM users WHERE email = '{email}'")
+# rows = await db.run(DatabaseQuery(SQL(f"SELECT id FROM tb_user WHERE email = '{email}'"), {}))
 ```
 
 **Transactions**:

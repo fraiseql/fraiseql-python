@@ -52,7 +52,7 @@ class TestProductionFixValidation:
             "172.16.0.1",  # Private IPv4
             "8.8.8.8",  # Public IPv4
             "127.0.0.1",  # Localhost
-            "0.0.0.0",  # noqa: S104  # All zeros (intentional for testing)
+            "0.0.0.0",  # All zeros (intentional for testing)
             "255.255.255.255",  # Broadcast
             "2001:db8::1",  # IPv6
             "::1",  # IPv6 localhost

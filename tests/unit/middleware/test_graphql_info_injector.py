@@ -47,6 +47,7 @@ class TestGraphQLInfoInjection:
     @pytest.mark.asyncio
     async def test_no_info_parameter_resolver(self):
         """Verify resolver without info parameter works."""
+
         @GraphQLInfoInjector.auto_inject
         async def resolver(param1, param2):
             return param1 + param2
@@ -151,6 +152,7 @@ class TestGraphQLInfoInjection:
     @pytest.mark.asyncio
     async def test_info_not_in_args_when_expected(self):
         """Verify handling when info param exists but not passed."""
+
         @GraphQLInfoInjector.auto_inject
         async def resolver(info=None):
             return info
@@ -197,6 +199,7 @@ class TestGraphQLInfoInjectionSync:
 
     def test_sync_no_info_parameter_resolver(self):
         """Verify sync resolver without info parameter works."""
+
         @GraphQLInfoInjector.auto_inject
         def resolver(param1, param2):
             return param1 + param2
@@ -293,6 +296,7 @@ class TestGraphQLInfoInjectionSync:
 
     def test_sync_info_not_in_args_when_expected(self):
         """Verify handling when info param exists but not passed in sync resolvers."""
+
         @GraphQLInfoInjector.auto_inject
         def resolver(info=None):
             return info

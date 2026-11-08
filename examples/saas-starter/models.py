@@ -9,11 +9,11 @@ from decimal import Decimal
 from uuid import UUID
 
 import fraiseql
-from fraiseql.types import ID
 from fraiseql import fraise_field
+from fraiseql.types import ID
 
 
-@fraiseql.type
+@fraiseql.type(sql_source="v_organization", jsonb_column="data")
 class Organization:
     """Organization/tenant entity."""
 
@@ -28,7 +28,7 @@ class Organization:
     updated_at: datetime = fraise_field(description="Last update timestamp")
 
 
-@fraiseql.type
+@fraiseql.type(sql_source="v_user", jsonb_column="data")
 class User:
     """User entity - belongs to an organization."""
 
@@ -115,7 +115,7 @@ class ActivityLogEntry:
     created_at: datetime = fraise_field(description="Action timestamp")
 
 
-@fraiseql.type
+@fraiseql.type(sql_source="v_project", jsonb_column="data")
 class Project:
     """Example resource - tenant-aware project."""
 
@@ -153,8 +153,8 @@ class LoginInput:
 class OrganizationUpdateInput:
     """Input for updating organization."""
 
-    name: str | None = fraise_field(description="New organization name")
-    settings: dict | None = fraise_field(description="Updated settings")
+    name: str | None = fraise_field(default=None, description="New organization name")
+    settings: dict | None = fraise_field(default=None, description="Updated settings")
 
 
 @fraiseql.input
@@ -179,16 +179,17 @@ class ProjectCreateInput:
     """Input for creating project."""
 
     name: str = fraise_field(description="Project name")
-    description: str | None = fraise_field(description="Project description")
+    description: str | None = fraise_field(default=None, description="Project description")
 
 
 @fraiseql.input
 class ProjectUpdateInput:
     """Input for updating project."""
 
-    name: str | None = fraise_field(description="Updated name")
-    description: str | None = fraise_field(description="Updated description")
-    status: str | None = fraise_field(description="Updated status")
+    id: ID = fraise_field(description="Project to update")
+    name: str | None = fraise_field(default=None, description="Updated name")
+    description: str | None = fraise_field(default=None, description="Updated description")
+    status: str | None = fraise_field(default=None, description="Updated status")
 
 
 # Result types for mutations

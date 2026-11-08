@@ -75,18 +75,14 @@ class TestIDFilterTypeAnnotations:
             annotation_str = str(annotation)
 
             # Should contain "ID" and not contain "str"
-            assert "ID" in annotation_str, (
-                f"Field {field} should use ID type, got {annotation_str}"
-            )
+            assert "ID" in annotation_str, f"Field {field} should use ID type, got {annotation_str}"
 
             # Should NOT have str unless it's in a comment or error message
             # More specifically, we want to ensure it's not "str | None"
             if field in ["descendant_of_id", "ancestor_of_id"]:
-                assert (
-                    "str | None" not in annotation_str
-                ), f"Field {field} should not be str | None, got {annotation_str}"
-
-
+                assert "str | None" not in annotation_str, (
+                    f"Field {field} should not be str | None, got {annotation_str}"
+                )
 
 
 class TestIDFilterVsUUIDFilter:

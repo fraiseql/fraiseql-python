@@ -124,7 +124,7 @@ class TestPostgresIntrospectorIntegration:
 
             await conn.commit()
 
-        return func_name.split(".")[-1]  # Return just the function name without schema
+        return func_name.rsplit(".", maxsplit=1)[-1]  # Return just the function name without schema
 
     @pytest.mark.asyncio
     async def test_discover_views_basic(self, introspector, test_view, test_schema) -> None:
@@ -338,7 +338,9 @@ class TestPostgresIntrospectorIntegration:
         assert any(f.startswith("fn_get_user_") for f in func_names)
 
         # Check the table-returning function
-        get_user_func = next(f for f in functions if f.function_name == func_name.split(".")[-1])
+        get_user_func = next(
+            f for f in functions if f.function_name == func_name.rsplit(".", maxsplit=1)[-1]
+        )
         assert get_user_func.return_type == "TABLE(id integer, name text, email text)"
         assert len(get_user_func.parameters) == 1
         assert get_user_func.parameters[0].name == "p_id"

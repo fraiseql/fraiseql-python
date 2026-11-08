@@ -1,26 +1,16 @@
-//! snake_case to camelCase conversion with multi-architecture SIMD support (Zero-copy API)
-//!
-//! This module provides optimized snake_case to camelCase conversion with:
-//! - x86_64: AVX2 SIMD (256-bit, 32 bytes at a time)
-//! - ARM64: NEON SIMD (128-bit, 16 bytes at a time)
-//! - Fallback: Portable scalar implementation for all architectures
-//!
-//! The public API automatically selects the best implementation for the current
-//! architecture at compile time.
+//! snake_case to camelCase conversion for the zero-copy transformer (byte API)
 //!
 //! ## Architecture
 //!
 //! FraiseQL has **two camelCase implementations** serving different needs:
 //! - **crate::camel_case**: String-based API for PyO3 and serde_json
-//! - **This module (core::camel)**: SIMD-optimized zero-copy API with arena allocation
+//! - **This module (core::camel)**: byte-slice API writing into a caller-owned buffer
 //!
 //! ## When to Use This Module
 //!
 //! ✅ **Use `core::camel` when**:
-//! - Hot path streaming transformation (4-16x faster with AVX2)
-//! - Zero-copy performance required (arena allocation available)
-//! - Processing byte slices (`&[u8]`)
-//! - High volume (> 1000 transformations/sec)
+//! - Hot path streaming transformation over byte slices (`&[u8]`)
+//! - A scratch buffer can be reused across keys, so converting allocates nothing
 //!
 //! ❌ **Use `crate::camel_case` instead when**:
 //! - Called from Python via PyO3
@@ -29,227 +19,106 @@
 //!
 //! For detailed architecture rationale, see: `docs/camel-case-apis.md`
 
-// Import architecture-specific intrinsics conditionally
-#[cfg(target_arch = "aarch64")]
-use std::arch::aarch64::*;
-#[cfg(target_arch = "x86_64")]
-use std::arch::x86_64::*;
-
-//----------------------------------------------------------------------------
-// Public API - Automatically dispatches to best implementation
-//----------------------------------------------------------------------------
-
-/// Convert snake_case to camelCase (public API)
+/// Convert snake_case to camelCase into `scratch`, and return the result.
 ///
-/// This function automatically selects the best implementation for the current
-/// architecture:
-/// - x86_64 with AVX2: Uses SIMD (4-16x faster)
-/// - x86_64 without AVX2: Uses portable scalar
-/// - ARM64: Uses portable scalar (NEON implementation TODO)
-/// - Other architectures: Uses portable scalar
-///
-/// This is a safe function that doesn't require `unsafe` by callers.
+/// `scratch` is cleared first and holds the result until the next call, so a caller
+/// converting many keys reuses one buffer: once it has grown to the longest key, a
+/// conversion allocates nothing. Each underscore is dropped and the byte after it
+/// upper-cased (a byte that has no upper case, such as a digit, is kept as is):
+/// `user_name` gives `userName`, `a_1b` gives `a1b`.
 ///
 /// # Examples
 /// ```
-/// use fraiseql_rs::core::{Arena, snake_to_camel};
+/// use fraiseql_rs::core::snake_to_camel;
 ///
-/// let arena = Arena::with_capacity(1024);
-/// let result = snake_to_camel(b"hello_world", &arena);
-/// assert_eq!(result, b"helloWorld");
+/// let mut scratch = Vec::new();
+/// assert_eq!(snake_to_camel(b"hello_world", &mut scratch), b"helloWorld");
+/// assert_eq!(snake_to_camel(b"id", &mut scratch), b"id");
 /// ```
-pub fn snake_to_camel<'a>(input: &[u8], arena: &'a crate::core::Arena) -> &'a [u8] {
-    #[cfg(target_arch = "x86_64")]
-    {
-        // Runtime detection of AVX2 support on x86_64
-        if is_x86_feature_detected!("avx2") {
-            unsafe { snake_to_camel_avx2(input, arena) }
-        } else {
-            snake_to_camel_scalar(input, arena)
-        }
-    }
+pub fn snake_to_camel<'a>(input: &[u8], scratch: &'a mut Vec<u8>) -> &'a [u8] {
+    scratch.clear();
 
-    #[cfg(target_arch = "aarch64")]
-    {
-        // TODO: Implement NEON SIMD for ARM64
-        // For now, use portable scalar implementation
-        snake_to_camel_scalar(input, arena)
-    }
-
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
-    {
-        // Fallback for all other architectures
-        snake_to_camel_scalar(input, arena)
-    }
-}
-
-//----------------------------------------------------------------------------
-// x86_64 AVX2 Implementation
-//----------------------------------------------------------------------------
-
-#[cfg(target_arch = "x86_64")]
-/// x86_64 AVX2-optimized snake_case to camelCase conversion
-///
-/// Strategy:
-/// 1. Find underscores using AVX2 SIMD (32 bytes at a time)
-/// 2. Copy chunks between underscores
-/// 3. Capitalize bytes after underscores
-///
-/// Performance:
-/// - 4-16x faster than scalar code
-/// - Vectorized underscore detection
-/// - Minimal branching
-///
-/// SAFETY: Requires AVX2 CPU feature. Use `snake_to_camel()` for safe dispatch.
-#[target_feature(enable = "avx2")]
-unsafe fn snake_to_camel_avx2<'a>(input: &[u8], arena: &'a crate::core::Arena) -> &'a [u8] {
-    // Fast path: no underscores (checked via SIMD)
-    let underscore_mask = find_underscores_avx2(input);
-    if underscore_mask.is_empty() {
-        // For zero-copy case, we need to allocate in arena anyway for consistency
-        let output = arena.alloc_bytes(input.len());
-        output.copy_from_slice(input);
-        return output;
-    }
-
-    // Allocate output in arena
-    let output = arena.alloc_bytes(input.len());
-    let mut write_pos = 0;
-    let mut capitalize_next = false;
-
-    for &byte in input.iter() {
-        if byte == b'_' {
-            capitalize_next = true;
-        } else {
-            if capitalize_next {
-                output[write_pos] = byte.to_ascii_uppercase();
-                capitalize_next = false;
-            } else {
-                output[write_pos] = byte;
-            }
-            write_pos += 1;
-        }
-    }
-
-    &output[..write_pos]
-}
-
-#[cfg(target_arch = "x86_64")]
-/// Find all underscores using AVX2 SIMD (256 bits at a time)
-///
-/// Returns: Bitmask of underscore positions
-#[target_feature(enable = "avx2")]
-unsafe fn find_underscores_avx2(input: &[u8]) -> UnderscoreMask {
-    let underscore_vec = _mm256_set1_epi8(b'_' as i8);
-    let mut mask = UnderscoreMask::new();
-
-    let (chunks, remainder) = input.as_chunks::<32>();
-    let chunks_len = chunks.len();
-
-    for (chunk_idx, chunk) in chunks.iter().enumerate() {
-        let data = _mm256_loadu_si256(chunk.as_ptr() as *const __m256i);
-        let cmp = _mm256_cmpeq_epi8(data, underscore_vec);
-        let bitmask = _mm256_movemask_epi8(cmp);
-
-        if bitmask != 0 {
-            mask.set_chunk(chunk_idx, bitmask);
-        }
-    }
-
-    // Handle remainder (< 32 bytes)
-    for (i, &byte) in remainder.iter().enumerate() {
-        if byte == b'_' {
-            mask.set_bit(chunks_len * 32 + i);
-        }
-    }
-
-    mask
-}
-
-/// Bitmask for tracking underscore positions (used by AVX2 implementation)
-#[cfg(target_arch = "x86_64")]
-struct UnderscoreMask {
-    // Support up to 256 bytes (reasonable limit for field names)
-    mask: [u64; 4], // 4 * 64 = 256 bits
-}
-
-#[cfg(target_arch = "x86_64")]
-impl UnderscoreMask {
-    fn new() -> Self {
-        UnderscoreMask { mask: [0; 4] }
-    }
-
-    fn set_chunk(&mut self, chunk_idx: usize, bitmask: i32) {
-        let word_idx = chunk_idx / 2;
-        let shift = (chunk_idx % 2) * 32;
-        self.mask[word_idx] |= (bitmask as u64) << shift;
-    }
-
-    fn set_bit(&mut self, pos: usize) {
-        if pos < 256 {
-            let word_idx = pos / 64;
-            let bit_idx = pos % 64;
-            self.mask[word_idx] |= 1u64 << bit_idx;
-        }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.mask.iter().all(|&word| word == 0)
-    }
-}
-
-//----------------------------------------------------------------------------
-// Portable Scalar Implementation (fallback for all architectures)
-//----------------------------------------------------------------------------
-
-/// Pure Rust scalar snake_case to camelCase conversion (no SIMD)
-///
-/// This implementation works on all architectures and serves as a fallback
-/// when SIMD is not available. It's optimized for readability and correctness,
-/// while still being reasonably fast.
-///
-/// Strategy:
-/// 1. Fast path: if no underscores, copy input as-is
-/// 2. Single pass: iterate through input, capitalize after underscores
-/// 3. Remove underscores from output
-///
-/// Performance:
-/// - 2-5x slower than SIMD on x86_64/ARM64
-/// - Still very fast for typical field names (< 100 bytes)
-pub fn snake_to_camel_scalar<'a>(input: &[u8], arena: &'a crate::core::Arena) -> &'a [u8] {
-    // Fast path: empty input
-    if input.is_empty() {
-        return b"";
-    }
-
-    // Fast path: no underscores (common case)
+    // Fast path: no underscores (the common case)
     if !input.contains(&b'_') {
-        let output = arena.alloc_bytes(input.len());
-        output.copy_from_slice(input);
-        return output;
+        scratch.extend_from_slice(input);
+        return scratch;
     }
 
-    // Allocate output buffer (worst case: same size as input)
-    let output = arena.alloc_bytes(input.len());
-    let mut write_pos = 0;
+    scratch.reserve(input.len());
     let mut capitalize_next = false;
-
     for &byte in input {
         if byte == b'_' {
-            // Mark next character for capitalization
             capitalize_next = true;
+        } else if capitalize_next {
+            scratch.push(byte.to_ascii_uppercase());
+            capitalize_next = false;
         } else {
-            // Write character (capitalized if needed)
-            if capitalize_next && byte.is_ascii_alphabetic() {
-                output[write_pos] = byte.to_ascii_uppercase();
-                capitalize_next = false;
-            } else {
-                output[write_pos] = byte;
-            }
-            write_pos += 1;
+            scratch.push(byte);
+        }
+    }
+    scratch
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn convert(input: &str) -> String {
+        let mut scratch = Vec::new();
+        String::from_utf8(snake_to_camel(input.as_bytes(), &mut scratch).to_vec()).unwrap()
+    }
+
+    #[test]
+    fn test_conversions() {
+        for (input, expected) in [
+            ("", ""),
+            ("id", "id"),
+            ("user_name", "userName"),
+            ("created_at_utc", "createdAtUtc"),
+            ("a_1b", "a1b"),
+            ("address_line_1", "addressLine1"),
+            ("double__underscore", "doubleUnderscore"),
+            ("trailing_", "trailing"),
+            ("already_Upper", "alreadyUpper"),
+        ] {
+            assert_eq!(convert(input), expected, "{input}");
         }
     }
 
-    // Return slice with actual written length
-    &output[..write_pos]
+    #[test]
+    fn test_long_keys() {
+        let key = format!("{}_tail", "segment_".repeat(40));
+        let expected = format!("segment{}Tail", "Segment".repeat(39));
+
+        assert_eq!(convert(&key), expected);
+    }
+
+    #[test]
+    fn test_scratch_is_reused_without_carrying_over() {
+        let mut scratch = Vec::new();
+        assert_eq!(snake_to_camel(b"first_name_of_the_user", &mut scratch), b"firstNameOfTheUser");
+        assert_eq!(snake_to_camel(b"id", &mut scratch), b"id");
+        assert_eq!(snake_to_camel(b"a_b", &mut scratch), b"aB");
+    }
+
+    mod proptests {
+        use proptest::prelude::*;
+
+        use super::*;
+
+        proptest! {
+            /// Converting keys one after another into one buffer gives each key
+            /// its own conversion, as the string API computes it.
+            #[test]
+            fn sequential_conversions_match_the_string_api(
+                keys in prop::collection::vec("[a-z][a-z0-9_]{0,300}", 1..50)
+            ) {
+                let mut scratch = Vec::new();
+                for key in &keys {
+                    let converted = snake_to_camel(key.as_bytes(), &mut scratch).to_vec();
+                    prop_assert_eq!(converted, crate::camel_case::to_camel_case(key).into_bytes());
+                }
+            }
+        }
+    }
 }

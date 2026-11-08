@@ -14,17 +14,11 @@ So the documented construction
 was flagged ``missing-argument`` for the phantom ``error_as_data_prefixes`` in
 every downstream consumer.
 
-Two layers of guard:
-
-* ``test_stub_matches_runtime_dataclass`` is a pure-Python introspection check
-  (always runs) — it parses the stub and compares the declared field set and
-  method names against the runtime dataclass.
-* The pyright tests drive a real type checker over a consumer snippet and the
-  stub itself; they skip when no pyright binary is available.
+The stub is gone (1.31.0): type checkers read the annotated runtime module, so
+it can't drift again. The pyright test drives a real type checker over a consumer
+snippet; it skips when no pyright binary is available.
 """
 
-import ast
-import dataclasses
 import json
 import shutil
 import subprocess
@@ -32,8 +26,6 @@ import sys
 from pathlib import Path
 
 import pytest
-
-from fraiseql.mutations.error_config import MutationErrorConfig
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _STUB = _REPO_ROOT / "src" / "fraiseql" / "mutations" / "error_config.pyi"
@@ -63,57 +55,13 @@ def _use() -> None:
 """
 
 
-def _stub_class_node() -> ast.ClassDef:
-    tree = ast.parse(_STUB.read_text())
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef) and node.name == "MutationErrorConfig":
-            return node
-    raise AssertionError("MutationErrorConfig not found in stub")
+def test_no_hand_written_stub() -> None:
+    """Type checkers read the annotated ``error_config.py`` itself.
 
-
-def test_stub_matches_runtime_dataclass() -> None:
-    """The stub's fields and methods must mirror the runtime dataclass."""
-    runtime_fields = {f.name for f in dataclasses.fields(MutationErrorConfig)}
-    runtime_methods = {"is_error_status", "get_error_code"}
-
-    cls = _stub_class_node()
-    stub_fields = {
-        node.target.id
-        for node in cls.body
-        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name)
-    }
-    stub_methods = {node.name for node in cls.body if isinstance(node, ast.FunctionDef)}
-    stub_methods.discard("__init__")
-
-    assert stub_fields == runtime_fields, (
-        f"stub fields {sorted(stub_fields)} != runtime "
-        f"{sorted(runtime_fields)} (drift reintroduced)"
-    )
-    assert stub_methods == runtime_methods, (
-        f"stub methods {sorted(stub_methods)} != runtime {sorted(runtime_methods)}"
-    )
-
-
-def test_fields_have_defaults() -> None:
-    """Every field must carry a default so the synthesized ``__init__`` is all-optional.
-
-    The stub marks the class ``@dataclass`` (mirroring the runtime), so the
-    constructor is synthesized from the field defaults rather than hand-written.
-    Each field annotated ``name: T = ...`` becomes an optional ``__init__`` param,
-    matching the runtime dataclass where every field has a default.
+    The stub added nothing over the module's inline annotations and drifted twice
+    (issue #374, then field defaults typed ``...``), so it was removed.
     """
-    cls = _stub_class_node()
-    undefaulted = [
-        node.target.id
-        for node in cls.body
-        if isinstance(node, ast.AnnAssign)
-        and isinstance(node.target, ast.Name)
-        and node.value is None
-    ]
-    assert not undefaulted, (
-        f"fields without a default {undefaulted} would force required "
-        "constructor args, diverging from the runtime dataclass"
-    )
+    assert not _STUB.exists()
 
 
 def _pyright_binary() -> str | None:
@@ -152,13 +100,6 @@ def test_construction_has_no_call_issues(consumer_module: Path) -> None:
         if d.get("rule") in {"reportCallIssue", "reportArgumentType"}
     ]
     assert not call_issues, (
-        "stub regressed — pyright reported call issues on MutationErrorConfig "
+        "pyright reported call issues on MutationErrorConfig "
         f"construction:\n{json.dumps(call_issues, indent=2)}"
     )
-
-
-def test_stub_module_has_no_type_errors() -> None:
-    """The stub itself must type-check cleanly."""
-    payload = _run_pyright(_STUB)
-    errors = [d for d in payload.get("generalDiagnostics", []) if d.get("severity") == "error"]
-    assert not errors, f"stub {_STUB} has type errors:\n{json.dumps(errors, indent=2)}"

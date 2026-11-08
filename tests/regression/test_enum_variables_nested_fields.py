@@ -76,9 +76,7 @@ class TestEnumVariableBug:
         )
 
         # Query type that filters users by status
-        def resolve_user_by_status(
-            root: Any, info: Any, status: str | Status
-        ) -> dict[str, str]:
+        def resolve_user_by_status(root: Any, info: Any, status: str | Status) -> dict[str, str]:
             # Convert enum to string if needed for comparison
             status_str = status.value if isinstance(status, Status) else status
 
@@ -168,9 +166,9 @@ class TestEnumVariableBug:
         user = result.data["userByStatus"]
         assert user is not None, "User should not be None"
         assert user["id"] == "1", f"Expected id='1', got {user.get('id')}"
-        assert (
-            user["name"] == "Alice"
-        ), f"Expected name='Alice', got {user.get('name')} - BUG: nested field is empty when enum is variable!"
+        assert user["name"] == "Alice", (
+            f"Expected name='Alice', got {user.get('name')} - BUG: nested field is empty when enum is variable!"
+        )
         assert user["status"] == "ACTIVE"
 
     def test_enum_variable_inline_literal_comparison(self) -> None:
@@ -203,9 +201,7 @@ class TestEnumVariableBug:
         """
 
         inline_result = graphql_sync(schema, inline_query)
-        variable_result = graphql_sync(
-            schema, variable_query, variable_values={"status": "ACTIVE"}
-        )
+        variable_result = graphql_sync(schema, variable_query, variable_values={"status": "ACTIVE"})
 
         # Both should have the same data
         assert inline_result.errors is None
@@ -215,6 +211,6 @@ class TestEnumVariableBug:
         variable_user = variable_result.data["userByStatus"]
 
         # Both should have the same nested field values
-        assert (
-            inline_user == variable_user
-        ), f"Inline: {inline_user}, Variable: {variable_user} - Results differ!"
+        assert inline_user == variable_user, (
+            f"Inline: {inline_user}, Variable: {variable_user} - Results differ!"
+        )

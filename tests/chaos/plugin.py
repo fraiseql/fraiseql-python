@@ -170,6 +170,7 @@ def retry_chaos_test(
             # All retries exhausted
             if last_exception:
                 raise last_exception
+            return None
 
         return wrapper
 

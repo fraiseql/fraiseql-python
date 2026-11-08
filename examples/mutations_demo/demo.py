@@ -106,7 +106,10 @@ class CreateUser:
     error: CreateUserError
 
 
-@fraiseql.mutation(function="update_user_account", schema="graphql")  # Custom function name
+# A custom SQL function name. name= names the GraphQL field after the class
+# (without it, fraiseql 1.x keeps the field named after the function,
+# updateUserAccount, and warns).
+@fraiseql.mutation(function="update_user_account", schema="graphql", name="updateUser")
 class UpdateUser:
     """Update an existing user account."""
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any, Optional
 
 from fraiseql.execution.mode_selector import ExecutionMode
@@ -9,6 +10,8 @@ from fraiseql.execution.mode_selector import ExecutionMode
 if TYPE_CHECKING:
     from fraiseql.routing.config import EntityRoutingConfig
     from fraiseql.routing.entity_extractor import EntityExtractor
+
+logger = logging.getLogger(__name__)
 
 
 class QueryRouter:
@@ -33,7 +36,8 @@ class QueryRouter:
             classification = self.classify_entities(entities)
             return self._determine_mode_from_classification(classification)
 
-        except Exception:
+        except Exception as e:
+            logger.warning("Entity routing failed, using NORMAL: %s", e, exc_info=True)
             return ExecutionMode.NORMAL
 
     def _determine_mode_from_classification(

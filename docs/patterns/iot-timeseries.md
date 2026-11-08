@@ -183,11 +183,11 @@ AS $$
         r.fk_device,
         r.sensor_name,
         jsonb_build_object(
-            'avgValue',     AVG(r.value),
-            'minValue',     MIN(r.value),
-            'maxValue',     MAX(r.value),
-            'stddevValue',  STDDEV(r.value),
-            'readingCount', COUNT(*)
+            'avg_value',     AVG(r.value),
+            'min_value',     MIN(r.value),
+            'max_value',     MAX(r.value),
+            'stddev_value',  STDDEV(r.value),
+            'reading_count', COUNT(*)
         )                                          AS data
     FROM tb_sensor_reading r
     WHERE r."time" >= p_from AND r."time" < p_to
@@ -215,12 +215,12 @@ SELECT
         'id',           d.id,
         'identifier',   d.identifier,
         'name',         d.name,
-        'deviceType',   d.device_type,
+        'device_type',   d.device_type,
         'location',     d.location,
         'latitude',     d.latitude,
         'longitude',    d.longitude,
         'status',       d.status,
-        'lastHeartbeat', d.last_heartbeat
+        'last_heartbeat', d.last_heartbeat
     ) AS data
 FROM tb_device d;
 
@@ -232,12 +232,12 @@ SELECT
     t.sensor_name,
     jsonb_build_object(
         'bucket',       t.bucket,
-        'sensorName',   t.sensor_name,
-        'avgValue',     t.data ->> 'avgValue',
-        'minValue',     t.data ->> 'minValue',
-        'maxValue',     t.data ->> 'maxValue',
-        'stddevValue',  t.data ->> 'stddevValue',
-        'readingCount', t.data ->> 'readingCount'
+        'sensor_name',   t.sensor_name,
+        'avg_value',     t.data ->> 'avg_value',
+        'min_value',     t.data ->> 'min_value',
+        'max_value',     t.data ->> 'max_value',
+        'stddev_value',  t.data ->> 'stddev_value',
+        'reading_count', t.data ->> 'reading_count'
     ) AS data
 FROM tv_reading_1h t
 JOIN tb_device dev ON dev.pk_device = t.fk_device;
@@ -257,9 +257,9 @@ SELECT
     t.sensor_name,
     jsonb_build_object(
         'bucket',     t.bucket,
-        'sensorName', t.sensor_name,
-        'avgValue',   (t.data ->> 'avgValue')::numeric,
-        'movingAvg3', AVG((t.data ->> 'avgValue')::numeric) OVER (
+        'sensor_name', t.sensor_name,
+        'avg_value',   (t.data ->> 'avg_value')::numeric,
+        'moving_avg3', AVG((t.data ->> 'avg_value')::numeric) OVER (
             PARTITION BY t.fk_device, t.sensor_name
             ORDER BY t.bucket
             ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
@@ -295,12 +295,12 @@ SELECT
     a.id,
     jsonb_build_object(
         'id',           a.id,
-        'alertType',    a.alert_type,
+        'alert_type',    a.alert_type,
         'severity',     a.severity,
         'value',        a.value,
         'threshold',    a.threshold,
         'acknowledged', a.acknowledged,
-        'createdAt',    a.created_at
+        'created_at',    a.created_at
     ) AS data
 FROM tb_device_alert a;
 ```
@@ -408,14 +408,14 @@ async def devices(info, device_type: str | None = None) -> list[Device]:
     """List devices, optionally filtered by type."""
     db = info.context["db"]
     filters = {"device_type": device_type} if device_type else {}
-    return await db.find("v_device", **filters)
+    return await db.find("v_device", mandatory_filters=filters)
 
 
 @fraiseql.query
 async def device(info, id: ID) -> Device | None:
     """Get one device by id."""
     db = info.context["db"]
-    return await db.find_one("v_device", id=id)
+    return await db.find_one("v_device", mandatory_filters={"id": id})
 
 
 @fraiseql.query
@@ -430,10 +430,8 @@ async def sensor_metrics(
     db = info.context["db"]
     return await db.find(
         "v_reading_1h",
-        device_id=device_id,
-        sensor_name=sensor_name,
-        bucket__gte=start_time,
-        bucket__lte=end_time,
+        mandatory_filters={"device_id": device_id, "sensor_name": sensor_name},
+        where={"bucket": {"gte": start_time, "lte": end_time}},
     )
 
 
@@ -441,10 +439,10 @@ async def sensor_metrics(
 async def active_alerts(info) -> list[Alert]:
     """Unacknowledged alerts."""
     db = info.context["db"]
-    return await db.find("v_alert", acknowledged=False)
+    return await db.find("v_alert", mandatory_filters={"acknowledged": False})
 ```
 
-`start_time`/`end_time` map to the WHERE operators `bucket__gte` / `bucket__lte`, which
+`start_time`/`end_time` map to the WHERE operators `gte` / `lte` on `bucket`, which
 FraiseQL translates into a partition-prunable `BETWEEN` against the view. When a query
 selects only aggregate fields, FraiseQL's **runtime auto-aggregation** derives the
 `GROUP BY` and the COUNT/SUM/AVG/MIN/MAX/STDDEV/VARIANCE SQL for you against the view — so
@@ -758,7 +756,7 @@ async def test_threshold_triggers_alert(schema, db):
         "{ ... on RecordReadingSuccess { sensorName } } }" % device_id,
         context_value={"db": db},
     )
-    alerts = await db.find("v_alert", acknowledged=False)
+    alerts = await db.find("v_alert", mandatory_filters={"acknowledged": False})
     assert any(a["data"]["severity"] == "warning" for a in alerts)
 ```
 

@@ -282,7 +282,7 @@ class TestCascadeSelectionFiltering:
                 pass
         else:
             # Unexpected response structure
-            assert False, f"Unexpected response structure: {result}"
+            pytest.fail(f"Unexpected response structure: {result}")
 
     @pytest.mark.asyncio
     async def test_multiple_mutations_with_different_cascade_selections(self, cascade_http_client):

@@ -25,7 +25,7 @@ async def setup_bridge_schema(class_db_pool, test_schema) -> None:
             """
                 SELECT EXISTS (
                     SELECT 1 FROM information_schema.tables
-                    WHERE table_name = 'audit_events'
+                    WHERE table_name = 'audit_events' AND table_schema = current_schema()
                 )
             """
         )
@@ -36,11 +36,6 @@ async def setup_bridge_schema(class_db_pool, test_schema) -> None:
             migration_path = Path("src/fraiseql/enterprise/migrations/001_audit_tables.sql")
             migration_sql = migration_path.read_text()
             await conn.execute(migration_sql)
-
-        # Disable partition trigger for tests
-        await conn.execute(
-            "ALTER TABLE audit_events DISABLE TRIGGER create_audit_partition_trigger"
-        )
 
         # Ensure test signing key exists
         cur = await conn.execute(

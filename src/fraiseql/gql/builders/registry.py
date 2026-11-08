@@ -18,6 +18,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _mutation_owner(resolver_fn: Callable[..., Any]) -> str:
+    """What a mutation's resolver belongs to: its class name, or the function itself."""
+    definition = getattr(resolver_fn, "__fraiseql_mutation__", None)
+    if hasattr(definition, "mutation_class"):
+        return definition.name
+    return f"{resolver_fn.__module__}.{resolver_fn.__qualname__}"
+
+
 class SchemaRegistry:
     """Singleton registry for GraphQL query types and mutation resolvers."""
 
@@ -58,6 +66,7 @@ class SchemaRegistry:
         - SchemaRegistry's internal types and mutations
         - SchemaConfig settings
         - Registered enums
+        - Registered scalars (types registered afterwards discover theirs again)
         - Mutation decorator registries
         - GraphQL type caches
         """
@@ -69,6 +78,7 @@ class SchemaRegistry:
         self._subscriptions.clear()
         self._enums.clear()
         self._interfaces.clear()
+        self._scalars.clear()
         self._type_map.clear()
         self.config = None
         self._default_authorizer = None
@@ -262,21 +272,43 @@ class SchemaRegistry:
                 and mutation_or_fn.__fraiseql_resolver__ is mutation_or_fn
             ):
                 # It's a function-based mutation decorated with @mutation
-                self._mutations[mutation_or_fn.__name__] = mutation_or_fn
+                self._mutations[self._mutation_key(mutation_or_fn)] = mutation_or_fn
             else:
                 # It's a @mutation decorated class
                 # Register the resolver function
                 resolver_fn = mutation_or_fn.__fraiseql_resolver__
-                self._mutations[resolver_fn.__name__] = resolver_fn
-                # Also register the success and error types
                 definition = mutation_or_fn.__fraiseql_mutation__
-                if hasattr(definition, "success_type") and definition.success_type:
-                    self.register_type(definition.success_type)
-                if hasattr(definition, "error_type") and definition.error_type:
-                    self.register_type(definition.error_type)
+                self._mutations[self._mutation_key(resolver_fn)] = resolver_fn
+                # Also register the success and error types. Anything but a class
+                # (error: A | B) is reported when the schema is built, with the
+                # mutation's other problems (MutationDefinition.member_problems).
+                for result_type in (
+                    getattr(definition, "success_type", None),
+                    getattr(definition, "error_type", None),
+                ):
+                    if isinstance(result_type, type):
+                        self.register_type(result_type)
         else:
             # Legacy: direct resolver function
-            self._mutations[mutation_or_fn.__name__] = mutation_or_fn
+            self._mutations[self._mutation_key(mutation_or_fn)] = mutation_or_fn
+
+    def _mutation_key(self, resolver_fn: Callable[..., Any]) -> str:
+        """Pick the registry key for a mutation's resolver.
+
+        The key is the resolver's name: the SQL function name for a ``@mutation``
+        class, the function's own name otherwise. Mutations may share it (two
+        classes calling one function, or a class and a function of that name), so
+        a key held by a different mutation falls back to ``<key>:<owner>`` instead
+        of replacing it. The same mutation registered again replaces the old one
+        (a redefinition). The schema builder names mutations from their
+        definitions and functions, so the key never becomes a field name.
+        """
+        key = resolver_fn.__name__
+        existing = self._mutations.get(key)
+        owner = _mutation_owner(resolver_fn)
+        if existing is None or _mutation_owner(existing) == owner:
+            return key
+        return f"{key}:{owner}"
 
     def register_query(self, query_fn: Callable[..., Any]) -> None:
         """Register a query function as a GraphQL field."""

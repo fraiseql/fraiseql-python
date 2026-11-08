@@ -285,7 +285,7 @@ async def test_slow_connection_establishment(
 
         for _ in range(iterations):
             try:
-                start = time.time()
+                time.time()
                 result = await chaos_db_client.execute_query(operation)
                 execution_time = result.get("_execution_time_ms", latency_ms + 10)
                 connection_times.append(execution_time)
@@ -375,7 +375,7 @@ async def test_mid_query_connection_drop(
             except Exception:
                 metrics.record_error()
 
-        avg_baseline = statistics.mean(baseline_times) if baseline_times else 50.0
+        statistics.mean(baseline_times) if baseline_times else 50.0
 
         # Inject chaos: Connection failures after specified time
         chaos_db_client.inject_latency(drop_after_ms)

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import functools
 import inspect
 import json
 import logging
@@ -11,12 +10,21 @@ import warnings
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar, Union
 
-from graphql import GraphQLError, GraphQLResolveInfo, TypeInfo, Visitor, parse, visit
-from graphql.execution.values import get_argument_values
+from graphql import (
+    GraphQLError,
+    GraphQLResolveInfo,
+    OperationDefinitionNode,
+    TypeInfo,
+    Visitor,
+    parse,
+    visit,
+)
+from graphql.execution.values import get_argument_values, get_variable_values
 from graphql.utilities.type_info import TypeInfoVisitor
 
 from fraiseql.core.resolver_invocation import invoke_resolver
 from fraiseql.security.authorization import AuthorizationDecision, normalize_decision
+from fraiseql.utils.annotations import set_annotations, wraps
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -107,7 +115,7 @@ def _copy_resolver_metadata(wrapper: Any, func: Any) -> None:
     wrapper.__name__ = getattr(func, "__name__", wrapper.__name__)
     wrapper.__doc__ = func.__doc__
     if hasattr(func, "__annotations__"):
-        wrapper.__annotations__ = func.__annotations__.copy()
+        set_annotations(wrapper, func.__annotations__.copy())
     if hasattr(func, "__fraiseql_field__"):
         wrapper.__fraiseql_field__ = func.__fraiseql_field__
         wrapper.__fraiseql_field_resolver__ = func.__fraiseql_field_resolver__
@@ -449,7 +457,7 @@ def gate_field_resolver(resolver: Callable[..., Any], *, field: str) -> Callable
     ``@authorize_field``-decorated resolver AND-composes the two checks (both must allow).
     """
 
-    @functools.wraps(resolver)
+    @wraps(resolver)
     async def _gated(root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
         decision = await _auto_field_authorization(info, field=field, arguments=kwargs)
         _enforce_field_decision(decision, error_message=None, info=info)
@@ -486,13 +494,40 @@ def iter_gated_selections(
     Detection is per-document (every gated field anywhere in the document is reported). For the
     common single-operation request this is exact; for a multi-operation document it can only
     *over*-report, which the fail-closed enforcement turns into a conservative deny — never a
-    silent allow.
+    silent allow. A field in a fragment definition is reported once per operation's variables.
+
+    ``variable_values`` are the request's raw variables. They are coerced against each
+    operation's variable definitions first, because ``get_argument_values`` takes coerced
+    values (a ``VariableValues`` on graphql-core 3.3, a dict on 3.2). Variables that don't
+    coerce raise the coercion error, which execution would raise for the same request.
     """
     type_info = TypeInfo(schema)
     found: list[tuple[str, dict[str, Any]]] = []
     seen: set[str] = set()
 
+    operation_variables: list[Any] = []
+    for definition in document.definitions:
+        if isinstance(definition, OperationDefinitionNode):
+            coerced = get_variable_values(
+                schema, definition.variable_definitions or (), variable_values
+            )
+            if isinstance(coerced, list):
+                raise coerced[0]
+            operation_variables.append(coerced)
+
     class _Collector(Visitor):
+        # Variables in scope: the current operation's, or every operation's inside a fragment
+        # definition, which any of them may spread.
+        current: list[Any] = operation_variables
+        operation_index = 0
+
+        def enter_operation_definition(self, *_args: Any) -> None:
+            self.current = [operation_variables[self.operation_index]]
+            self.operation_index += 1
+
+        def enter_fragment_definition(self, *_args: Any) -> None:
+            self.current = operation_variables
+
         def enter_field(self, node: Any, *_args: Any) -> None:
             field_def = type_info.get_field_def()
             resolve = getattr(field_def, "resolve", None)
@@ -501,18 +536,19 @@ def iter_gated_selections(
             auth_id = getattr(resolve, "__fraiseql_field_auth_id__", None)
             if auth_id is None:
                 return
-            try:
-                arguments = get_argument_values(field_def, node, variable_values)
-            except Exception:  # an invalid document is rejected by normal execution anyway
-                arguments = {}
-            try:
-                dedup = f"{auth_id}\x00{json.dumps(arguments, sort_keys=True, default=str)}"
-            except Exception:
-                dedup = f"{auth_id}\x00{len(found)}"
-            if dedup in seen:
-                return
-            seen.add(dedup)
-            found.append((auth_id, arguments))
+            for variables in self.current or [None]:
+                try:
+                    arguments = get_argument_values(field_def, node, variables)
+                except Exception:  # an invalid document is rejected by normal execution anyway
+                    arguments = {}
+                try:
+                    dedup = f"{auth_id}\x00{json.dumps(arguments, sort_keys=True, default=str)}"
+                except Exception:
+                    dedup = f"{auth_id}\x00{len(found)}"
+                if dedup in seen:
+                    continue
+                seen.add(dedup)
+                found.append((auth_id, arguments))
 
     visit(document, TypeInfoVisitor(type_info, _Collector()))
     return found

@@ -2,7 +2,7 @@ import pytest
 
 """Test that scalar types are properly cached to prevent duplicate registrations."""
 
-import datetime
+import datetime as dt
 
 import fraiseql
 from fraiseql.core.graphql_type import _graphql_type_cache, convert_type_to_graphql_output
@@ -16,9 +16,9 @@ def test_scalar_caching_prevents_duplicates() -> None:
     _graphql_type_cache.clear()
 
     # Convert the same scalar type multiple times
-    date_gql1 = convert_type_to_graphql_output(datetime.date)
-    date_gql2 = convert_type_to_graphql_output(datetime.date)
-    date_gql3 = convert_type_to_graphql_output(datetime.date)
+    date_gql1 = convert_type_to_graphql_output(dt.date)
+    date_gql2 = convert_type_to_graphql_output(dt.date)
+    date_gql3 = convert_type_to_graphql_output(dt.date)
 
     # All should be the exact same instance due to caching
     assert date_gql1 is date_gql2
@@ -39,8 +39,8 @@ def test_different_scalars_cached_separately() -> None:
     _graphql_type_cache.clear()
 
     # Convert different scalar types
-    date_gql = convert_type_to_graphql_output(datetime.date)
-    datetime_gql = convert_type_to_graphql_output(datetime.datetime)
+    date_gql = convert_type_to_graphql_output(dt.date)
+    datetime_gql = convert_type_to_graphql_output(dt.datetime)
     int_gql = convert_type_to_graphql_output(int)
 
     # Should have separate cache entries
@@ -65,38 +65,38 @@ def test_complex_scenario_with_caching() -> None:
     @fraiseql.type
     class User:
         name: str
-        birth_date: datetime.date
-        registration_date: datetime.date
+        birth_date: dt.date
+        registration_date: dt.date
 
     @fraiseql.type
     class Event:
         title: str
-        start_date: datetime.date
-        end_date: datetime.date
-        created_date: datetime.date
+        start_date: dt.date
+        end_date: dt.date
+        created_date: dt.date
 
     @fraiseql.type
     class Order:
         id: int
-        order_date: datetime.date
-        delivery_date: datetime.date | None
+        order_date: dt.date
+        delivery_date: dt.date | None
 
     # Input types with dates
     @fraiseql.input
     class CreateEventInput:
         title: str
-        start_date: datetime.date
-        end_date: datetime.date
+        start_date: dt.date
+        end_date: dt.date
 
     # Queries and mutations
     @fraiseql.query
     async def get_users(info) -> list[User]:
-        today = datetime.date.today()
+        today = dt.date.today()
         return [User(name="Test", birth_date=today, registration_date=today)]
 
     @fraiseql.query
     async def get_events(info) -> list[Event]:
-        today = datetime.date.today()
+        today = dt.date.today()
         return [Event(title="Test", start_date=today, end_date=today, created_date=today)]
 
     @fraiseql.mutation
@@ -105,7 +105,7 @@ def test_complex_scenario_with_caching() -> None:
             title=input.title,
             start_date=input.start_date,
             end_date=input.end_date,
-            created_date=datetime.date.today(),
+            created_date=dt.date.today(),
         )
 
     # Build schema - this should not fail with duplicate Date registrations
@@ -153,11 +153,11 @@ def test_cache_behavior_across_schema_builds() -> None:
     # First schema
     @fraiseql.type
     class Model1:
-        date_field: datetime.date
+        date_field: dt.date
 
     @fraiseql.query
     async def query1(info) -> Model1:
-        return (Model1(date_field=datetime.date.today()),)
+        return (Model1(date_field=dt.date.today()),)
 
     schema1 = build_fraiseql_schema(query_types=[Model1, query1])
     date_type1 = schema1.type_map["Date"]
@@ -170,11 +170,11 @@ def test_cache_behavior_across_schema_builds() -> None:
     # Second schema (cache is cleared by build_fraiseql_schema)
     @fraiseql.type
     class Model2:
-        another_date: datetime.date
+        another_date: dt.date
 
     @fraiseql.query
     async def query2(info) -> Model2:
-        return (Model2(another_date=datetime.date.today()),)
+        return (Model2(another_date=dt.date.today()),)
 
     schema2 = build_fraiseql_schema(query_types=[Model2, query2])
     date_type2 = schema2.type_map["Date"]

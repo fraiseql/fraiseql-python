@@ -55,7 +55,8 @@ FilterFieldSpec = tuple[type, Any, str | None]  # (field_type, default_value, gr
 from fraiseql import fraise_input
 from fraiseql.fields import fraise_field
 from fraiseql.sql.where_generator import safe_create_where_type
-from fraiseql.types.scalars.vector import HalfVectorField, QuantizedVectorField, SparseVectorField
+from fraiseql.types.scalars.coordinates import CoordinateField as Coordinate
+from fraiseql.types.scalars.vector import is_float_vector_type
 
 logger = logging.getLogger(__name__)
 
@@ -355,6 +356,18 @@ class MacAddressFilter:
 
 
 @fraise_input
+class LTreeIndexInput:
+    """A label and its position in a path, for ``indexEq`` / ``indexGte``.
+
+    ``indexEq: {label: "astronomy", position: 1}`` keeps the paths whose first
+    ``astronomy`` label is at position 1 (0-indexed).
+    """
+
+    label: str
+    position: int
+
+
+@fraise_input
 class LTreeFilter:
     """Filter for LTree hierarchical paths with comprehensive operator support.
 
@@ -383,14 +396,10 @@ class LTreeFilter:
     - depth_*: Aliases for nlevel_* (same semantics)
 
     **Path Analysis Operators** (Extract and Find):
-    - index(label): Find position of label in path
-    - index_eq(label, pos): Label at exact position
-    - index_gte(label, pos): Label at or after position
-    - subpath(offset, len): Extract subpath range
-
-    **Path Manipulation Operators**:
-    - concat(path): Concatenate with another path
-    - lca(paths): Lowest common ancestor of multiple paths
+    - index_eq({label, position}): Label at exact position
+    - index_gte({label, position}): Label at or after position
+    - lca(paths): The path is the lowest common ancestor of the paths
+    - index, subpath, concat: rejected; they compute a value, not a condition
 
     **Array Operations**:
     - in_array(paths): Path is in array of allowed paths
@@ -414,7 +423,7 @@ class LTreeFilter:
     descendant_of: str | None = None  # <@ - Is descendant of path
     isdescendant: str | None = None  # Alias for descendant_of
     matches_lquery: str | None = None  # ~ - Matches lquery pattern
-    matches_ltxtquery: str | None = None  # ? - Matches ltxtquery text pattern
+    matches_ltxtquery: str | None = None  # @ - Matches ltxtquery text pattern
     matches_any_lquery: list[str] | None = None  # ? ANY(lquery[]) - Matches any lquery
 
     # Level/depth operators (nlevel() function)
@@ -435,16 +444,44 @@ class LTreeFilter:
     depth_neq: int | None = None  # Alias for nlevel_neq
 
     # Path manipulation operators
-    subpath: str | None = None  # subpath(path, offset, len) comparison
-    index: int | None = None  # index(path, item) - position of item
-    index_eq: int | None = None  # index(path, item) = value
-    index_gte: int | None = None  # index(path, item) >= value
-    lca: list[str] | None = None  # Lowest Common Ancestor of paths
-    concat: str | None = None  # path || value - concatenation
+    subpath: str | None = None  # Not a filter: rejected (subpath() computes a path)
+    index: int | None = None  # Not a filter: rejected (use index_eq / index_gte)
+    index_eq: LTreeIndexInput | None = None  # index(path, label) = position
+    index_gte: LTreeIndexInput | None = None  # index(path, label) >= position
+    lca: list[str] | None = None  # path = lca(paths), their lowest common ancestor
+    concat: str | None = None  # Not a filter: rejected (|| computes a path)
 
     # Array operations
     in_array: list[str] | None = None  # <@ - Path is in array of paths
     array_contains: str | None = None  # @> - Array contains path
+
+
+@fraise_input
+class CoordinateDistanceInput:
+    """A center and a radius, for ``distanceWithin``.
+
+    ``distanceWithin: {center: [37.7749, -122.4194], radius: 5000}`` keeps the
+    coordinates at most 5 km from the center, given as ``[latitude, longitude]``.
+    The SQL depends on ``FraiseQLConfig.coordinate_distance_method``.
+    """
+
+    center: list[float]
+    radius: float  # meters
+
+
+@fraise_input
+class CoordinateFilter:
+    """Filter for geographic coordinates (a ``point``: ``(longitude, latitude)``).
+
+    Values are ``"latitude,longitude"`` strings, like the ``Coordinate`` scalar.
+    """
+
+    eq: Coordinate | None = None
+    neq: Coordinate | None = None
+    in_: list[Coordinate] | None = fraise_field(default=None, graphql_name="in")
+    nin: list[Coordinate] | None = None
+    isnull: bool | None = None
+    distance_within: CoordinateDistanceInput | None = None
 
 
 @fraise_input
@@ -576,10 +613,8 @@ class VectorFilter:
     - l1_distance: L1/Manhattan distance (sum of absolute differences)
     - inner_product: Negative inner product (more negative = more similar)
 
-    Sparse Vector Operators (sparsevec):
-    - cosine_distance: Sparse cosine distance (accepts sparse vector input)
-    - l2_distance: Sparse L2 distance (accepts sparse vector input)
-    - inner_product: Sparse inner product (accepts sparse vector input)
+    A sparse operand (``{ sparse: ... }``) is refused: its literal needs the
+    column's dimension.
 
     Binary Vector Operators (bit):
     - hamming_distance: Hamming distance for bit vectors (count differing bits)
@@ -591,20 +626,12 @@ class VectorFilter:
     Example:
         # Dense vector distance:
         documents(
-            where: { embedding: { cosine_distance: { dense: [0.1, 0.2, 0.3] } } }
+            where: { embedding: { cosineDistance: { dense: [0.1, 0.2] }, distanceWithin: 0.5 } }
             limit: 10
-        )
-        # Sparse vector distance:
-        documents(
-            where: {
-                sparse_embedding: {
-                    cosine_distance: { sparse: { indices: [1,3,5], values: [0.1,0.2,0.3] } }
-                }
-            }
         )
         # Binary vector distance:
         documents(
-            where: { binary_embedding: { hamming_distance: "101010" } }
+            where: { binaryEmbedding: { hammingDistance: "101010", distanceWithin: 2 } }
         )
     """
 
@@ -738,9 +765,9 @@ def _get_filter_type_for_field(
             "imageembedding",
         ]
         # Check if it's a vector field (pattern match + list type or vector field types)
-        if (origin is list and any(pattern in field_lower for pattern in vector_patterns)) or (
-            field_type in (HalfVectorField, SparseVectorField, QuantizedVectorField)
-        ):
+        if (
+            origin is list and any(pattern in field_lower for pattern in vector_patterns)
+        ) or is_float_vector_type(field_type):
             return VectorFilter
 
     # Check if it's a List type
@@ -785,6 +812,7 @@ def _get_filter_type_for_field(
         from fraiseql.types.scalars.daterange import DateRangeField
 
         exotic_type_mapping = {
+            Coordinate: CoordinateFilter,
             IpAddress: NetworkAddressFilter,
             CIDR: NetworkAddressFilter,
             MacAddress: MacAddressFilter,
@@ -824,12 +852,14 @@ def _get_filter_type_for_field(
         try:
             from fraiseql.types.scalars import (
                 CIDRScalar,
+                CoordinateScalar,
                 IpAddressScalar,
                 LTreeScalar,
                 MacAddressScalar,
             )
 
             graphql_scalar_mapping = {
+                CoordinateScalar: CoordinateFilter,
                 IpAddressScalar: NetworkAddressFilter,
                 CIDRScalar: NetworkAddressFilter,
                 MacAddressScalar: MacAddressFilter,
@@ -1148,8 +1178,12 @@ def create_graphql_where_input(cls: type, name: str | None = None) -> type:
                 if hasattr(WhereInputClass, "__gql_fields__"):
                     from fraiseql.fields import fraise_field
 
-                    # Create a FraiseQLField with the correct type
-                    gql_field = fraise_field(default=None)
+                    # Create a FraiseQLField with the correct type, keeping the
+                    # description fraise_input gave the field it replaces
+                    replaced = WhereInputClass.__gql_fields__.get(logical_field)
+                    gql_field = fraise_field(
+                        default=None, description=getattr(replaced, "description", None)
+                    )
                     gql_field.name = logical_field
                     gql_field.field_type = self_ref_list_type
                     WhereInputClass.__gql_fields__[logical_field] = gql_field

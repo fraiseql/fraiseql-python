@@ -69,23 +69,60 @@ FraiseQL provides three pre-configured security profiles that bundle together re
 | **Rate Limit** | 100 req/min | 50 req/min | 10 req/min |
 | **Audit Level** | STANDARD | **ENHANCED** | **VERBOSE** |
 | **Field Audit** | Off | **On** | **On** |
-| **Query Depth** | 15 levels | 10 levels | 10 levels |
-| **Query Complexity** | Unlimited | Limited | **500 max** |
-| **Body Size** | No limit | 1 MB | **512 KB** |
+| **Query Depth** | 15 levels | 10 levels | **5 levels** |
+| **Query Complexity** | 1000 max | 1000 max | **500 max** |
+| **Body Size** | 1 MB | 1 MB | **512 KB** |
 
 ### STANDARD Profile (Default)
 
 **Configuration**:
 
 ```python
+from fraiseql import FraiseQLConfig
 from fraiseql.security.profiles import get_profile
 
 profile = get_profile("standard")
 config = FraiseQLConfig(
-    security_profile=profile,
     database_url="postgresql://localhost/fraiseql_db",
+    introspection_policy=profile.introspection_policy.value,  # "authenticated"
+    max_query_depth=profile.max_query_depth,  # 15
+    complexity_max_score=profile.max_query_complexity,  # 1000
 )
 ```
+
+A deeper query is answered with `QUERY_TOO_DEEP`, a costlier one with
+`QUERY_TOO_COMPLEX`, and neither is executed (setting `complexity_max_score`
+turns the complexity check on).
+
+> **Applying a profile in 1.31:** `FraiseQLConfig` has no `security_profile` setting
+> (it ignores fields it doesn't declare). A profile is a `SecurityProfileConfig`
+> value. `ProfileEnforcer(profile).apply_to_app(app)` is meant to install its
+> middleware, but the app then fails to start (`apply_to_app` adds
+> `SecurityHeadersMiddleware`, and another middleware, without the config they
+> need). Install the profile's body-size limit and rate limit yourself instead:
+>
+> ```python
+> from fraiseql.middleware import (
+>     BodySizeLimiterMiddleware,
+>     InMemoryRateLimiter,
+>     RateLimiterMiddleware,
+> )
+> from fraiseql.security.profiles import ProfileEnforcer, get_profile
+>
+> enforcer = ProfileEnforcer(get_profile("regulated"))
+> app.add_middleware(BodySizeLimiterMiddleware, config=enforcer.get_body_size_config())
+> app.add_middleware(
+>     RateLimiterMiddleware,
+>     rate_limiter=InMemoryRateLimiter(enforcer.get_rate_limit_config()),
+> )
+> ```
+>
+> A body over the profile's `max_body_size` then gets 413, and a client over
+> `rate_limit_requests_per_minute` gets 429 with `Retry-After` (counted per client
+> IP, and per user when a middleware in front of it sets `request.state.user_id`, in each
+> process's memory). The profile's introspection policy works as above,
+> and the security headers as in
+> [Security Header Configuration](#security-header-configuration).
 
 **Settings**:
 
@@ -98,7 +135,8 @@ config = FraiseQLConfig(
 - Audit Level: STANDARD (basic event logging)
 - Field-Level Audit: Disabled
 - Query Depth Limit: 15 levels
-- Query Complexity: Unlimited (auto-estimated)
+- Query Complexity: 1000 max
+- Request Body Size: 1 MB limit
 
 **Use Cases**:
 
@@ -119,12 +157,13 @@ config = FraiseQLConfig(
 **Configuration**:
 
 ```python
+from fraiseql import FraiseQLConfig
 from fraiseql.security.profiles import get_profile
 
 profile = get_profile("regulated")
 config = FraiseQLConfig(
-    security_profile=profile,
     database_url="postgresql://localhost/fraiseql_db",
+    introspection_policy=profile.introspection_policy.value,  # "disabled"
 )
 ```
 
@@ -139,7 +178,7 @@ config = FraiseQLConfig(
 - Audit Level: **ENHANCED** (detailed event tracking)
 - Field-Level Audit: **Enabled** (track field access)
 - Query Depth Limit: **10 levels** (reduced from STANDARD)
-- Query Complexity: Limited to 5000 estimated units
+- Query Complexity: 1000 max
 - Request Body Size: 1 MB limit
 
 **Use Cases**:
@@ -161,26 +200,25 @@ config = FraiseQLConfig(
 **Production Deployment**:
 
 ```bash
-# Require HTTPS only
-export FRAISEQL_SECURITY_PROFILE=regulated
-export FRAISEQL_TLS_ENFORCE=true
-export FRAISEQL_TLS_MIN_VERSION=1.2
+# The one profile setting FraiseQLConfig reads from the environment
 export FRAISEQL_INTROSPECTION_POLICY=disabled
-export FRAISEQL_AUDIT_LEVEL=enhanced
-export FRAISEQL_AUDIT_FIELD_ACCESS=true
 ```
+
+TLS (and, for RESTRICTED, mTLS) is terminated in front of the app, at the load
+balancer or reverse proxy; FraiseQL has no setting for it.
 
 ### RESTRICTED Profile
 
 **Configuration**:
 
 ```python
+from fraiseql import FraiseQLConfig
 from fraiseql.security.profiles import get_profile
 
 profile = get_profile("restricted")
 config = FraiseQLConfig(
-    security_profile=profile,
     database_url="postgresql://localhost/fraiseql_db",
+    introspection_policy=profile.introspection_policy.value,  # "disabled"
 )
 ```
 
@@ -194,7 +232,7 @@ config = FraiseQLConfig(
 - Rate Limiting: **10 requests/minute** (highly restrictive)
 - Audit Level: **VERBOSE** (comprehensive logging)
 - Field-Level Audit: **Enabled** (all field access tracked)
-- Query Depth Limit: **10 levels** (same as REGULATED)
+- Query Depth Limit: **5 levels**
 - Query Complexity: **500 max** (very low limit)
 - Request Body Size: **512 KB limit** (protective)
 - CSRF: Strict validation with referrer checking
@@ -232,22 +270,16 @@ client_config = {
 **Production Deployment**:
 
 ```bash
-# Maximum security configuration
-export FRAISEQL_SECURITY_PROFILE=restricted
-export FRAISEQL_TLS_ENFORCE=true
-export FRAISEQL_TLS_MIN_VERSION=1.3
-export FRAISEQL_MTLS_ENABLE=true
-export FRAISEQL_MTLS_CA_CERT=/etc/tls/ca.crt
+# The one profile setting FraiseQLConfig reads from the environment
 export FRAISEQL_INTROSPECTION_POLICY=disabled
-export FRAISEQL_AUDIT_LEVEL=verbose
-export FRAISEQL_AUDIT_FIELD_ACCESS=true
-export FRAISEQL_QUERY_COMPLEXITY_MAX=500
-export FRAISEQL_RATE_LIMIT_PER_MIN=10
 ```
+
+TLS (and, for RESTRICTED, mTLS) is terminated in front of the app, at the load
+balancer or reverse proxy; FraiseQL has no setting for it.
 
 ### Profile Enforcement
 
-Security profiles are automatically enforced via middleware. Each request is validated against the profile's constraints:
+The order the profile middleware is designed to run in (see the note under STANDARD Profile for what runs in 1.31):
 
 ```python
 # Middleware enforcement order:
@@ -635,12 +667,18 @@ Content-Security-Policy: default-src *; script-src * 'unsafe-inline' 'unsafe-eva
 **CSP Violation Reporting**:
 
 ```python
-# Configure webhook to receive CSP violations
-config = FraiseQLConfig(
-    csp_report_uri="https://security.example.com/csp-violations",
-    csp_report_only=False,  # True = report only, False = enforce
-)
+from fraiseql.security.security_headers import CSPDirective, add_csp_reporting
+
+# Receive violation reports at POST /csp-report and forward them to a webhook
+add_csp_reporting(app, "/csp-report", webhook_url="https://security.example.com/csp-violations")
+
+# Point the policy at it; report_only=True sends Content-Security-Policy-Report-Only
+csp.add_directive(CSPDirective.REPORT_URI, "/csp-report")
+csp.report_only = False
 ```
+
+`csp` is the `ContentSecurityPolicy` you pass to `SecurityHeadersConfig` (see
+Custom Configuration below).
 
 #### HTTP Strict-Transport-Security (HSTS)
 
@@ -732,37 +770,31 @@ Cross-Origin-Resource-Policy: same-site
 
 ### Security Header Configuration
 
-**Automatic Injection**:
+**Presets**:
 
-FraiseQL automatically injects security headers based on security profile:
+Security headers come from a `SecurityHeadersConfig`, not from the security
+profile. Two presets cover the common cases:
 
 ```python
-from fraiseql.security.profiles import get_profile
+from fraiseql.security.security_headers import (
+    create_development_security_config,
+    create_production_security_config,
+    setup_security_headers,
+)
 
-# STANDARD profile
-config = FraiseQLConfig(security_profile=get_profile("standard"))
-# Headers:
-# - CSP (permissive)
-# - HSTS (recommended)
-# - X-Content-Type-Options: nosniff
-# - X-Frame-Options: SAMEORIGIN
+# Production API: CSP default-src 'none', HSTS (max-age=31536000; includeSubDomains),
+# X-Frame-Options: DENY, X-Content-Type-Options: nosniff
+setup_security_headers(
+    app, config=create_production_security_config("api.example.com", api_only=True)
+)
 
-# REGULATED profile
-config = FraiseQLConfig(security_profile=get_profile("regulated"))
-# Headers (stricter):
-# - CSP (strict, only 'self' allowed)
-# - HSTS (enforced, max-age=31536000)
-# - X-Frame-Options: DENY
-# - X-XSS-Protection: 1; mode=block
-
-# RESTRICTED profile (maximum security)
-config = FraiseQLConfig(security_profile=get_profile("restricted"))
-# Headers (maximum):
-# - CSP (very strict, no inline scripts)
-# - HSTS (enforced + preload)
-# - X-Frame-Options: DENY
-# - All feature-policy restrictions enabled
+# Development: permissive CSP, no HSTS, X-Frame-Options: SAMEORIGIN
+# (this preset skips /graphql, /playground and the docs pages)
+setup_security_headers(app, config=create_development_security_config())
 ```
+
+`create_production_security_config(..., enable_hsts_preload=True)` adds `preload`
+to HSTS.
 
 **Custom Configuration**:
 
@@ -821,39 +853,6 @@ FraiseQL provides comprehensive Cross-Site Request Forgery (CSRF) protection wit
 ```text
 Token: NrVy3e5K_J2x8aB9cDmQpRsT1uVwXyZa
 HMAC: e4c7e8f5a1b2c3d4e5f6a7b8c9d0e1f2
-```
-
-### Storage Methods
-
-**Cookie-Based** (recommended for SPAs):
-
-```python
-config = FraiseQLConfig(
-    csrf_token_storage="cookie",
-    csrf_cookie_secure=True,          # HTTPS only
-    csrf_cookie_httponly=True,        # Not accessible to JavaScript
-    csrf_cookie_samesite="strict",    # Prevent cross-site cookie sends
-    csrf_cookie_domain=".example.com",
-    csrf_cookie_path="/graphql",
-)
-```
-
-**Session-Based** (server-side storage):
-
-```python
-config = FraiseQLConfig(
-    csrf_token_storage="session",
-    # Requires session middleware
-)
-```
-
-**Header-Based** (custom header):
-
-```python
-config = FraiseQLConfig(
-    csrf_token_storage="header",
-    csrf_header_name="X-CSRF-Token",
-)
 ```
 
 ### CSRF Validation
@@ -1089,137 +1088,41 @@ HTTP/1.1 200 OK
 
 ## Rate Limiting
 
-FraiseQL provides sophisticated rate limiting based on GraphQL operations and query complexity.
+Rate limiting is off by default. [Rate Limiting](../configuration/rate-limiting.md)
+describes both ways to turn it on:
 
-### Rate Limiting Strategies
+- **`FraiseQLConfig(rate_limit_enabled=True)`**: `create_fraiseql_app` installs
+  `RateLimiterMiddleware`. It counts requests per client IP, in a sliding window, in
+  each process's memory, against `rate_limit_requests_per_minute` and
+  `rate_limit_requests_per_hour`. Every counted response carries `X-RateLimit-Limit`,
+  `X-RateLimit-Remaining` and `X-RateLimit-Reset`.
+- **`setup_rate_limiting(app)`** (from `fraiseql.security`): installs
+  `RateLimitMiddleware`, with limits per path pattern and, on `POST /graphql`, per
+  operation type (100 queries, 20 mutations, 10 subscriptions a minute) and per
+  estimated cost (200 / 100 / 20 a minute for the low / medium / high tier). Windows
+  are fixed; counts are kept in memory, or in Redis with `redis_client=`.
 
-**Fixed Window** (traditional):
-
-- Time divided into fixed buckets (minute, hour, day)
-- Count requests in current window
-- Simple but susceptible to burst at window boundaries
-
-**Sliding Window** (recommended):
-
-- Requests in past N seconds
-- More accurate burst detection
-- Slightly more overhead
-
-**Token Bucket** (smoothing):
-
-- Tokens generated at constant rate
-- Each request consumes tokens
-- Burst capacity configurable
-- Smooths traffic patterns
-
-**FraiseQL Default**: Sliding window with 1-minute window
-
-### Configuration by Operation Type
-
-```python
-rate_limit_config = RateLimitConfig(
-    strategies={
-        "query": {
-            "limit": 100,           # 100 queries/minute
-            "window": 60,           # 1 minute
-            "strategy": "sliding_window",
-        },
-        "mutation": {
-            "limit": 20,            # 20 mutations/minute (stricter)
-            "window": 60,
-            "strategy": "sliding_window",
-        },
-        "subscription": {
-            "limit": 10,            # 10 subscriptions
-            "window": 60,
-            "strategy": "token_bucket",  # Smooth out subscriptions
-        },
-    }
-)
-```
-
-### Complexity-Based Rate Limiting
-
-Automatically estimates query complexity and applies stricter limits to expensive queries:
-
-```python
-# Query complexity auto-estimation
-# Simple query (5 fields): ~10 units
-# Moderate query (20 fields, 1-2 levels): ~50 units
-# Complex query (100+ fields, nested): ~500+ units
-
-rate_limit_config = RateLimitConfig(
-    complexity_limits={
-        "low": {      # 0-50 complexity units
-            "limit": 200,
-            "window": 60,
-        },
-        "medium": {   # 50-200 complexity units
-            "limit": 100,
-            "window": 60,
-        },
-        "high": {     # 200-500 complexity units
-            "limit": 20,
-            "window": 60,
-        },
-        "critical": { # 500+ complexity units
-            "limit": 5,
-            "window": 60,
-        },
-    }
-)
-```
-
-### Response Headers
-
-FraiseQL includes rate limit information in response headers:
-
-```text
-HTTP/1.1 200 OK
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 87
-X-RateLimit-Window: 60
-X-RateLimit-Reset: 1631384400
-```
-
-**Rate Limit Exceeded** (HTTP 429):
+A request over a limit gets HTTP 429 with `Retry-After`. From `RateLimiterMiddleware`:
 
 ```json
 HTTP/1.1 429 Too Many Requests
 Retry-After: 45
 
+{"detail": "Rate limit exceeded. Retry after 45 seconds."}
+```
+
+From the GraphQL limits of `RateLimitMiddleware`:
+
+```json
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+
 {
   "errors": [{
-    "message": "Rate limit exceeded",
-    "extensions": {
-      "code": "RATE_LIMIT_EXCEEDED",
-      "limit": 100,
-      "reset_in": 45
-    }
+    "message": "Rate limit exceeded for mutation operations",
+    "extensions": {"code": "RATE_LIMITED", "limit": 20, "window": 60}
   }]
 }
-```
-
-### Store Implementations
-
-**In-Memory Store** (development):
-
-```python
-RateLimitConfig(
-    store="memory",  # No external dependencies
-    cleanup_interval=300,  # Cleanup every 5 minutes
-)
-```
-
-**Redis Store** (production):
-
-```python
-RateLimitConfig(
-    store="redis",
-    redis_url="redis://localhost:6379/0",
-    key_prefix="rate_limit:",
-    ttl=3600,  # Automatic cleanup after 1 hour
-)
 ```
 
 ---

@@ -12,7 +12,8 @@ Raises:
     TypeError: If the provided Python type has no corresponding GraphQL scalar.
 """
 
-import datetime
+import datetime as dt
+import decimal
 import ipaddress
 import uuid
 
@@ -30,6 +31,7 @@ from .coordinates import CoordinateField, CoordinateScalar
 from .date import DateScalar
 from .daterange import DateRangeField, DateRangeScalar
 from .datetime import DateTimeScalar
+from .decimal import DecimalScalar
 from .email_address import EmailAddressField, EmailAddressScalar
 from .hostname import HostnameField, HostnameScalar
 from .id_scalar import ID
@@ -65,9 +67,10 @@ def convert_scalar_to_graphql(typ: type) -> GraphQLScalarType:
         UUIDField: UUIDScalar,  # Explicit UUID field → "UUID" scalar
         # ID type annotation uses GraphQL's built-in ID scalar
         ID: GraphQLID,  # ID → GraphQL's built-in "ID" scalar
-        datetime.date: DateScalar,
-        datetime.datetime: DateTimeScalar,
-        datetime.time: GraphQLString,
+        dt.date: DateScalar,
+        dt.datetime: DateTimeScalar,
+        dt.time: GraphQLString,
+        decimal.Decimal: DecimalScalar,
         ipaddress.IPv4Address: IpAddressScalar,
         ipaddress.IPv4Network: SubnetMaskScalar,
         IpAddressField: IpAddressScalar,

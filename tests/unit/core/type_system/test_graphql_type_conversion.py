@@ -691,7 +691,7 @@ class TestInvalidJSONFieldData:
         """Test invalid JSON literal (e.g., non-JSON string)."""
         invalid_json = '{"key": "value",}'  # Invalid JSON syntax (extra comma)
 
-        with pytest.raises(GraphQLError, match="JSON cannot represent.*literal of type str"):
+        with pytest.raises(GraphQLError, match=r"JSON cannot represent.*literal of type str"):
             # Ensure that parsing invalid JSON literals raises an error
             parse_json_literal(invalid_json)  # type: ignore[arg-type]
 

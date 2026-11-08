@@ -1,162 +1,104 @@
-"""FraiseQL Organization Chart Schema
-Demonstrates LTREE usage for employee hierarchies
+"""FraiseQL Organization Chart - ltree hierarchies.
+
+Run setup.sql on a database, then:
+
+    DATABASE_URL=postgresql://localhost/org_chart python schema.py
 """
 
+import os
+from datetime import date
+
 import fraiseql
-from fraiseql.types.scalars import LTree
+from fraiseql.db import register_type_for_view
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.types import ID, LTree
 
 
-@fraiseql.fraise_type
+@fraiseql.type(sql_source="v_employee")
 class Employee:
     """Employee in the organization hierarchy."""
 
-    id: int = fraiseql.field(primary_key=True)
+    id: ID
     name: str
     title: str
     department: str
-    salary: float
-    org_path: LTree  # Hierarchical organizational path
-    manager_id: int | None
-    hire_date: str
-    active: bool = True
-
-    # Relationships
-    @fraiseql.field
-    def manager(self) -> "Employee | None":
-        """Get the employee's manager."""
-        return Employee.find_by(id=self.manager_id)
-
-    @fraiseql.field
-    def direct_reports(self) -> list["Employee"]:
-        """Get employees who directly report to this employee."""
-        return Employee.find_where(
-            org_path__descendant_of=self.org_path,
-            org_path__nlevel_eq=fraiseql.sql.Function("nlevel", self.org_path) + 1,
-        )
-
-    @fraiseql.field
-    def all_reports(self) -> list["Employee"]:
-        """Get all employees under this employee in the hierarchy."""
-        return Employee.find_where(org_path__descendant_of=self.org_path).exclude(id=self.id)
-
-    @fraiseql.field
-    def peers(self) -> list["Employee"]:
-        """Get employees at the same level with the same manager."""
-        if not self.manager_id:
-            return []
-
-        parent_path = fraiseql.sql.Function("subpath", self.org_path, 0, -1)
-        return Employee.find_where(
-            org_path__descendant_of=parent_path,
-            org_path__nlevel_eq=fraiseql.sql.Function("nlevel", self.org_path),
-        ).exclude(id=self.id)
+    org_path: LTree  # The chain of managers down to this employee
+    level: int  # 1 for the CEO, 2 for their direct reports, ...
+    hire_date: date
 
 
-@fraiseql.fraise_query
-class Query:
-    """Root query for organization chart."""
-
-    @fraiseql.field
-    def employees(self, where: dict | None = None) -> list[Employee]:
-        """Get all employees with optional filtering."""
-        return Employee.find_where(**(where or {}))
-
-    @fraiseql.field
-    def employee(self, id: int) -> Employee | None:
-        """Get a specific employee by ID."""
-        return Employee.find_by(id=id)
-
-    @fraiseql.field
-    def department_employees(self, department: str) -> list[Employee]:
-        """Get all employees in a department."""
-        return Employee.find_where(department=department)
-
-    @fraiseql.field
-    def org_structure(self, root_path: str | None = None) -> list[Employee]:
-        """Get organization structure starting from a root path."""
-        root = root_path or "acme"
-        return Employee.find_where(org_path__descendant_of=root).order_by("org_path")
-
-    @fraiseql.field
-    def managers(self) -> list[Employee]:
-        """Get all employees who have direct reports."""
-        # Employees who appear as managers in the org_path
-        return Employee.find_where(
-            id__in=fraiseql.sql.Subquery(
-                Employee.select("manager_id").distinct().where(manager_id__isnull=False)
-            )
-        )
-
-
-@fraiseql.fraise_mutation
-class Mutation:
-    """Mutations for organization management."""
-
-    @fraiseql.field
-    def update_employee_position(
-        self, employee_id: int, new_manager_id: int | None, new_title: str | None = None
-    ) -> Employee:
-        """Update an employee's position in the organization."""
-        employee = Employee.find_by(id=employee_id)
-        if not employee:
-            raise ValueError("Employee not found")
-
-        # Update manager and title
-        updates = {}
-        if new_manager_id is not None:
-            updates["manager_id"] = new_manager_id
-        if new_title:
-            updates["title"] = new_title
-
-        # Update org_path based on new manager
-        if new_manager_id:
-            manager = Employee.find_by(id=new_manager_id)
-            if manager:
-                # New path: manager's path + employee name
-                employee_name = employee.name.lower().replace(" ", "_")
-                new_path = f"{manager.org_path}.{employee_name}"
-                updates["org_path"] = new_path
-
-        employee.update(**updates)
-        return employee
-
-    @fraiseql.field
-    def add_employee(
-        self,
-        name: str,
-        title: str,
-        department: str,
-        salary: float,
-        manager_id: int | None,
-        hire_date: str,
-    ) -> Employee:
-        """Add a new employee to the organization."""
-        # Generate org_path
-        if manager_id:
-            manager = Employee.find_by(id=manager_id)
-            if not manager:
-                raise ValueError("Manager not found")
-            employee_name = name.lower().replace(" ", "_")
-            org_path = f"{manager.org_path}.{employee_name}"
-        else:
-            # Root level employee
-            employee_name = name.lower().replace(" ", "_")
-            org_path = f"acme.{department.lower()}.{employee_name}"
-
-        return Employee.create(
-            name=name,
-            title=title,
-            department=department,
-            salary=salary,
-            org_path=org_path,
-            manager_id=manager_id,
-            hire_date=hire_date,
-        )
-
-
-# Configure the GraphQL app
-app = fraiseql.create_app(
-    title="Organization Chart API",
-    description="Hierarchical employee management with LTREE paths",
-    version="1.0.0",
+# v_employee exposes org_path as a real ltree column (and its level) next to
+# data: filters on it then use PostgreSQL's ltree operators and the GiST index.
+register_type_for_view(
+    "v_employee",
+    Employee,
+    table_columns={"id", "org_path", "level", "department", "data"},
+    has_jsonb_data=True,
 )
+
+
+@fraiseql.query
+async def employees(
+    info, where=None, order_by=None, limit: int | None = None, offset: int | None = None
+) -> list[Employee]:
+    """List employees, with fraiseql's filters, including ltree ones on orgPath."""
+    db = info.context["db"]
+    return await db.find(
+        "v_employee",
+        "employees",
+        info,
+        where=where,
+        order_by=order_by,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@fraiseql.query
+async def employee(info, id: ID) -> Employee | None:
+    """Get an employee by ID."""
+    db = info.context["db"]
+    return await db.find_one("v_employee", "employee", info, mandatory_filters={"id": id})
+
+
+@fraiseql.query
+async def reports(info, org_path: str, direct_only: bool = False) -> list[Employee]:
+    """Employees under the one at org_path: everyone, or only direct reports."""
+    level = len(org_path.split("."))
+    below = {"eq": level + 1} if direct_only else {"gt": level}
+    db = info.context["db"]
+    return await db.find(
+        "v_employee",
+        "reports",
+        info,
+        where={"org_path": {"descendant_of": org_path}, "level": below},
+        order_by=[{"org_path": "asc"}],
+    )
+
+
+@fraiseql.query
+async def chain_of_command(info, org_path: str) -> list[Employee]:
+    """The managers above the employee at org_path, from the top down."""
+    level = len(org_path.split("."))
+    db = info.context["db"]
+    return await db.find(
+        "v_employee",
+        "chainOfCommand",
+        info,
+        where={"org_path": {"ancestor_of": org_path}, "level": {"lt": level}},
+        order_by=[{"org_path": "asc"}],
+    )
+
+
+app = create_fraiseql_app(
+    database_url=os.getenv("DATABASE_URL", "postgresql://localhost/org_chart"),
+    types=[Employee],
+    queries=[employees, employee, reports, chain_of_command],
+    title="Organization Chart API",
+)
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)

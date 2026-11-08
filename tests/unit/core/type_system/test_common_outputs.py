@@ -48,9 +48,9 @@ class TestMutationResultRow:
         """Test MutationResultRow field type annotations."""
         annotations = MutationResultRow.__annotations__
         assert annotations["id"] == uuid.UUID
-        assert annotations["status"] == str
+        assert annotations["status"] is str
         assert annotations["updated_fields"] == list[str]
-        assert annotations["message"] == str
+        assert annotations["message"] is str
         assert annotations["object_data"] == dict[str, typing.Any]
         assert annotations["extra_metadata"] == dict[str, typing.Any]
 
@@ -232,7 +232,7 @@ class TestMutationStatusMap:
     )
     def test_status_http_codes(self, status, expected_http) -> None:
         """Test specific status to HTTP code mappings."""
-        error_code, http_status = MUTATION_STATUS_MAP[status]
+        _error_code, http_status = MUTATION_STATUS_MAP[status]
         assert http_status == expected_http
 
     def test_status_map_usage_example(self) -> None:

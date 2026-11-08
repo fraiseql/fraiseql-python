@@ -17,7 +17,7 @@ SELECT
             'product_id', (SELECT id FROM tb_product WHERE pk_product = oi.fk_product),
             'product_name', (SELECT data->>'name' FROM v_product WHERE pk_product = oi.fk_product),
             'quantity', oi.quantity,
-            'unitPrice', oi.unit_price,
+            'unit_price', oi.unit_price,
             'total_price', oi.total_price,
             'created_at', oi.created_at
         )
@@ -85,10 +85,10 @@ BEGIN
         o.data || jsonb_build_object(
             'items', COALESCE(items.items_data, '[]'::jsonb),
             'customer', COALESCE(cust.customer_data, '{}'::jsonb),
-            'itemCount', COALESCE(jsonb_array_length(items.items_data), 0),
+            'item_count', COALESCE(jsonb_array_length(items.items_data), 0),
             'total_price', o.total,
-            'totalTax', (o.total * 0.1)::NUMERIC(10,2),  -- Example: 10% tax
-            'finalPrice', (o.total * 1.1)::NUMERIC(10,2)
+            'total_tax', (o.total * 0.1)::NUMERIC(10,2),  -- Example: 10% tax
+            'final_price', (o.total * 1.1)::NUMERIC(10,2)
         ) AS data,
         o.status,
         o.total,
@@ -165,10 +165,10 @@ BEGIN
             o.data || jsonb_build_object(
                 'items', COALESCE(items.items_data, '[]'::jsonb),
                 'customer', COALESCE(cust.customer_data, '{}'::jsonb),
-                'itemCount', COALESCE(jsonb_array_length(items.items_data), 0),
+                'item_count', COALESCE(jsonb_array_length(items.items_data), 0),
                 'total_price', o.total,
-                'totalTax', (o.total * 0.1)::NUMERIC(10,2),
-                'finalPrice', (o.total * 1.1)::NUMERIC(10,2)
+                'total_tax', (o.total * 0.1)::NUMERIC(10,2),
+                'final_price', (o.total * 1.1)::NUMERIC(10,2)
             ) AS data,
             o.status,
             o.total,

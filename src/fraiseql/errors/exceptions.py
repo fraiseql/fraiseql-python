@@ -372,8 +372,8 @@ class ResolverError(FraiseQLException):
 
         if query_info:
             query_context["field"] = query_info.field_name
-            if query_info.path:
-                query_context["path"] = str(query_info.path)
+            if query_info.path is not None:
+                query_context["path"] = query_info.path.as_list()
 
         # Generate hints
         hints = []

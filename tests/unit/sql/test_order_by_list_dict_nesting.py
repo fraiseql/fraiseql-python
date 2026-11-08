@@ -85,5 +85,5 @@ class TestUninterpretableValuesWarn:
             _instructions({"name": 42})
 
     def test_unrecognised_value_is_not_silently_ascending(self) -> None:
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning, match="order_by"):
             assert _instructions([{"name": 42}]) == []

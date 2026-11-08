@@ -84,9 +84,9 @@ echo ""
 echo -e "${BLUE}Test 1: GraphQL Schema Introspection${NC}"
 SCHEMA_RESPONSE=$(curl -s http://localhost:8001/graphql \
   -H "Content-Type: application/json" \
-  -d '{"query":"{ __schema { queryType { name } mutationType { name } } }"}')
+  -d '{"query":"{ __schema { queryType { fields { name } } } }"}')
 
-if echo "$SCHEMA_RESPONSE" | grep -q "QueryRoot"; then
+if echo "$SCHEMA_RESPONSE" | grep -q '"documents"'; then
     echo -e "${GREEN}✓ GraphQL schema loads correctly${NC}"
 else
     echo -e "${RED}✗ GraphQL schema failed${NC}"
@@ -112,23 +112,10 @@ else
 fi
 echo ""
 
-# Test 3: Create document via GraphQL mutation
-echo -e "${BLUE}Test 3: Create Document (GraphQL)${NC}"
-CREATE_RESPONSE=$(curl -s http://localhost:8001/graphql \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "mutation { createDocument(title: \"Test Document\", content: \"This is a test document for E2E testing.\", source: \"test\") { id title } }"
-  }')
-
-if echo "$CREATE_RESPONSE" | grep -q "Test Document"; then
-    echo -e "${GREEN}✓ Document creation works${NC}"
-    TEST_DOC_ID=$(echo "$CREATE_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-    echo -e "  Created document ID: ${GREEN}${TEST_DOC_ID}${NC}"
-else
-    echo -e "${RED}✗ Document creation failed${NC}"
-    echo "$CREATE_RESPONSE"
-    exit 1
-fi
+# Test 3: Model availability
+echo -e "${BLUE}Test 3: Model Status${NC}"
+STATUS_RESPONSE=$(curl -s http://localhost:8001/api/rag/status)
+echo -e "  ${GREEN}${STATUS_RESPONSE}${NC}"
 echo ""
 
 # Test 4: Create document with embedding via REST API

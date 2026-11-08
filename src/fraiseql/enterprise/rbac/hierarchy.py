@@ -106,18 +106,15 @@ class RoleHierarchy:
         Returns:
             List of descendant roles
         """
-        # Find all roles that have this role in their inheritance chain
+        # Find all roles that have this role among their ancestors
         results = await self.repo.run(
             DatabaseQuery(
                 statement="""
-                SELECT DISTINCT r.* FROM roles r
-                WHERE r.id IN (
-                    SELECT DISTINCT role_id
-                    FROM get_inherited_roles(r.id)
-                    WHERE role_id != r.id  -- Exclude self
-                    AND %(parent_role_id)s = ANY(ARRAY(
-                        SELECT role_id FROM get_inherited_roles(r.id)
-                    ))
+                SELECT r.* FROM roles r
+                WHERE r.id <> %(parent_role_id)s::uuid  -- Exclude self
+                AND EXISTS (
+                    SELECT 1 FROM get_inherited_roles(r.id) ir
+                    WHERE ir.role_id = %(parent_role_id)s::uuid
                 )
                 ORDER BY r.name
             """,

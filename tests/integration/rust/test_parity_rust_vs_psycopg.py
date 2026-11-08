@@ -34,7 +34,9 @@ class TestRustPsycopgParity:
         assert len(rust_result["data"]) == len(psycopg_result["data"])
 
         # Field names should match (camelCase conversion)
-        for rust_item, psycopg_item in zip(rust_result["data"], psycopg_result["data"]):
+        for rust_item, psycopg_item in zip(
+            rust_result["data"], psycopg_result["data"], strict=False
+        ):
             assert rust_item.keys() == psycopg_item.keys()
             assert rust_item["id"] == psycopg_item["id"]
             assert rust_item["userName"] == psycopg_item["userName"]
@@ -111,7 +113,7 @@ class TestRustPsycopgParity:
     @pytest.mark.asyncio
     async def test_data_type_parity(self):
         """Test that different data types are handled identically."""
-        pipeline = RustGraphQLPipeline()
+        RustGraphQLPipeline()
 
         # Test various PostgreSQL data types
         test_cases = [

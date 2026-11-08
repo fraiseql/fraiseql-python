@@ -242,7 +242,7 @@ class TestCQRSRepositoryQueries:
             email: str
 
         _ = await repository.find_by_view(
-            "vw_active_users", where={"email": {"like": "%@example.com"}}, limit=5
+            "vw_active_users", where={"email": {"eq": "user@example.com"}}, limit=5
         )
 
         # Check cursor was called
@@ -427,7 +427,7 @@ class TestCQRSRepositoryErrorHandling:
         with patch.object(repository.executor, "execute_function") as mock_exec:
             mock_exec.side_effect = Exception("function fn_create_invalid does not exist")
 
-            with pytest.raises(Exception, match="function.*does not exist"):
+            with pytest.raises(Exception, match=r"function.*does not exist"):
                 await repository.create("invalid", {"data": "test"})
 
     @pytest.mark.asyncio

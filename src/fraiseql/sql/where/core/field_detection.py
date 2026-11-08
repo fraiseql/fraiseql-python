@@ -31,8 +31,6 @@ class FieldType(Enum):
     PORT = "port"
     FULLTEXT = "fulltext"
     VECTOR = "vector"
-    SPARSE_VECTOR = "sparse_vector"
-    QUANTIZED_VECTOR = "quantized_vector"
 
     def is_ip_address(self) -> bool:
         """Check if this field type is IP address."""
@@ -58,7 +56,6 @@ class FieldType(Enum):
             from fraiseql.types.scalars.date import DateField
             from fraiseql.types.scalars.daterange import DateRangeField
             from fraiseql.types.scalars.datetime import DateTimeField
-            from fraiseql.types.scalars.vector import QuantizedVectorField, SparseVectorField
 
             type_mapping = {
                 IpAddress: cls.IP_ADDRESS,
@@ -68,8 +65,6 @@ class FieldType(Enum):
                 DateRangeField: cls.DATE_RANGE,
                 DateTimeField: cls.DATETIME,
                 DateField: cls.DATE,
-                SparseVectorField: cls.SPARSE_VECTOR,
-                QuantizedVectorField: cls.QUANTIZED_VECTOR,
             }
 
             if python_type in type_mapping:

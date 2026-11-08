@@ -8,9 +8,15 @@ from __future__ import annotations
 
 import logging
 from dataclasses import replace
-from typing import Any
+from typing import Any, Literal
 
-from fraiseql.where_clause import ALL_OPERATORS, VECTOR_OPERATORS, FieldCondition, WhereClause
+from fraiseql.where_clause import (
+    ALL_OPERATORS,
+    LTREE_INDEX_COMPARISONS,
+    VECTOR_OPERATORS,
+    FieldCondition,
+    WhereClause,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +162,8 @@ def normalize_dict_where(
                 )
             continue
 
+        _reject_operator_suffix_key(original_field_name, view_name, table_columns)
+
         # Convert camelCase field names to snake_case for database lookups
         # This allows GraphQL camelCase convention while using snake_case in DB
         field_name = original_field_name
@@ -166,6 +174,8 @@ def normalize_dict_where(
         if not isinstance(field_value, dict):
             # Scalar value, wrap in eq operator
             field_value = {"eq": field_value}  # noqa: PLW2901
+
+        field_value = _fold_vector_filter(field_value, original_field_name)  # noqa: PLW2901
 
         # Check if this is a nested object filter
         is_nested, use_fk = _is_nested_object_filter(
@@ -305,15 +315,13 @@ def normalize_dict_where(
             # Direct column filter: status = 'active'
             # Determine lookup strategy based on table structure
             lookup_strategy = "sql_column"
-            target_column = field_name
 
             # Check if we know table columns
             if table_columns is not None:
                 # We have table column information - use it to decide
-                if field_name not in table_columns:
+                if field_name not in table_columns and not _is_flat_view(view_name, table_columns):
                     # Column doesn't exist in table, must be in JSONB
                     lookup_strategy = "jsonb_path"
-                    target_column = jsonb_column
             else:
                 # We don't know table columns - check if table uses JSONB for data
                 from fraiseql.db import _table_metadata
@@ -324,7 +332,6 @@ def normalize_dict_where(
                     # (unless field is 'id' which is often a top-level column)
                     if metadata.get("has_jsonb_data", False) and field_name != "id":
                         lookup_strategy = "jsonb_path"
-                        target_column = jsonb_column
 
             for op, val in field_value.items():
                 if val is None:
@@ -334,7 +341,11 @@ def normalize_dict_where(
                 # (e.g., descendantOfId → descendant_of_id)
                 operator = _normalize_operator(op)
 
-                if lookup_strategy == "jsonb_path":
+                # A vector distance reads the view's column: one inside the JSONB
+                # document can't be compared (`data ->> 'embedding' <=> ...` has
+                # no operator), so the view exposes it beside `data`. That holds
+                # whether or not the view's columns were registered.
+                if lookup_strategy == "jsonb_path" and operator not in VECTOR_OPERATORS:
                     condition = FieldCondition(
                         field_path=[field_name],
                         operator=operator,
@@ -349,7 +360,7 @@ def normalize_dict_where(
                         operator=operator,
                         value=val,
                         lookup_strategy="sql_column",
-                        target_column=target_column,
+                        target_column=field_name,
                     )
 
                 conditions.append(condition)
@@ -359,6 +370,115 @@ def normalize_dict_where(
         logical_op=logical_op,
         nested_clauses=nested_clauses,
         not_clause=not_clause,
+    )
+
+
+def _reject_operator_suffix_key(key: str, view_name: str, table_columns: set[str] | None) -> None:
+    """Refuse a Django-style ``"age__gte"`` key: it is not an operator here.
+
+    Such a key was read as an equality filter on a field named ``age__gte``,
+    which no row has, so the query matched nothing without an error. A key
+    stays a field when the view has a column of that name or its registered
+    type declares one, whatever the suffix.
+
+    Raises:
+        ValueError: ``key`` ends in ``__<operator>`` and names no known field.
+    """
+    field, sep, operator = key.rpartition("__")
+    if not sep or not field or operator not in ALL_OPERATORS:
+        return
+    if table_columns and key in table_columns:
+        return
+    from fraiseql.db import _type_registry
+
+    type_class = _type_registry.get(view_name)
+    declared = getattr(type_class, "__gql_fields__", None) or getattr(
+        type_class, "__annotations__", {}
+    )
+    if key in declared:
+        return
+    msg = (
+        f"where: {key!r} is not a field, and Django-style __{operator} suffixes are not "
+        f'operators; write {{"{field}": {{"{operator}": ...}}}}'
+    )
+    raise ValueError(msg)
+
+
+def _is_flat_view(view_name: str, table_columns: set[str]) -> bool:
+    """Whether view_name is registered as having no JSONB column, columns unknown.
+
+    ``@fraiseql.type(sql_source=..., jsonb_column=None)`` registers the view with
+    no columns. An empty column set otherwise sends every field to the JSONB
+    column, which such a view doesn't have.
+    """
+    from fraiseql.db import _table_metadata
+
+    metadata = _table_metadata.get(view_name)
+    return (
+        not table_columns
+        and metadata is not None
+        and not metadata.get("has_jsonb_data", False)
+        and metadata.get("jsonb_column") is None
+    )
+
+
+def _fold_vector_filter(field_filter: dict, field_name: str) -> dict:
+    """Rewrite a GraphQL ``VectorFilter`` into the form ``FieldCondition`` reads.
+
+    GraphQL sends ``{"cosineDistance": {"dense": [...]}, "distanceWithin": 0.5}``:
+    the operator camelCased, the vector under ``dense``, and the threshold as a
+    sibling. ``FieldCondition`` reads ``{"cosine_distance": {"vector": [...],
+    "threshold": 0.5, "comparison": "lte"}}``. Without the rewrite, the
+    camelCased operator made the filter look nested and ``dense`` was rejected
+    as an unknown operator.
+
+    A ``VectorFilter`` operand (``{dense}``, ``{sparse}`` or a bit string)
+    without ``distanceWithin`` raises: it used to filter at ``< 0.5``, a
+    threshold nobody asked for.
+    """
+    operators = {_normalize_operator(key): key for key in field_filter}
+    if not any(operator in VECTOR_OPERATORS for operator in operators):
+        return field_filter
+
+    threshold = field_filter.get(operators.get("distance_within", "distance_within"))
+    folded = {}
+    for operator, key in operators.items():
+        value = field_filter[key]
+        if operator == "distance_within":
+            continue
+        if operator not in VECTOR_OPERATORS or value is None:
+            folded[key] = value
+            continue
+        if hasattr(value, "dense") or hasattr(value, "sparse"):  # a VectorDistanceInput
+            value = {
+                "dense": getattr(value, "dense", None),
+                "sparse": getattr(value, "sparse", None),
+            }
+        if isinstance(value, dict) and ("dense" in value or "sparse" in value):
+            if value.get("dense") is None:
+                # FieldCondition casts the operand to vector, not sparsevec
+                msg = f"where: {key!r} needs a dense vector; db.find can't filter on a sparse one"
+                raise ValueError(msg)
+            value = {"vector": value["dense"]}
+            if threshold is None:
+                raise ValueError(_missing_distance_within(field_name, key))
+        elif isinstance(value, str):
+            if threshold is None:
+                raise ValueError(_missing_distance_within(field_name, key))
+            value = {"vector": value}
+        elif threshold is not None and isinstance(value, list):
+            value = {"vector": value}
+        if threshold is not None and isinstance(value, dict) and "threshold" not in value:
+            # distanceWithin is the maximum distance to include
+            value = {**value, "threshold": threshold, "comparison": "lte"}
+        folded[operator] = value
+    return folded
+
+
+def _missing_distance_within(field_name: str, operator: str) -> str:
+    return (
+        f"where: {field_name!r} needs distanceWithin next to {operator!r}: "
+        "the maximum distance to include"
     )
 
 
@@ -377,7 +497,14 @@ def _is_nested_object_filter(
     """
     # Check if any keys are vector operators - these should not be treated as nested
     # Example: {"cosine_distance": {"vector": [...], "threshold": 0.5}}
-    if any(k in VECTOR_OPERATORS for k in field_filter):
+    # Same for the ltree operators taking {"label": ..., "position": ...}, and
+    # the coordinate distance_within taking {"center": ..., "radius": ...}
+    if any(
+        k in VECTOR_OPERATORS
+        or _normalize_operator(k) in LTREE_INDEX_COMPARISONS
+        or _normalize_operator(k) == "distance_within"
+        for k in field_filter
+    ):
         return False, False
 
     # Check if field_filter has nested operators
@@ -481,6 +608,81 @@ def normalize_whereinput(
 
     # Use dict normalization logic
     return normalize_dict_where(where_dict, view_name, table_columns, jsonb_column)
+
+
+def _declared_temporal_cast(
+    source_type: type, field_path: list[str]
+) -> Literal["timestamptz", "date"] | None:
+    """``timestamptz`` or ``date`` when *field_path* names a datetime or date field.
+
+    The path is walked through the annotations of *source_type* and its nested
+    types (``author.created_at``), unwrapping ``X | None``. Anything that does
+    not resolve answers None, which keeps the text comparison.
+    """
+    from datetime import date, datetime
+
+    from fraiseql.sql.graphql_order_by_generator import _resolve_field_type
+    from fraiseql.types.scalars.date import DateField
+    from fraiseql.types.scalars.datetime import DateTimeField
+
+    field_type = _resolve_field_type(source_type, tuple(field_path))
+    if not isinstance(field_type, type):
+        return None
+    if issubclass(field_type, datetime | DateTimeField):
+        return "timestamptz"
+    if issubclass(field_type, date | DateField):
+        return "date"
+    return None
+
+
+def _declared_ltree(source_type: type, field_path: list[str]) -> bool:
+    """Whether *field_path* names a field *source_type* declares as ``LTree``."""
+    from fraiseql.sql.graphql_order_by_generator import _resolve_field_type
+    from fraiseql.types.scalars.ltree import LTreeField
+
+    field_type = _resolve_field_type(source_type, tuple(field_path))
+    return isinstance(field_type, type) and issubclass(field_type, LTreeField)
+
+
+def _declared_coordinate(source_type: type, field_path: list[str]) -> bool:
+    """Whether *field_path* names a field *source_type* declares as ``Coordinate``."""
+    from fraiseql.sql.graphql_order_by_generator import _resolve_field_type
+    from fraiseql.types.scalars.coordinates import CoordinateField
+
+    field_type = _resolve_field_type(source_type, tuple(field_path))
+    return isinstance(field_type, type) and issubclass(field_type, CoordinateField)
+
+
+def annotate_temporal_casts(clause: WhereClause, source_type: type | None) -> None:
+    """Mark the JSONB conditions on datetime / date / ltree fields of *source_type*.
+
+    A JSONB field holds an ISO string, and ``->>`` compares it as text:
+    ``'2025-01-01T00:00:00+00:00' >= '2025-01-01T00:00:00Z'`` is false. A
+    condition on a field the type declares as ``datetime`` or ``date`` gets
+    ``temporal_cast`` set, and compares as ``timestamptz`` / ``date``. One on an
+    ``LTree`` field compares as ``ltree``, label by label (as text,
+    ``'a-b' < 'a.c'``; as paths, ``a.c < a-b``). A ``Coordinate`` field, on a
+    JSONB path or a column, gets ``"point"``: its filters compare points.
+    """
+    if source_type is None:
+        return
+    for condition in clause.conditions:
+        if condition.temporal_cast is not None:
+            continue
+        if condition.lookup_strategy == "jsonb_path":
+            condition.temporal_cast = _declared_temporal_cast(source_type, condition.field_path)
+            if condition.temporal_cast is None and _declared_ltree(
+                source_type, condition.field_path
+            ):
+                condition.temporal_cast = "ltree"
+        if condition.temporal_cast is None and _declared_coordinate(
+            source_type, condition.field_path
+        ):
+            condition.temporal_cast = "point"
+    for nested in clause.nested_clauses:
+        annotate_temporal_casts(nested, source_type)
+    if clause.not_clause:
+        annotate_temporal_casts(clause.not_clause, source_type)
 
 
 def _mapped_lookup_strategy(column: str, value: Any) -> str:

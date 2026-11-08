@@ -71,22 +71,22 @@ class TestBuildJsonbFieldExpr:
     def test_single_field(self) -> None:
         expr = _build_jsonb_field_expr("date", "data")
         sql_str = expr.as_string(None)
-        assert sql_str == '"data"->>\'date\''
+        assert sql_str == "\"data\"->>'date'"
 
     def test_nested_field(self) -> None:
         expr = _build_jsonb_field_expr("date_info.date", "data")
         sql_str = expr.as_string(None)
-        assert sql_str == '"data"->\'date_info\'->>\'date\''
+        assert sql_str == "\"data\"->'date_info'->>'date'"
 
     def test_deeply_nested(self) -> None:
         expr = _build_jsonb_field_expr("a.b.c", "data")
         sql_str = expr.as_string(None)
-        assert sql_str == '"data"->\'a\'->\'b\'->>\'c\''
+        assert sql_str == "\"data\"->'a'->'b'->>'c'"
 
     def test_custom_jsonb_column(self) -> None:
         expr = _build_jsonb_field_expr("name", "payload")
         sql_str = expr.as_string(None)
-        assert sql_str == '"payload"->>\'name\''
+        assert sql_str == "\"payload\"->>'name'"
 
 
 class TestBuildNonJsonbFieldExpr:
@@ -118,7 +118,7 @@ class TestBuildFindQueryGroupBy:
         sql_str = query.statement.as_string(None)
         assert "json_build_object(" in sql_str
         assert "'date'" in sql_str
-        assert 'GROUP BY "data"->>\'date\'' in sql_str
+        assert "GROUP BY \"data\"->>'date'" in sql_str
 
     def test_group_by_multiple_fields_jsonb(self) -> None:
         """GROUP BY multiple fields on JSONB table."""
@@ -265,9 +265,7 @@ class TestBuildFindQueryGroupBy:
 
         from unittest.mock import patch
 
-        with patch.object(
-            self.repo, "_build_where_clause", side_effect=capture_kwargs
-        ):
+        with patch.object(self.repo, "_build_where_clause", side_effect=capture_kwargs):
             self.repo._build_find_query(
                 "v_stats",
                 group_by=["date"],
@@ -336,9 +334,7 @@ class TestBuildNestedJsonObject:
         ]
         result = _build_nested_json_object(entries)
         sql_str = result.as_string(None)
-        assert sql_str == (
-            "json_build_object('date', expr_date, 'total', expr_total)"
-        )
+        assert sql_str == ("json_build_object('date', expr_date, 'total', expr_total)")
 
     def test_single_nested_path(self) -> None:
         """A single dotted path produces nested json_build_object."""
@@ -347,9 +343,7 @@ class TestBuildNestedJsonObject:
         entries = [("a.b", SQL("expr_b"))]
         result = _build_nested_json_object(entries)
         sql_str = result.as_string(None)
-        assert sql_str == (
-            "json_build_object('a', json_build_object('b', expr_b))"
-        )
+        assert sql_str == ("json_build_object('a', json_build_object('b', expr_b))")
 
     def test_sibling_paths_grouped(self) -> None:
         """Paths sharing a prefix are grouped under one key."""
@@ -373,8 +367,7 @@ class TestBuildNestedJsonObject:
         result = _build_nested_json_object(entries)
         sql_str = result.as_string(None)
         assert sql_str == (
-            "json_build_object('a', json_build_object("
-            "'b', json_build_object('c', expr_c)))"
+            "json_build_object('a', json_build_object('b', json_build_object('c', expr_c)))"
         )
 
     def test_mixed_flat_and_nested(self) -> None:

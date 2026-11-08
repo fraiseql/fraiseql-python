@@ -144,8 +144,8 @@ class CreateUserError:
     code: str = "VALIDATION_ERROR"
 ```
 
-`@fraiseql.result(success_cls, error_cls)` builds a combined result type if you prefer that
-over a union return annotation.
+`fraiseql.result(success_cls, error_cls)` builds a combined result type. It is deprecated
+since 1.29 (it keeps working in fraiseql 1.x); annotate `Success | Error` instead.
 
 ### `@fraiseql.query`
 
@@ -166,7 +166,7 @@ async def users(info) -> list[User]:
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 ### `@fraiseql.mutation`
@@ -361,14 +361,14 @@ is the CQRS data access object — reads via views, writes via functions.
 | `find_one` | `await db.find_one(view_name, id=..., **kwargs)` | Single row, or `None` if not found. |
 | `execute_function` | `await db.execute_function(function_name, input_data)` | Call a `fn_` PostgreSQL function (passes `input_data` as JSONB); returns the function's result dict. |
 | `count` | `await db.count(view_name, **kwargs)` | Integer count with the same `where=` semantics as `find`. |
-| `aggregate` | `await db.aggregate(view_name, aggregations, **kwargs)` | Run multiple aggregate expressions in one query. |
+| `aggregate` | `await db.aggregate(view_name, aggregations, **kwargs)` | Run multiple aggregate expressions in one query. The expressions are SQL written into the query as is: constants from your code only, never request input. |
 
 ```python
 # Read with filtering
 rows = await db.find("v_order", where={"status": {"eq": "active"}}, limit=20)
 
 # Single record
-one = await db.find_one("v_user", id=user_id)
+one = await db.find_one("v_user", mandatory_filters={"id": user_id})
 
 # Count
 total = await db.count("v_user", where={"status": {"eq": "active"}})
@@ -496,7 +496,7 @@ async def users(info) -> list[User]:
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 
 
 @fraiseql.mutation

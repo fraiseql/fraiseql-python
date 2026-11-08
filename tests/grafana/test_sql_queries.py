@@ -22,10 +22,14 @@ DASHBOARD_DIR = Path(__file__).parent.parent.parent / "grafana"
 DASHBOARD_FILES = [
     "error_monitoring.json",
     "performance_metrics.json",
-    "cache_hit_rate.json",
     "database_pool.json",
     "apq_effectiveness.json",
 ]
+
+
+def calls(func: str, sql: str) -> bool:
+    """Whether ``sql`` calls ``func`` (not a column such as max_exec_time_ms)."""
+    return re.search(rf"\b{func}\s*\(", sql) is not None
 
 
 @pytest.fixture
@@ -100,14 +104,19 @@ class TestSQLSyntax:
 class TestTableReferences:
     """Test that queries reference correct tables."""
 
+    # Tables and views of src/fraiseql/monitoring/schema.sql, of the PostgreSQL APQ
+    # backend (default table_prefix "apq_"), and PostgreSQL's statistics views
     EXPECTED_TABLES = {
-        "monitoring.errors",
-        "monitoring.traces",
-        "monitoring.metrics",
-        "tb_persisted_query",
         "tb_error_log",
         "tb_error_occurrence",
         "tb_error_notification_log",
+        "v_query_stats",
+        "apq_queries",
+        "apq_responses",
+        "pg_stat_activity",
+        "pg_stat_database",
+        "pg_stat_user_tables",
+        "pg_class",
     }
 
     def test_queries_reference_valid_tables(self, all_sql_queries) -> None:
@@ -142,24 +151,16 @@ class TestTableReferences:
                     continue
 
                 if not is_cte:
-                    assert any(expected in table_lower for expected in self.EXPECTED_TABLES), (
+                    assert table_lower in self.EXPECTED_TABLES, (
                         f"{query_info['dashboard']}.{query_info['panel']}: Unknown table '{table}'"
                     )
 
-    def test_monitoring_schema_usage(self, all_sql_queries) -> None:
-        """Queries should use monitoring schema for observability tables."""
-        observability_tables = ["errors", "traces", "metrics"]
-
+    def test_no_monitoring_schema(self, all_sql_queries) -> None:
+        """schema.sql creates its tables in the search_path, not in a 'monitoring' schema."""
         for query_info in all_sql_queries:
-            sql = query_info["sql"].lower()
-
-            for table in observability_tables:
-                # If table is referenced, it should use monitoring schema
-                if f" {table} " in sql or f" {table}\n" in sql:
-                    assert f"monitoring.{table}" in sql, (
-                        f"{query_info['dashboard']}.{query_info['panel']}: "
-                        f"Table '{table}' should use 'monitoring.' schema prefix"
-                    )
+            assert "monitoring." not in query_info["sql"].lower(), (
+                f"{query_info['dashboard']}.{query_info['panel']}: there is no 'monitoring' schema"
+            )
 
 
 class TestGrafanaVariables:
@@ -184,7 +185,9 @@ class TestGrafanaVariables:
             if has_time_filter:
                 # Should use $__timeFrom() and $__timeTo() OR NOW() - INTERVAL
                 # OR be a latest/single-value query (ORDER BY ... DESC LIMIT 1)
-                uses_grafana_time = "$__timeFrom()" in sql or "$__timeTo()" in sql
+                uses_grafana_time = (
+                    "$__timeFilter(" in sql or "$__timeFrom()" in sql or "$__timeTo()" in sql
+                )
                 uses_now_interval = "NOW() - INTERVAL" in sql or "NOW()" in sql
                 is_latest_query = (
                     "ORDER BY" in sql.upper() and "DESC" in sql.upper() and "LIMIT 1" in sql.upper()
@@ -200,8 +203,9 @@ class TestGrafanaVariables:
 
     def test_queries_use_environment_variable(self, all_sql_queries) -> None:
         """Queries should filter by environment variable."""
-        # Queries accessing observability tables should typically filter by environment
-        observability_tables = ["monitoring.errors", "monitoring.traces", "monitoring.metrics"]
+        # Queries on the error tables (tb_error_log has the environment column)
+        # should filter by environment
+        observability_tables = ["tb_error_log", "tb_error_occurrence", "tb_error_notification_log"]
 
         for query_info in all_sql_queries:
             sql = query_info["sql"]
@@ -245,25 +249,24 @@ class TestQueryPerformance:
     """Test query performance characteristics."""
 
     def test_queries_use_indexed_columns(self, all_sql_queries) -> None:
-        """WHERE clauses should use indexed columns."""
+        """WHERE clauses on FraiseQL tables should use indexed columns."""
         indexed_columns = [
             "occurred_at",
-            "start_time",
-            "timestamp",
+            "last_seen",
+            "sent_at",
             "created_at",
             "fingerprint",
             "error_id",
             "trace_id",
             "environment",
             "error_type",
-            "metric_name",
-            "operation_name",
         ]
 
         for query_info in all_sql_queries:
             sql = query_info["sql"].lower()
 
-            if "where" in sql:
+            # PostgreSQL's statistics views (pg_stat_*, v_query_stats) have no indexes
+            if "where" in sql and re.search(r"\b(?:from|join)\s+(?:tb|apq)_", sql):
                 # At least one indexed column should be in WHERE clause
                 has_indexed_filter = any(col in sql for col in indexed_columns)
 
@@ -385,7 +388,7 @@ class TestQueryCorrectness:
         for query_info in all_sql_queries:
             sql = query_info["sql"].upper()
 
-            has_aggregate = any(func in sql for func in aggregate_functions)
+            has_aggregate = any(calls(func, sql) for func in aggregate_functions)
 
             if has_aggregate:
                 # If there are non-aggregate columns in SELECT, need GROUP BY
@@ -400,7 +403,7 @@ class TestQueryCorrectness:
                     select_clause = select_match.group(1)
 
                     # Count aggregate functions
-                    agg_count = sum(1 for func in aggregate_functions if func in select_clause)
+                    agg_count = sum(1 for func in aggregate_functions if calls(func, select_clause))
 
                     # Count commas (rough proxy for column count)
                     comma_count = select_clause.count(",")

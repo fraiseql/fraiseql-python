@@ -101,7 +101,7 @@ Processes JSONB data and returns complete GraphQL response:
 
 - **Field projection**: Filters to requested fields only
 - **camelCase conversion**: `first_name` → `firstName`
-- **`__typename` injection**: Adds GraphQL type information
+- **`__typename`**: Adds the GraphQL type name where the query selects it
 - **Response wrapping**: Wraps in `{"data": {"user": {...}}}`
 
 **Zero-copy**: Returns bytes directly without Python JSON parsing.

@@ -421,21 +421,32 @@ use crate::mutation::filter_entity_fields;
 
 /// Build GraphQL response with entity field filtering
 ///
-/// Extended version of build_graphql_response that supports entity field filtering
+/// build_graphql_response with its arguments in this module's order
+#[allow(clippy::too_many_arguments)]
 fn build_graphql_response_with_entity_filtering(
-    _result: &MutationResult,
-    _field_name: &str,
-    _success_type: &str,
-    _error_type: &str,
-    _entity_field_name: Option<&str>,
-    _entity_type: Option<&str>,
-    _auto_camel_case: bool,
-    _success_type_fields: Option<&Vec<String>>,
-    _error_type_fields: Option<&Vec<String>>,
-    _cascade_selections: Option<&str>,
-    _entity_selections: Option<&str>,
+    result: &MutationResult,
+    field_name: &str,
+    success_type: &str,
+    error_type: &str,
+    entity_field_name: Option<&str>,
+    entity_type: Option<&str>,
+    auto_camel_case: bool,
+    success_type_fields: Option<&Vec<String>>,
+    error_type_fields: Option<&Vec<String>>,
+    cascade_selections: Option<&str>,
+    entity_selections: Option<&str>,
 ) -> Result<serde_json::Value, String> {
-    // TODO: This will be implemented when we integrate with build_graphql_response
-    // For now, skip these integration tests
-    unimplemented!("Integration with build_graphql_response pending")
+    crate::mutation::build_graphql_response(
+        result,
+        field_name,
+        success_type,
+        error_type,
+        entity_field_name,
+        entity_type,
+        auto_camel_case,
+        success_type_fields,
+        error_type_fields,
+        cascade_selections,
+        entity_selections,
+    )
 }

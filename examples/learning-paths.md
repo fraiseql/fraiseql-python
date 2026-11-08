@@ -51,13 +51,13 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 2: First Real Application (45 minutes)
 
-**[`blog_api/`](blog_api/README.md)** - Complete content management system
+**[`blog_simple/`](blog_simple/README.md)** - A blog with posts, tags and comments
 
-- ✅ Enterprise-grade patterns (audit trails, mutation results)
-- ✅ CQRS architecture with PostgreSQL functions
-- ✅ Authentication and role-based access
-- ✅ Production-ready error handling
-- **Time**: 15 minutes
+- ✅ JSONB views that embed related objects
+- ✅ CQRS: views for reads, PostgreSQL functions for writes
+- ✅ Class mutations with success and error types
+- ✅ The current user passed to SQL functions
+- **Time**: 20 minutes
 
 ### Phase 3: Add Business Logic (45 minutes)
 
@@ -71,13 +71,12 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 4: Master Advanced Patterns (30 minutes)
 
-**[`enterprise_patterns/`](enterprise_patterns/README.md)** - All enterprise patterns
+**[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
 
-- ✅ Complete audit trail system
-- ✅ Multi-layer validation
-- ✅ NOOP handling and app/core separation
-- ✅ Production compliance patterns
-- **Time**: 45 minutes
+- ✅ Tenant scoping on every query and mutation (`mandatory_filters`, `context_params`)
+- ✅ Validation and not-found errors returned by SQL functions
+- ✅ Usage tracking and an activity log
+- **Time**: 30 minutes
 
 ### 🎉 Beginner Path Outcomes
 
@@ -94,12 +93,11 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 1: Enterprise Foundation (45 minutes)
 
-**[`blog_api/`](blog_api/README.md)** - Enterprise patterns foundation
+**[`blog_simple/`](blog_simple/README.md)** - Foundation
 
-- ✅ Mutation result pattern for reliable APIs
-- ✅ Audit trails and change tracking
-- ✅ Role-based permissions
-- ✅ Production error handling
+- ✅ Mutation results from SQL functions (`mutation_response`)
+- ✅ Error statuses mapped to codes (403, 404, 409, 422)
+- ✅ The current user in the GraphQL context
 
 **[`security/`](security/README.md)** - Security implementation
 
@@ -133,7 +131,7 @@ This document provides structured learning paths to help you master FraiseQL pro
 - ✅ Scalable database design
 - ✅ Production deployment patterns
 
-**[`turborouter/`](turborouter/README.md)** - Query optimization
+**[`turbo_router_with_complexity.py`](turbo_router_with_complexity.py)** - Query optimization
 
 - ✅ Pre-compiled query routing
 - ✅ Performance monitoring
@@ -142,12 +140,11 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 4: Production Mastery (30 minutes)
 
-**[`enterprise_patterns/`](enterprise_patterns/README.md)** - Complete production patterns
+**[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
 
-- ✅ All enterprise compliance patterns
-- ✅ Multi-layer validation
-- ✅ Advanced audit and compliance
-- ✅ Production monitoring
+- ✅ Tenant scoping on every query and mutation (`mandatory_filters`, `context_params`)
+- ✅ Validation and not-found errors returned by SQL functions
+- ✅ Usage tracking and an activity log
 
 ### 🎯 Production Path Outcomes
 
@@ -180,14 +177,14 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 2: Query Optimization (45 minutes)
 
-**[`turborouter/`](turborouter/README.md)** - Pre-compiled routing
+**[`turbo_router_with_complexity.py`](turbo_router_with_complexity.py)** - Pre-compiled routing
 
 - ✅ Query pre-compilation
 - ✅ Routing optimization
 - ✅ Performance benchmarking
 - ✅ High-throughput patterns
 
-**[`complex_nested_where_clauses.py`](complex_nested_where_clauses.py)** - Advanced queries
+**[`nested_array_filtering.py`](nested_array_filtering.py)** - Advanced queries
 
 - ✅ Complex filtering patterns
 - ✅ Nested query optimization
@@ -202,13 +199,6 @@ This document provides structured learning paths to help you master FraiseQL pro
 - ✅ Complex analytical queries
 - ✅ Materialized views for performance
 - ✅ Real-time dashboard optimization
-
-**[`real_time_chat/`](real_time_chat/README.md)** - Real-time performance
-
-- ✅ WebSocket optimization
-- ✅ Presence tracking at scale
-- ✅ Event-driven architecture
-- ✅ Connection pooling
 
 ### 🎯 Performance Path Outcomes
 
@@ -225,44 +215,22 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 1: Enterprise Patterns Foundation (60 minutes)
 
-**[`enterprise_patterns/`](enterprise_patterns/README.md)** - Complete enterprise reference
+**[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
 
-- ✅ All enterprise patterns in one place
-- ✅ Audit trails and compliance
-- ✅ Multi-layer validation
-- ✅ NOOP handling and error patterns
-
-**[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
-
-- ✅ Bounded contexts
-- ✅ Domain events and aggregates
-- ✅ Enterprise authentication
-- ✅ Event sourcing patterns
+- ✅ Tenant scoping on every query and mutation (`mandatory_filters`, `context_params`)
+- ✅ Validation and not-found errors returned by SQL functions
+- ✅ Usage tracking and an activity log
 
 ### Phase 2: Advanced Architecture (60 minutes)
 
-**[`complete_cqrs_blog/`](complete_cqrs_blog/README.md)** - CQRS implementation
+**[`blog_simple/`](blog_simple/README.md)** - CQRS implementation
 
 - ✅ Command-Query Responsibility Segregation
 - ✅ Event-driven architecture
 - ✅ Docker and containerization
 - ✅ Migration strategies
 
-**[`real_time_chat/`](real_time_chat/README.md)** - Event-driven systems
-
-- ✅ Real-time event processing
-- ✅ WebSocket architecture
-- ✅ Presence and state management
-- ✅ Scalable messaging
-
 ### Phase 3: Compliance & Governance (60 minutes)
-
-**[`admin-panel/`](admin-panel/README.md)** - Administrative systems
-
-- ✅ User management at scale
-- ✅ Administrative interfaces
-- ✅ Governance and compliance
-- ✅ Audit and reporting
 
 **[`analytics_dashboard/`](analytics_dashboard/README.md)** - Enterprise analytics
 
@@ -318,24 +286,23 @@ If you need specific patterns, here are the best examples:
 
 | Pattern | Primary Example | Alternative |
 |---------|-----------------|-------------|
-| **Basic CRUD** | [`todo_quickstart.py`](todo_quickstart.py) | [`blog_api/`](blog_api/README.md) |
+| **Basic CRUD** | [`todo_quickstart.py`](todo_quickstart.py) | [`blog_simple/`](blog_simple/README.md) |
 | **Authentication** | [`security/`](security.md) | [`native-auth-app/`](native-auth-app/README.md) |
 | **Caching** | [`caching_example.py`](caching_example.py) | [`apq_multi_tenant/`](apq_multi_tenant/README.md) |
-| **CQRS** | [`complete_cqrs_blog/`](complete_cqrs_blog.md) | [`blog_api/`](blog_api/README.md) |
+| **CQRS** | [`blog_simple/`](blog_simple/README.md) | [`saas-starter/`](saas-starter/README.md) |
 | **Multi-tenant** | [`apq_multi_tenant/`](apq_multi_tenant.md) | [`saas-starter/`](saas-starter/README.md) |
-| **Real-time** | [`real_time_chat/`](real_time_chat.md) | [`analytics_dashboard/`](analytics_dashboard/README.md) |
-| **Enterprise** | [`enterprise_patterns/`](enterprise_patterns.md) | [`blog_enterprise/`](blog_enterprise/README.md) |
+| **Real-time** | [Subscriptions](../docs/architecture/realtime/subscriptions.md) | [`analytics_dashboard/`](analytics_dashboard/README.md) |
+| **Enterprise** | [`saas-starter/`](saas-starter/README.md) | [`blog_simple/`](blog_simple/README.md) |
 
 ### Use Case-Based Learning
 
 | Use Case | Recommended Example | Why |
 |----------|-------------------|-----|
-| **Content Management** | [`blog_api/`](blog_api/README.md) | Enterprise patterns for CMS |
+| **Content Management** | [`blog_simple/`](blog_simple/README.md) | Posts, tags and moderated comments |
 | **E-commerce** | [`ecommerce/`](ecommerce/README.md) | Complete business logic |
 | **SaaS Platform** | [`saas-starter/`](saas-starter/README.md) | Multi-tenant foundation |
 | **Analytics** | [`analytics_dashboard/`](analytics_dashboard/README.md) | High-performance BI |
-| **Real-time App** | [`real_time_chat/`](real_time_chat/README.md) | WebSocket architecture |
-| **Admin System** | [`admin-panel/`](admin-panel/README.md) | User management |
+| **Real-time App** | [Subscriptions](../docs/architecture/realtime/subscriptions.md) | WebSocket architecture |
 
 ---
 

@@ -10,26 +10,34 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from graphql import (
+    DocumentNode,
     FieldNode,
+    FragmentDefinitionNode,
     FragmentSpreadNode,
+    GraphQLObjectType,
+    GraphQLOutputType,
     GraphQLSchema,
     InlineFragmentNode,
     OperationDefinitionNode,
     parse,
 )
+from graphql.pyutils import Path
 from pydantic import BaseModel, field_validator
 
 from fraiseql.analysis.query_analyzer import QueryAnalyzer
 from fraiseql.auth.base import AuthProvider
+from fraiseql.core.field_resolvers import operation_selects_field_resolver
 from fraiseql.core.graphql_parser import RustGraphQLParser
 from fraiseql.core.rust_pipeline import RustResponseBytes
 from fraiseql.db import FraiseQLRepository
+from fraiseql.errors.masking import mask_database_error
 from fraiseql.execution.mode_selector import ModeSelector
 from fraiseql.execution.unified_executor import UnifiedExecutor
 from fraiseql.fastapi.config import FraiseQLConfig, IntrospectionPolicy
 from fraiseql.fastapi.dependencies import build_graphql_context
 from fraiseql.fastapi.json_encoder import FraiseQLJSONResponse, clean_unset_values
 from fraiseql.fastapi.turbo import TurboRegistry, TurboRouter
+from fraiseql.gql.query_limits import QueryLimits
 from fraiseql.graphql.execute import execute_graphql
 from fraiseql.optimization.n_plus_one_detector import (
     N1QueryDetectedError,
@@ -100,8 +108,8 @@ def _should_include_field(field_node: Any, variables: dict[str, Any] | None) -> 
     # Check for @skip directive first (takes precedence)
     for directive in field_node.directives:
         if directive.name.value == "skip":
-            # Extract the 'if' argument value
-            for arg in directive.arguments:
+            # Extract the 'if' argument value (graphql-core leaves none as None)
+            for arg in directive.arguments or ():
                 if arg.name.value == "if":
                     # Evaluate the condition
                     condition = _evaluate_directive_condition(arg.value, variables)
@@ -111,8 +119,8 @@ def _should_include_field(field_node: Any, variables: dict[str, Any] | None) -> 
     # Check for @include directive
     for directive in field_node.directives:
         if directive.name.value == "include":
-            # Extract the 'if' argument value
-            for arg in directive.arguments:
+            # Extract the 'if' argument value (graphql-core leaves none as None)
+            for arg in directive.arguments or ():
                 if arg.name.value == "if":
                     # Evaluate the condition
                     condition = _evaluate_directive_condition(arg.value, variables)
@@ -247,7 +255,9 @@ def _extract_field_location(field_node: Any) -> dict[str, int] | None:
 
 
 def _extract_variable_defaults(
-    query_string: str, operation_name: str | None = None
+    query_string: str,
+    operation_name: str | None = None,
+    document: DocumentNode | None = None,
 ) -> dict[str, Any]:
     """Extract default values for variables from operation definition.
 
@@ -260,16 +270,16 @@ def _extract_variable_defaults(
     Args:
         query_string: GraphQL query string
         operation_name: Optional operation name for multi-operation queries
+        document: query_string already parsed, to avoid parsing it again
 
     Returns:
         Dict mapping variable names to their default values
     """
-    from graphql import OperationDefinitionNode, parse
-
-    try:
-        document = parse(query_string)
-    except Exception:
-        return {}
+    if document is None:
+        try:
+            document = parse(query_string)
+        except Exception:
+            return {}
 
     defaults = {}
 
@@ -558,7 +568,10 @@ def extract_field_selections(
 
 
 def _extract_root_query_fields(
-    query_string: str, operation_name: str | None = None, variables: dict[str, Any] | None = None
+    query_string: str,
+    operation_name: str | None = None,
+    variables: dict[str, Any] | None = None,
+    document: DocumentNode | None = None,
 ) -> list[dict[str, Any]]:
     """Extract root-level query fields with their selections, applying directive filtering.
 
@@ -566,6 +579,7 @@ def _extract_root_query_fields(
         query_string: GraphQL query string
         operation_name: Optional operation name for multi-operation queries
         variables: Query variables for directive evaluation
+        document: query_string already parsed, to avoid parsing it again
 
     Returns:
         List of dicts with field info:
@@ -579,7 +593,8 @@ def _extract_root_query_fields(
         ]
     """
     try:
-        document = parse(query_string)
+        if document is None:
+            document = parse(query_string)
 
         for definition in document.definitions:
             if not isinstance(definition, OperationDefinitionNode):
@@ -662,7 +677,8 @@ def _build_field_selections_recursive(
     variables: dict[str, Any] | None,
     parent_path: str = "",
     visited_fragments: frozenset[str] | None = None,
-) -> list[dict[str, str | None]]:
+    parent_response_path: str = "",
+) -> list[dict[str, Any]]:
     """Build a flat list of field selections with full materialized dot-path keys.
 
     Unlike extract_field_selections() which only captures immediate sub-fields
@@ -688,10 +704,13 @@ def _build_field_selections_recursive(
             level (empty string at root level).
         visited_fragments: Fragment names already expanded in the current
             traversal branch (prevents infinite recursion on circular refs).
+        parent_response_path: ``parent_path`` with each field's response key.
 
     Returns:
-        Flat list of ``{"materialized_path": "...", "alias": "..."|None}``
-        dicts covering every field at every nesting depth.
+        Flat list of ``{"materialized_path": "...", "alias": "..."|None,
+        "response_path": "...", "is_nested_object": bool}`` dicts covering every
+        field at every nesting depth. ``response_path`` holds the response key of
+        each field down to this one, so a field below an alias answers under it.
     """
     from graphql import FieldNode as _FieldNode
     from graphql import FragmentSpreadNode as _FragmentSpreadNode
@@ -730,6 +749,7 @@ def _build_field_selections_recursive(
                         variables,
                         parent_path,
                         visited_fragments | {frag_name},
+                        parent_response_path,
                     )
                 )
             continue
@@ -745,6 +765,7 @@ def _build_field_selections_recursive(
                     variables,
                     parent_path,
                     visited_fragments,
+                    parent_response_path,
                 )
             )
             continue
@@ -754,7 +775,8 @@ def _build_field_selections_recursive(
             continue
         if not hasattr(sel, "name") or not sel.name:
             continue
-        if sel.name.value.startswith("__"):
+        # __typename is answered (Rust writes only the selected fields)
+        if sel.name.value.startswith("__") and sel.name.value != "__typename":
             continue
         if not _should_include_field(sel, variables):
             continue
@@ -762,10 +784,21 @@ def _build_field_selections_recursive(
         field_name = sel.name.value
         alias: str | None = sel.alias.value if sel.alias else None
         path = f"{parent_path}.{field_name}" if parent_path else field_name
-        result.append({"materialized_path": path, "alias": alias})
+        # The key of each field down to this one: an alias above it renames it too
+        key = alias or field_name
+        response_path = f"{parent_response_path}.{key}" if parent_response_path else key
+        has_selection = bool(getattr(sel, "selection_set", None))
+        result.append(
+            {
+                "materialized_path": path,
+                "alias": alias,
+                "response_path": response_path,
+                "is_nested_object": has_selection,
+            }
+        )
 
         # Recurse into nested object selections.
-        if getattr(sel, "selection_set", None):
+        if has_selection:
             result.extend(
                 _build_field_selections_recursive(
                     sel,
@@ -773,6 +806,7 @@ def _build_field_selections_recursive(
                     variables,
                     path,
                     visited_fragments,
+                    response_path,
                 )
             )
 
@@ -798,11 +832,69 @@ def _encode_field_row(value: Any) -> Any:
     return value
 
 
+def _select_query_operation(
+    document: DocumentNode, operation_name: str | None
+) -> OperationDefinitionNode | None:
+    """Return the query operation to execute: the one named, or else the first."""
+    for definition in document.definitions:
+        if not isinstance(definition, OperationDefinitionNode):
+            continue
+        if definition.operation.value != "query":
+            continue
+        if operation_name and (not definition.name or definition.name.value != operation_name):
+            continue
+        return definition
+    return None
+
+
+class _MultiFieldResolveInfo:
+    """Stand-in for graphql-core's GraphQLResolveInfo on the multi-field merge path.
+
+    execute_multi_field_query calls each root resolver itself, so it builds the resolve
+    info itself too. It carries what FraiseQL resolvers and their helpers read: the field
+    node and the document's fragments (db.find() expands spreads from them, issue #554),
+    the operation, and a graphql-core Path.
+
+    ``variable_values`` holds the request variables merged with the operation's
+    defaults. Unlike graphql-core, they are not coerced to their input types; readers
+    such as debug.py accept either form.
+    """
+
+    def __init__(
+        self,
+        *,
+        field_name: str,
+        field_node: FieldNode,
+        response_key: str,
+        parent_type: GraphQLObjectType,
+        return_type: GraphQLOutputType,
+        schema: GraphQLSchema,
+        fragments: dict[str, FragmentDefinitionNode],
+        operation: OperationDefinitionNode | None,
+        variable_values: dict[str, Any],
+        context: dict[str, Any],
+    ) -> None:
+        self.field_name = field_name
+        self.field_nodes = [field_node]
+        self.return_type = return_type
+        self.parent_type = parent_type
+        self.path = Path(None, response_key, parent_type.name)
+        self.schema = schema
+        self.fragments = fragments
+        self.root_value = None
+        self.operation = operation
+        self.variable_values = variable_values
+        self.context = context
+
+
 async def execute_multi_field_query(
     schema: GraphQLSchema,
     query_string: str,
     variables: dict[str, Any] | None,
     context: dict[str, Any],
+    operation_name: str | None = None,
+    *,
+    is_production: bool = False,
 ) -> RustResponseBytes:
     """Execute multi-field query entirely in Rust - bypass graphql-core.
 
@@ -817,6 +909,9 @@ async def execute_multi_field_query(
         query_string: GraphQL query string
         variables: Query variables
         context: GraphQL context with database connection, etc.
+        operation_name: Operation to execute when the document holds several
+        is_production: Answer a field whose resolver raised a database error with
+            a generic message instead of the error's (it carries SQL text)
 
     Returns:
         RustResponseBytes with complete {"data": {...}} response
@@ -825,15 +920,17 @@ async def execute_multi_field_query(
         Exception: If field extraction or resolver execution fails
     """
     # Parse once; reused by _extract_variable_defaults, _extract_root_query_fields,
-    # and _build_field_selections_recursive (fragment lookup for issue #288 fix).
-    from graphql import parse as _gql_parse
-
+    # _build_field_selections_recursive (issue #288) and the resolvers' fragments (#554).
     from fraiseql.core.rust_pipeline import fraiseql_rs
 
-    _parsed_query = _gql_parse(query_string)
+    _parsed_query = parse(query_string)
+    operation = _select_query_operation(_parsed_query, operation_name)
+    fragments = {
+        d.name.value: d for d in _parsed_query.definitions if isinstance(d, FragmentDefinitionNode)
+    }
 
     # Extract variable defaults from operation definition
-    variable_defaults = _extract_variable_defaults(query_string, None)
+    variable_defaults = _extract_variable_defaults(query_string, operation_name, _parsed_query)
 
     # Merge defaults with provided variables (provided variables take precedence)
     if variable_defaults:
@@ -841,7 +938,7 @@ async def execute_multi_field_query(
         variables = merged_variables
 
     # Extract all root fields (with directive evaluation using variables)
-    fields_info = _extract_root_query_fields(query_string, None, variables)
+    fields_info = _extract_root_query_fields(query_string, operation_name, variables, _parsed_query)
 
     if not fields_info:
         raise ValueError("No root query fields found in multi-field query")
@@ -888,35 +985,21 @@ async def execute_multi_field_query(
         if not resolver:
             raise ValueError(f"No resolver found for field '{field_name}'")
 
-        # Execute resolver
-        # Resolvers expect: resolve(root, info, **args)
-        # For root-level queries, root is None
-        # We need to create a GraphQL ResolveInfo object, but for simplicity
-        # in Phase 2, we'll call the resolver directly and hope it doesn't need full info
-
-        # SIMPLIFIED: Assume resolver returns the data we need
-        # In a real implementation, we'd need to construct proper ResolveInfo
+        # Execute resolver. Root-level resolvers get root=None and a resolve info
+        # built here, since graphql-core does not run on this path.
         try:
-            # Most FraiseQL resolvers are async and expect (info, **kwargs)
-            # Try calling with minimal info
-
-            # Create minimal resolve info
-            # This is a simplified version - proper implementation would build full ResolveInfo
-            class MinimalInfo:
-                def __init__(self, field_name: str, context: dict, field_node: Any) -> None:
-                    self.field_name = field_name
-                    self.context = context
-                    self.field_nodes = [field_node]
-                    self.parent_type = query_type  # noqa: B023
-                    self.path = None
-                    self.return_type = field_def.type  # noqa: B023
-                    self.schema = schema
-                    self.fragments = {}
-                    self.root_value = None
-                    self.operation = None
-                    self.variable_values = variables or {}
-
-            info = MinimalInfo(field_name, context, field_node)
+            info = _MultiFieldResolveInfo(
+                field_name=field_name,
+                field_node=field_node,
+                response_key=response_key,
+                parent_type=query_type,
+                return_type=field_def.type,
+                schema=schema,
+                fragments=fragments,
+                operation=operation,
+                variable_values=variables or {},
+                context=context,
+            )
 
             # Execute resolver
             # Resolvers can have different signatures:
@@ -1041,6 +1124,9 @@ async def execute_multi_field_query(
             location = _extract_field_location(field_node)
             if location:
                 error_dict["locations"] = [location]
+
+            if is_production:
+                error_dict = mask_database_error(error_dict, e)
 
             errors.append(error_dict)
 
@@ -1236,6 +1322,14 @@ def create_graphql_router(
         f"TurboRouter creation final state: turbo_registry={turbo_registry is not None}, "
         f"turbo_router={turbo_router is not None}, turbo_router_value={turbo_router}"
     )
+    # apq_queries_dir is loaded into the APQ backend when the first APQ request creates
+    # it; a missing directory fails here, at startup, not on that request.
+    if config.apq_queries_dir and config.apq_mode.processes_apq():
+        from pathlib import Path
+
+        if not Path(config.apq_queries_dir).is_dir():
+            raise FileNotFoundError(f"apq_queries_dir not found: {config.apq_queries_dir}")
+
     query_analyzer = QueryAnalyzer(schema)
     mode_selector = ModeSelector(config)
 
@@ -1253,6 +1347,9 @@ def create_graphql_router(
             turbo_router is not None,
             config.environment,
         )
+
+    # max_query_depth / complexity_*: None when no limit is set
+    query_limits = QueryLimits.from_config(config)
 
     # Create context dependency
     if context_getter:
@@ -1293,6 +1390,32 @@ def create_graphql_router(
 
         Returns either a dict (normal GraphQL response) or Response (direct Rust bytes).
         """
+        # Filled by the APQ step when the response of this request may be cached
+        # (apq_cache_responses): stored here, whichever execution path built it.
+        apq_cache_target: dict[str, Any] = {}
+        result = await _execute_graphql_request(request, http_request, context, apq_cache_target)
+        if apq_cache_target:
+            from fraiseql.middleware.apq_caching import call_backend, store_executed_response
+
+            await call_backend(
+                apq_cache_target.get("backend"),
+                store_executed_response,
+                result,
+                config=config,
+                variables=request.variables,
+                context=context,
+                operation_name=request.operationName,
+                **apq_cache_target,
+            )
+        return result
+
+    async def _execute_graphql_request(
+        request: GraphQLRequest,
+        http_request: Request,
+        context: dict[str, Any],
+        apq_cache_target: dict[str, Any],
+    ) -> dict[str, Any] | Response:
+        """Run one GraphQL request (the body of ``graphql_endpoint``)."""
         # Check authentication first (before APQ processing to ensure security)
         # For APQ requests, we need to check auth regardless of query availability
         # Special case: Allow introspection queries to proceed to GraphQL layer when:
@@ -1334,6 +1457,7 @@ def create_graphql_router(
         if is_apq_request and request.extensions and should_process_apq:
             from fraiseql.middleware.apq import create_apq_error_response, get_persisted_query
             from fraiseql.middleware.apq_caching import (
+                call_backend,
                 get_apq_backend,
                 handle_apq_request_with_cache,
             )
@@ -1351,11 +1475,36 @@ def create_graphql_router(
                     "PERSISTED_QUERY_NOT_FOUND", "PersistedQueryNotFound"
                 )
 
+            # A query sent with a hash must be the text of that hash, in every mode that
+            # processes APQ: otherwise any text could be stored under the hash of a query
+            # other clients use (Apollo Server refuses it the same way).
+            if request.query:
+                from fraiseql.middleware.apq import create_hash_mismatch_error
+                from fraiseql.storage.apq_store import compute_query_hash
+
+                if compute_query_hash(request.query) != sha256_hash:
+                    logger.debug(f"APQ request refused: hash mismatch {sha256_hash[:8]}...")
+                    return FraiseQLJSONResponse(create_hash_mismatch_error(), status_code=400)
+
             # Get APQ backend for caching
             apq_backend = get_apq_backend(config)
 
             # Check if this is a registration request (has both hash and query)
-            if request.query:
+            if request.query and not apq_mode.allows_arbitrary_queries():
+                # 'required' mode: clients cannot register queries. Only a hash the server
+                # already knows (apq_queries_dir, or registered by the operator) runs, and
+                # it runs the stored text (the text sent matches its hash, checked above).
+                from fraiseql.middleware.apq import create_query_not_in_list_error
+
+                approved_query = await call_backend(
+                    apq_backend, apq_backend.get_persisted_query, sha256_hash
+                ) or get_persisted_query(sha256_hash)
+                if not approved_query:
+                    logger.debug(f"APQ required mode: refusing unknown hash {sha256_hash[:8]}...")
+                    return create_query_not_in_list_error()
+                request.query = approved_query
+
+            elif request.query:
                 # This is a registration request - store the query
                 logger.debug(f"APQ registration: storing query with hash {sha256_hash[:8]}...")
 
@@ -1364,17 +1513,26 @@ def create_graphql_router(
 
                 # Also store in the backend if available
                 if apq_backend:
-                    apq_backend.store_persisted_query(sha256_hash, request.query)
+                    await call_backend(
+                        apq_backend,
+                        apq_backend.store_persisted_query,
+                        sha256_hash,
+                        request.query,
+                    )
 
                 # Continue with normal execution using the provided query
-                # The response will be cached after execution (see lines 361-370)
 
             else:
                 # This is a hash-only request - try to retrieve the query
 
                 # 1. Try cached response first (JSON passthrough)
-                cached_response = handle_apq_request_with_cache(
-                    request, apq_backend, config, context=context
+                cached_response = await call_backend(
+                    apq_backend,
+                    handle_apq_request_with_cache,
+                    request,
+                    apq_backend,
+                    config,
+                    context=context,
                 )
                 if cached_response:
                     # Operation authorization gate (issue #362): a cached (baked)
@@ -1388,7 +1546,11 @@ def create_graphql_router(
                         from fraiseql.security.authorization import enforce_operation_value
 
                         persisted_text = (
-                            apq_backend.get_persisted_query(sha256_hash) if apq_backend else None
+                            await call_backend(
+                                apq_backend, apq_backend.get_persisted_query, sha256_hash
+                            )
+                            if apq_backend
+                            else None
                         )
                         op_type, op_name = _derive_operation_info(persisted_text)
                         try:
@@ -1423,7 +1585,11 @@ def create_graphql_router(
                         )
 
                         persisted_text = (
-                            apq_backend.get_persisted_query(sha256_hash) if apq_backend else None
+                            await call_backend(
+                                apq_backend, apq_backend.get_persisted_query, sha256_hash
+                            )
+                            if apq_backend
+                            else None
                         )
                         if persisted_text:
                             try:
@@ -1443,7 +1609,9 @@ def create_graphql_router(
 
                 # Try backend first
                 if apq_backend:
-                    persisted_query_text = apq_backend.get_persisted_query(sha256_hash)
+                    persisted_query_text = await call_backend(
+                        apq_backend, apq_backend.get_persisted_query, sha256_hash
+                    )
 
                 # Fallback to global store
                 if not persisted_query_text:
@@ -1461,6 +1629,20 @@ def create_graphql_router(
                     f"query length {len(persisted_query_text)}"
                 )
                 request.query = persisted_query_text
+
+            # The query runs below; its response is cached by graphql_endpoint.
+            if config.apq_cache_responses and request.query:
+                apq_cache_target.update(
+                    hash_value=sha256_hash, backend=apq_backend, query_text=request.query
+                )
+
+        # Depth and complexity limits: after APQ resolved the query, before any execution path.
+        if query_limits is not None and request.query:
+            limit_error = query_limits.check(
+                schema, request.query, request.operationName, request.variables
+            )
+            if limit_error is not None:
+                return limit_error
 
         try:
             # Determine execution mode from headers and config
@@ -1504,8 +1686,12 @@ def create_graphql_router(
             context["__has_multiple_root_fields__"] = has_multiple_root_fields
 
             # 🚀 MULTI-FIELD QUERY ROUTING (Phase 1)
-            # Route multi-field queries to Rust-only merge path to avoid graphql-core type errors
-            if has_multiple_root_fields:
+            # Route multi-field queries to Rust-only merge path to avoid graphql-core type errors.
+            # Not when the query selects a field resolver: the merge never runs one, so
+            # graphql-core completes the typed rows db.find returns then.
+            if has_multiple_root_fields and not operation_selects_field_resolver(
+                schema, request.query, request.operationName, request.variables
+            ):
                 field_count = _count_root_query_fields(request.query, request.operationName)
                 logger.info(
                     f"🚀 Multi-field query detected ({field_count} root fields) - "
@@ -1529,7 +1715,12 @@ def create_graphql_router(
                     return _forbidden_error_payload(exc)
                 try:
                     result = await execute_multi_field_query(
-                        schema, request.query, request.variables, context
+                        schema,
+                        request.query,
+                        request.variables,
+                        context,
+                        operation_name=request.operationName,
+                        is_production=is_production_env,
                     )
                     # execute_multi_field_query returns RustResponseBytes
                     return Response(
@@ -1543,8 +1734,8 @@ def create_graphql_router(
 
             # Use unified executor if available
             if unified_executor:
-                # Add execution metadata if in development
-                if not is_production_env:
+                # Execution timing in extensions: outside production, or when configured
+                if config.include_execution_metadata or not is_production_env:
                     context["include_execution_metadata"] = True
 
                 result = await unified_executor.execute(
@@ -1695,30 +1886,6 @@ def create_graphql_router(
                             media_type="application/json",
                         )
 
-            # Cache response for APQ if it was an APQ request and response is cacheable
-            if is_apq_request and apq_backend:
-                from fraiseql.middleware.apq_caching import (
-                    get_apq_hash_from_request,
-                    store_response_in_cache,
-                )
-
-                apq_hash = get_apq_hash_from_request(request)
-                if apq_hash:
-                    # Get query text for field selection filtering
-                    query_text = apq_backend.get_persisted_query(apq_hash)
-
-                    # Store the filtered response in cache for future requests
-                    store_response_in_cache(
-                        apq_hash,
-                        response,
-                        apq_backend,
-                        config,
-                        variables=request.variables,
-                        context=context,
-                        query_text=query_text,
-                        operation_name=request.operationName,
-                    )
-
             return response
 
         except N1QueryDetectedError as e:
@@ -1829,6 +1996,16 @@ def create_graphql_router(
             moving all database operations to Rust. All work happens in a
             single Rust function call.
             """
+            # This endpoint takes a query's text, never a persisted-query hash: in
+            # apq_mode='required' every request to it is an arbitrary query.
+            if not config.apq_mode.allows_arbitrary_queries():
+                from fraiseql.middleware.apq import create_arbitrary_query_rejected_error
+
+                return Response(
+                    content=json.dumps(create_arbitrary_query_rejected_error()).encode(),
+                    media_type="application/json",
+                )
+
             # Operation authorization gate (issue #362). This endpoint hands off to Rust
             # and never runs a Python resolver, so enforcement happens here, before the
             # Rust call. Per-operation decorator overrides do not apply on this path.
@@ -1882,6 +2059,15 @@ def create_graphql_router(
                     content=json.dumps(_forbidden_error_payload(exc)).encode(),
                     media_type="application/json",
                 )
+
+            if query_limits is not None and request.query:
+                limit_error = query_limits.check(
+                    schema, request.query, request.operationName, request.variables
+                )
+                if limit_error is not None:
+                    return Response(
+                        content=json.dumps(limit_error).encode(), media_type="application/json"
+                    )
 
             # Import the unified Rust function
             from fraiseql._fraiseql_rs import execute_graphql_query

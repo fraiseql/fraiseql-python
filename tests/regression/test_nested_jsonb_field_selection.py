@@ -275,9 +275,8 @@ class TestNestedJSONBFieldSelection:
         assert "hostname" not in network_config, "BUG: hostname should not be returned"
         assert "domainName" not in network_config, "BUG: domainName should not be returned"
 
-        # Verify only requested fields + __typename are present
-        # __typename is automatically injected by GraphQL, so we expect 3 fields total
-        expected_fields = {"id", "ipAddress", "__typename"}
+        # Verify only requested fields are present (__typename isn't selected)
+        expected_fields = {"id", "ipAddress"}
         actual_fields = set(network_config.keys())
         assert actual_fields == expected_fields, (
             f"Expected fields {expected_fields}, got {actual_fields}. "
@@ -292,6 +291,7 @@ class TestNestedJSONBFieldSelection:
             allocations {
                 id
                 networkConfig {
+                    __typename
                     id
                     ipAddress
                     subnetMask
@@ -352,13 +352,13 @@ class TestNestedJSONBFieldSelection:
         allocation = data["data"]["allocations"][0]
         network_config = allocation["networkConfig"]
 
-        # Exactly 4 fields + __typename should be present
-        assert len(network_config) == 5  # 4 data fields + __typename
+        # Exactly the 4 selected fields should be present (__typename isn't selected)
+        assert len(network_config) == 4
         assert "id" in network_config
         assert "ipAddress" in network_config
         assert "gateway" in network_config
         assert "hostname" in network_config
-        assert "__typename" in network_config
+        assert "__typename" not in network_config
 
         # These should NOT be present
         assert "subnetMask" not in network_config

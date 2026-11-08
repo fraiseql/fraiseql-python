@@ -63,13 +63,17 @@ impl FragmentGraph {
 
     /// Detect cycles in fragment dependencies using DFS
     ///
-    /// Returns Ok(()) if no cycles found, Err(cycle_path) if cycle detected
+    /// Returns Ok(()) if no cycles found, Err(cycle_path) if cycle detected. The path
+    /// is closed (`["FragA", "FragB", "FragA"]`), and fragments are visited in name
+    /// order, so the same query always reports the same cycle.
     pub fn detect_cycles(&self) -> Result<(), Vec<String>> {
         let mut visited = HashSet::new();
         let mut recursion_stack = HashSet::new();
         let mut cycle_path = Vec::new();
 
-        for fragment_name in self.dependencies.keys() {
+        let mut fragment_names: Vec<&String> = self.dependencies.keys().collect();
+        fragment_names.sort();
+        for fragment_name in fragment_names {
             if !visited.contains(fragment_name) {
                 if let Some(cycle) = self.dfs_cycle_detect(
                     fragment_name,
@@ -98,6 +102,8 @@ impl FragmentGraph {
         cycle_path.push(fragment_name.to_string());
 
         if let Some(deps) = self.dependencies.get(fragment_name) {
+            let mut deps: Vec<&String> = deps.iter().collect();
+            deps.sort();
             for dep in deps {
                 if let Some(cycle) =
                     self.check_dependency_cycle(dep, visited, recursion_stack, cycle_path)
@@ -126,9 +132,10 @@ impl FragmentGraph {
         }
 
         if recursion_stack.contains(dep) {
-            // Cycle found - extract cycle path
+            // Cycle found - extract cycle path, closed by the fragment it returns to
             let cycle_start = cycle_path.iter().position(|f| f == dep).unwrap();
-            let cycle = cycle_path[cycle_start..].to_vec();
+            let mut cycle = cycle_path[cycle_start..].to_vec();
+            cycle.push(dep.to_string());
             return Some(cycle);
         }
 

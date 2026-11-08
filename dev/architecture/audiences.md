@@ -100,7 +100,7 @@ pip install fraiseql[enterprise]
 # Start with enterprise examples
 cd examples/ecommerce/
 # or
-cd examples/blog_enterprise/
+cd examples/saas-starter/
 
 # Study performance guide
 open docs/performance/

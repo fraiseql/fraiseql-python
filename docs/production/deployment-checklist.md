@@ -71,13 +71,25 @@ echo "Security Profile: ______ (STANDARD/REGULATED/RESTRICTED)"
 
 - [ ] 🟢 **Security Profile Configured**
 
-  ```python
-  # Verify in application code
-  from fraiseql.security.profiles import SecurityProfile
+  `create_fraiseql_app` takes no security profile. Apply the profile's settings
+  yourself: its introspection policy through `FraiseQLConfig`, and its body-size and
+  rate limits with the middleware (see the note under STANDARD Profile in
+  [Security & Compliance](../specs/security-compliance.md#standard-profile-default)):
 
-  app = create_fraiseql_app(
-      security_profile=SecurityProfile.____,  # STANDARD/REGULATED/RESTRICTED
-      ...
+  ```python
+  from fraiseql.middleware import (
+      BodySizeLimiterMiddleware,
+      InMemoryRateLimiter,
+      RateLimiterMiddleware,
+  )
+  from fraiseql.security.profiles import ProfileEnforcer, get_profile
+
+  profile = get_profile("regulated")  # "standard" / "regulated" / "restricted"
+  enforcer = ProfileEnforcer(profile)
+  app.add_middleware(BodySizeLimiterMiddleware, config=enforcer.get_body_size_config())
+  app.add_middleware(
+      RateLimiterMiddleware,
+      rate_limiter=InMemoryRateLimiter(enforcer.get_rate_limit_config()),
   )
   ```
 
@@ -465,16 +477,21 @@ curl -I https://api.yourapp.com/graphql \
   - REGULATED: 50 requests/minute
   - RESTRICTED: 10 requests/minute
 
+  - Off by default: `rate_limit_enabled=True` (`FRAISEQL_RATE_LIMIT_ENABLED=true`),
+    `setup_rate_limiting(app)`, or the profile's middleware as in 2.1 (see
+    [Rate Limiting](../configuration/rate-limiting.md))
+
 - [ ] 🟢 **Rate Limit Storage Configured**
-  - Redis or in-memory store configured
-  - Rate limit keys expiring correctly
+  - In-memory counts are per process: N workers allow N times the limit
+  - Redis (`setup_rate_limiting(app, redis_client=...)`) for one count across instances
 
 **Verification:**
 
 ```bash
-# Test rate limiting
+# Test rate limiting (/health is never limited, so test /graphql)
 for i in {1..101}; do
-  curl -s -o /dev/null -w "%{http_code}\n" https://api.yourapp.com/health
+  curl -s -o /dev/null -w "%{http_code}\n" https://api.yourapp.com/graphql \
+    -H "Content-Type: application/json" -d '{"query": "{ __typename }"}'
 done
 # Last requests should return 429 (Too Many Requests)
 ```
@@ -490,6 +507,8 @@ done
 
 - [ ] 🟢 **Request Body Size Limited**
   - Max size: 1 MB (STANDARD/REGULATED), 512 KB (RESTRICTED)
+  - `create_fraiseql_app` sets no limit: add `BodySizeLimiterMiddleware` (as in 2.1)
+    or limit the body at the proxy (`client_max_body_size` in nginx)
 
 **Verification:**
 
@@ -889,8 +908,11 @@ kubectl get pods -l app=fraiseql -o jsonpath='{.items[0].spec.containers[0].imag
     -d '{"query": "{ user { id } }"}'
   # Expected: 200 OK with user data
 
-  # Test rate limiting
-  for i in {1..101}; do curl https://api.yourapp.com/health; done
+  # Test rate limiting (/health is never limited)
+  for i in {1..101}; do
+    curl -s -o /dev/null -w "%{http_code}\n" https://api.yourapp.com/graphql \
+      -H "Content-Type: application/json" -d '{"query": "{ __typename }"}'
+  done
   # Expected: Last requests return 429
   ```
 

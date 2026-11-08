@@ -62,6 +62,34 @@ class TestSchemaRegistry:
         assert len(registry.queries) == 0
         assert len(registry.mutations) == 0
 
+    def test_clear_removes_scalars(self) -> None:
+        """clear() drops registered scalars, so a later schema can reuse their names."""
+        from fraiseql.types.scalars import ColorScalar
+
+        registry = SchemaRegistry.get_instance()
+        registry.register_scalar(ColorScalar)
+
+        registry.clear()
+
+        assert registry.scalars == {}
+
+    def test_scalars_rediscovered_after_clear(self) -> None:
+        """A type registered after clear() registers the scalars it uses again."""
+        from fraiseql.types.scalars import UUIDScalar
+
+        class WithScalar:
+            ref: UUIDScalar
+
+        registry = SchemaRegistry.get_instance()
+        registry.register_type(WithScalar)
+        registry.clear()
+        assert registry.scalars == {}
+
+        registry.register_type(WithScalar)
+
+        assert registry.scalars == {"UUID": UUIDScalar}
+        registry.clear()
+
 
 class TestQueryTypeBuilder:
     """Test the QueryTypeBuilder functionality."""

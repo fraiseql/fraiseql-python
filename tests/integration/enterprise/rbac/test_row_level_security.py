@@ -249,7 +249,7 @@ async def test_tenant_isolation_logic() -> None:
     # Mock tenant IDs
     tenant1 = uuid4()
     tenant2 = uuid4()
-    user1 = uuid4()
+    uuid4()
 
     # Simulate the RLS policy logic:
     # A user should only see data where tenant_id matches their context tenant_id

@@ -303,7 +303,6 @@ class TestNestedFilterIdField:
         Query: allocations(where: { device: { is_active: { eq: true } } })
         Expected SQL: WHERE data->'device'->>'is_active' = 'true'
         """
-        test_data = setup_hybrid_table
 
         register_type_for_view(
             "tv_allocation",

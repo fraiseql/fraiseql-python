@@ -110,12 +110,11 @@ FROM tb_user u;
 **Mutation Pattern**:
 
 ```sql
--- PostgreSQL function
-CREATE FUNCTION fn_create_note(
-    p_user_id UUID,
-    p_title TEXT,
-    p_content TEXT
-) RETURNS UUID AS $$
+-- PostgreSQL function: the context params first (the user's id), then the
+-- input as one jsonb. mutation_response and mutation_created() come from
+-- migrations/trinity/005_add_mutation_response.sql
+CREATE FUNCTION create_note(p_user_id UUID, input JSONB)
+RETURNS mutation_response AS $$
 DECLARE
     v_note_id UUID;
     v_user_pk INT;
@@ -124,10 +123,12 @@ BEGIN
     SELECT pk_user INTO v_user_pk FROM tb_user WHERE id = p_user_id;
 
     INSERT INTO tb_note (fk_user, title, content)
-    VALUES (v_user_pk, p_title, p_content)
+    VALUES (v_user_pk, input->>'title', input->>'content')
     RETURNING id INTO v_note_id;
 
-    RETURN v_note_id;
+    RETURN mutation_created(
+        'Note created', (SELECT data FROM v_note WHERE id = v_note_id), 'Note'
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -135,11 +136,26 @@ $$ LANGUAGE plpgsql;
 ```python
 import fraiseql
 
-# Python mutation
-@fraiseql.mutation
-def create_note(title: str, content: str) -> Note:
+@fraiseql.input
+class CreateNoteInput:
+    title: str
+    content: str
+
+@fraiseql.success
+class CreateNoteSuccess:
+    note: Note
+
+@fraiseql.error
+class CreateNoteError:
+    """status, message and code come from the function's mutation_response."""
+
+# Python mutation: calls create_note(info.context["user_id"], input)
+@fraiseql.mutation(context_params={"user_id": "p_user_id"})
+class CreateNote:
     """Create a new note."""
-    pass  # Implementation handled by framework
+    input: CreateNoteInput
+    success: CreateNoteSuccess
+    error: CreateNoteError
 ```
 
 ---

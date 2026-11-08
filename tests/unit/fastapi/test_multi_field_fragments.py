@@ -5,9 +5,21 @@ are properly expanded at the root level of multi-field queries.
 """
 
 import json
+from typing import Any
 
 import pytest
+from graphql import (
+    GraphQLArgument,
+    GraphQLField,
+    GraphQLInt,
+    GraphQLList,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLString,
+    OperationDefinitionNode,
+)
 
+from fraiseql.core.ast_parser import extract_field_paths_from_info
 from fraiseql.fastapi.routers import execute_multi_field_query
 
 
@@ -584,3 +596,193 @@ def init_schema_registry_fixture():
     }
 
     fraiseql_rs.initialize_schema_registry(json.dumps(schema_ir))
+
+
+# ---------------------------------------------------------------------------
+# Issue #554: resolvers that read info.fragments, as db.find() does
+# ---------------------------------------------------------------------------
+
+
+def _product_schema(seen: dict[str, Any]) -> GraphQLSchema:
+    """Build a schema whose list resolvers read their selection the way db.find() does.
+
+    Each resolver records the field paths extract_field_paths_from_info() returns, which
+    raises "Fragment 'X' not found" when info.fragments lacks a spread fragment.
+    """
+    supplier_type = GraphQLObjectType(
+        "Supplier",
+        {"id": GraphQLField(GraphQLInt), "name": GraphQLField(GraphQLString)},
+    )
+    product_type = GraphQLObjectType(
+        "Product",
+        {
+            "id": GraphQLField(GraphQLInt),
+            "name": GraphQLField(GraphQLString),
+            "price": GraphQLField(GraphQLInt),
+            "supplier": GraphQLField(supplier_type),
+        },
+    )
+    rows = [
+        {"id": 1, "name": "Widget", "price": 10, "supplier": {"id": 7, "name": "Acme"}},
+        {"id": 2, "name": "Gadget", "price": 20, "supplier": {"id": 7, "name": "Acme"}},
+    ]
+
+    def list_resolver(key: str):
+        async def resolve(root, info, limit=None):
+            paths = extract_field_paths_from_info(info)
+            seen[key] = sorted(".".join(p.path) for p in paths or [])
+            return rows[:limit]
+
+        return resolve
+
+    async def resolve_count(root, info):
+        return len(rows)
+
+    query_type = GraphQLObjectType(
+        "Query",
+        {
+            "products": GraphQLField(
+                GraphQLList(product_type),
+                args={"limit": GraphQLArgument(GraphQLInt)},
+                resolve=list_resolver("products"),
+            ),
+            "featuredProducts": GraphQLField(
+                GraphQLList(product_type), resolve=list_resolver("featuredProducts")
+            ),
+            "productsCount": GraphQLField(GraphQLInt, resolve=resolve_count),
+        },
+    )
+    return GraphQLSchema(query=query_type)
+
+
+async def _run(query: str, seen: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
+    result = await execute_multi_field_query(_product_schema(seen), query, None, {}, **kwargs)
+    return json.loads(bytes(result))
+
+
+@pytest.mark.asyncio
+async def test_issue_554_fragment_spread_with_scalar_sibling(init_schema_registry_fixture):
+    """The reporter's query: a named spread in a list root, next to a count root."""
+    seen: dict[str, Any] = {}
+    body = await _run(
+        """
+        query { products(limit: 2) { ...ProductFields } productsCount }
+        fragment ProductFields on Product { id name }
+        """,
+        seen,
+    )
+
+    assert "errors" not in body, body
+    assert seen["products"] == ["id", "name"]
+    assert [p["name"] for p in body["data"]["products"]] == ["Widget", "Gadget"]
+    assert body["data"]["productsCount"] == 2
+
+
+@pytest.mark.asyncio
+async def test_issue_554_nested_fragment_spread(init_schema_registry_fixture):
+    """A fragment that spreads another fragment."""
+    seen: dict[str, Any] = {}
+    body = await _run(
+        """
+        query { products { ...ProductFields } productsCount }
+        fragment ProductFields on Product { id ...ProductPrice }
+        fragment ProductPrice on Product { price }
+        """,
+        seen,
+    )
+
+    assert "errors" not in body, body
+    assert seen["products"] == ["id", "price"]
+    assert [p["price"] for p in body["data"]["products"]] == [10, 20]
+
+
+@pytest.mark.asyncio
+async def test_issue_554_fragment_spread_in_sub_object(init_schema_registry_fixture):
+    """A spread inside a nested object selection."""
+    seen: dict[str, Any] = {}
+    body = await _run(
+        """
+        query { products { id supplier { ...SupplierFields } } productsCount }
+        fragment SupplierFields on Supplier { id name }
+        """,
+        seen,
+    )
+
+    assert "errors" not in body, body
+    assert seen["products"] == ["id", "supplier.id", "supplier.name"]
+    assert body["data"]["products"][0]["supplier"]["name"] == "Acme"
+
+
+@pytest.mark.asyncio
+async def test_issue_554_fragment_shared_by_both_roots(init_schema_registry_fixture):
+    """The same fragment spread in two root fields."""
+    seen: dict[str, Any] = {}
+    body = await _run(
+        """
+        query { products { ...ProductFields } featuredProducts { ...ProductFields } }
+        fragment ProductFields on Product { id name }
+        """,
+        seen,
+    )
+
+    assert "errors" not in body, body
+    assert seen == {"products": ["id", "name"], "featuredProducts": ["id", "name"]}
+    assert len(body["data"]["featuredProducts"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# Issue #554 follow-up: the rest of the resolve info the multi-field path builds
+# ---------------------------------------------------------------------------
+
+
+def _info_capturing_schema(captured: dict[str, Any]) -> GraphQLSchema:
+    async def resolve_a(root, info):
+        captured["a"] = info
+        return 1
+
+    async def resolve_b(root, info):
+        captured["b"] = info
+        return 2
+
+    query_type = GraphQLObjectType(
+        "Query",
+        {
+            "a": GraphQLField(GraphQLInt, resolve=resolve_a),
+            "b": GraphQLField(GraphQLInt, resolve=resolve_b),
+        },
+    )
+    return GraphQLSchema(query=query_type)
+
+
+@pytest.mark.asyncio
+async def test_info_carries_operation_and_path(init_schema_registry_fixture):
+    """info.operation is the executed operation; info.path is a graphql-core Path."""
+    captured: dict[str, Any] = {}
+    result = await execute_multi_field_query(
+        _info_capturing_schema(captured), "query Pair { a aliasB: b }", None, {}
+    )
+
+    assert json.loads(bytes(result))["data"] == {"a": 1, "aliasB": 2}
+    for info in captured.values():
+        assert isinstance(info.operation, OperationDefinitionNode)
+        assert info.operation.name.value == "Pair"
+    assert captured["a"].path.as_list() == ["a"]
+    assert captured["b"].path.as_list() == ["aliasB"]
+    assert captured["b"].path.typename == "Query"
+
+
+@pytest.mark.asyncio
+async def test_operation_name_selects_operation(init_schema_registry_fixture):
+    """With several operations in one document, operationName picks the one to run."""
+    captured: dict[str, Any] = {}
+    query = """
+        query First($skipB: Boolean = true) { a b @skip(if: $skipB) }
+        query Second($skipB: Boolean = false) { a b @skip(if: $skipB) }
+    """
+    result = await execute_multi_field_query(
+        _info_capturing_schema(captured), query, None, {}, operation_name="Second"
+    )
+
+    assert json.loads(bytes(result))["data"] == {"a": 1, "b": 2}
+    assert captured["a"].operation.name.value == "Second"
+    assert captured["a"].variable_values == {"skipB": False}

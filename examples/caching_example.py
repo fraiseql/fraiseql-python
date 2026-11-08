@@ -17,12 +17,12 @@ LEARNING OUTCOMES:
 - Database-backed caching without Redis
 
 PREREQUISITES:
-- ../blog_api/ - Basic FraiseQL patterns
+- ../blog_simple/ - Basic FraiseQL patterns
 - Understanding of caching concepts
 
 NEXT STEPS:
 - ../apq_multi_tenant/ - Query-level caching
-- ../turborouter/ - Pre-compiled query routing
+- ../turbo_router_with_complexity.py - Pre-compiled query routing
 - ../analytics_dashboard/ - High-performance analytics
 """
 
@@ -93,13 +93,13 @@ async def setup_cached_repository(db_pool) -> CachedRepository:
 async def get_active_users(info) -> list[User]:
     """Get all active users (cached for 5 minutes)."""
     db: CachedRepository = info.context["db"]
-    return await db.find("users", status="active")
+    return await db.find("users", mandatory_filters={"status": "active"})
 
 
 async def get_user_by_id(info, user_id: ID) -> User | None:
     """Get user by ID (cached for 5 minutes)."""
     db: CachedRepository = info.context["db"]
-    return await db.find_one("users", id=user_id)
+    return await db.find_one("users", mandatory_filters={"id": user_id})
 
 
 async def get_products_by_category(
@@ -112,8 +112,7 @@ async def get_products_by_category(
     db: CachedRepository = info.context["db"]
     return await db.find(
         "products",
-        category=category,
-        price={"gte": min_price, "lte": max_price},
+        where={"category": {"eq": category}, "price": {"gte": min_price, "lte": max_price}},
         # Custom TTL for product queries (1 hour)
         cache_ttl=3600,
     )
@@ -122,7 +121,7 @@ async def get_products_by_category(
 async def get_fresh_user_data(info, user_id: ID) -> User | None:
     """Get user data bypassing cache."""
     db: CachedRepository = info.context["db"]
-    return await db.find_one("users", id=user_id, skip_cache=True)
+    return await db.find_one("users", mandatory_filters={"id": user_id}, skip_cache=True)
 
 
 # Mutations that will invalidate cache

@@ -1,5 +1,6 @@
 """Shared logic to define FraiseQL types across @fraise_input, @fraise_type, etc."""
 
+import inspect
 import types
 import typing
 from typing import Any, Literal, Protocol, TypeVar, cast, get_type_hints
@@ -65,6 +66,27 @@ def _serialize_field_value(field_value: Any) -> Any:
     return _serialize_basic(field_value)
 
 
+def _concrete_type(declared: Any, value: dict[str, Any]) -> Any:
+    """The type to build ``value`` as: the one its ``__typename`` names, for an interface.
+
+    An interface class can't be the object graphql-core completes (it resolves
+    the object's type from its class), so a field typed ``Node`` builds the
+    implementing type the row says it is. Without a known ``__typename``, the
+    declared type.
+    """
+    definition = getattr(declared, "__fraiseql_definition__", None)
+    typename = value.get("__typename")
+    if getattr(definition, "kind", None) != "interface" or not isinstance(typename, str):
+        return declared
+
+    from fraiseql.gql.builders.registry import SchemaRegistry
+
+    for registered in SchemaRegistry.get_instance().types.values():
+        if getattr(registered, "__name__", None) == typename and hasattr(registered, "from_dict"):
+            return registered
+    return declared
+
+
 def _process_field_value(value: Any, field_type: Any) -> Any:
     """Process a field value based on its type hint.
 
@@ -91,8 +113,8 @@ def _process_field_value(value: Any, field_type: Any) -> Any:
 
     # Handle FraiseQL types
     if hasattr(actual_type, "__fraiseql_definition__") and isinstance(value, dict):
-        # Recursively instantiate nested object
-        return actual_type.from_dict(value)
+        # Recursively instantiate nested object (the concrete type, for an interface)
+        return _concrete_type(actual_type, value).from_dict(value)
 
     # Handle UUID conversion
     if actual_type is UUID and isinstance(value, str):
@@ -155,8 +177,9 @@ def define_fraiseql_type(
 
         raise TypeError(
             f"Forward reference '{undefined_name}' in {cls.__name__} cannot be resolved. "
-            f"Define '{undefined_name}' before '{cls.__name__}', or use "
-            f"'from __future__ import annotations' for deferred evaluation."
+            f"Define '{undefined_name}' before '{cls.__name__}' at module level, or import "
+            f"it into that module: annotations are resolved against the module's globals "
+            f"when the decorator runs."
         ) from e
     field_map, patched_annotations = collect_fraise_fields(typed_cls, type_hints, kind=kind)
 
@@ -227,8 +250,9 @@ def define_fraiseql_type(
                 else:
                     snake_case_data[snake_key] = value
 
-            # Create instance with converted data
-            return cls(**snake_case_data)
+            # Build from what the dict has: a mutation entity holds only the
+            # selected fields, and a view's JSONB may hold keys the type lacks
+            return cls(**_constructor_arguments(cls, snake_case_data))
 
         typed_cls.from_dict = from_dict
 
@@ -243,7 +267,8 @@ def define_fraiseql_type(
             from fraiseql.types.definitions import UNSET
 
             result = {}
-            for field_name in getattr(self, "__annotations__", {}):
+            # Python 3.14 (PEP 749) no longer exposes class annotations on instances
+            for field_name in getattr(type(self), "__annotations__", {}):
                 if hasattr(self, field_name):
                     field_value = getattr(self, field_name)
                     if field_value is not UNSET:
@@ -258,3 +283,32 @@ def define_fraiseql_type(
         typed_cls.__json__ = __json__
 
     return cast("type[T]", typed_cls)
+
+
+def _constructor_arguments(cls: type, data: dict[str, Any]) -> dict[str, Any]:
+    """The keyword arguments of ``cls(...)`` for ``data``.
+
+    Keys the constructor doesn't take are left out, and a required parameter
+    missing from ``data`` gets None: an object built from part of a row reads
+    only the fields that were selected. A constructor taking ``**kwargs`` gets
+    everything.
+    """
+    try:
+        # fraiseql's generated __init__ carries a __signature__ without self
+        parameters = dict(inspect.signature(cls.__init__).parameters)
+    except (TypeError, ValueError):
+        return data
+    parameters.pop("self", None)
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
+        return data
+
+    arguments = {key: value for key, value in data.items() if key in parameters}
+    for name, parameter in parameters.items():
+        if (
+            name not in arguments
+            and parameter.default is inspect.Parameter.empty
+            and parameter.kind
+            in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+        ):
+            arguments[name] = None
+    return arguments

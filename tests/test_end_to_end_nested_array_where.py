@@ -38,6 +38,7 @@ class Network:
 
 
 @pytest.mark.integration
+@pytest.mark.usefixtures("clear_registry")
 class TestEndToEndNestedArrayWhere:
     """End-to-end tests for the complete nested array where filtering feature."""
 

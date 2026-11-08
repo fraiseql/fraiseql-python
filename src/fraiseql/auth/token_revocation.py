@@ -44,6 +44,14 @@ class RevocationStore(Protocol):
         """Revoke all tokens for a user."""
         ...
 
+    async def revoked_before(self, user_id: str) -> float | None:
+        """Return when all of a user's tokens were last revoked (a Unix timestamp).
+
+        Tokens of that user issued before it are revoked. None when no such
+        revocation is active. Optional: without it, only token ids are checked.
+        """
+        ...
+
     async def cleanup_expired(self) -> int:
         """Clean up expired revocations. Returns number cleaned."""
         ...
@@ -62,6 +70,8 @@ class InMemoryRevocationStore:
         self._revoked_tokens: dict[str, float] = {}
         # Map user_id to set of token_ids
         self._user_tokens: dict[str, set[str]] = defaultdict(set)
+        # Map user_id to (revoked_before, expiry) from revoke_all_user_tokens
+        self._user_cutoffs: dict[str, tuple[float, float]] = {}
         self._lock = asyncio.Lock()
 
     async def revoke_token(self, token_id: str, user_id: str) -> None:
@@ -91,17 +101,32 @@ class InMemoryRevocationStore:
             return True
 
     async def revoke_all_user_tokens(self, user_id: str) -> None:
-        """Revoke all tokens for a user."""
+        """Revoke all tokens for a user: every token issued before now."""
         async with self._lock:
-            # Get all tokens for this user
-            user_tokens = self._user_tokens.get(user_id, set())
+            now = time.time()
+            expiry_time = now + 86400
+            self._user_cutoffs[user_id] = (now, expiry_time)
 
-            # Mark them all as revoked
-            expiry_time = time.time() + 86400
+            # Tokens revoked one by one stay revoked as long as the cutoff
+            user_tokens = self._user_tokens.get(user_id, set())
             for token_id in user_tokens:
                 self._revoked_tokens[token_id] = expiry_time
 
-            logger.info("Revoked %s tokens for user %s", len(user_tokens), user_id)
+            logger.info("Revoked all tokens for user %s", user_id)
+
+    async def revoked_before(self, user_id: str) -> float | None:
+        """Return when all of a user's tokens were last revoked, if still active."""
+        async with self._lock:
+            cutoff = self._user_cutoffs.get(user_id)
+            if cutoff is None:
+                return None
+
+            revoked_before, expiry = cutoff
+            if time.time() > expiry:
+                del self._user_cutoffs[user_id]
+                return None
+
+            return revoked_before
 
     async def cleanup_expired(self) -> int:
         """Clean up expired revocations."""
@@ -124,7 +149,15 @@ class InMemoryRevocationStore:
             for user_id in empty_users:
                 del self._user_tokens[user_id]
 
-            return len(expired)
+            expired_cutoffs = [
+                user_id
+                for user_id, (_, expiry) in self._user_cutoffs.items()
+                if current_time > expiry
+            ]
+            for user_id in expired_cutoffs:
+                del self._user_cutoffs[user_id]
+
+            return len(expired) + len(expired_cutoffs)
 
     async def get_revoked_count(self) -> int:
         """Get count of revoked tokens."""
@@ -226,40 +259,46 @@ class PostgreSQLRevocationStore:
             result = await cur.fetchone()
             return result is not None
 
+    @staticmethod
+    def _cutoff_token_id(user_id: str) -> str:
+        """Row id of a user's "revoke all" cutoff; its revoked_at is the cutoff."""
+        return f"__all__{user_id}"
+
     async def revoke_all_user_tokens(self, user_id: str) -> None:
-        """Revoke all tokens for a user."""
+        """Revoke all tokens for a user: every token issued before now."""
         await self._ensure_initialized()
 
+        now = time.time()
         # Default expiry: 24 hours from now
-        expiry_time = time.time() + 86400
+        expiry_time = now + 86400
 
         async with self.pool.connection() as conn, conn.cursor() as cur:
-            # This is a placeholder - we mark this user_id as revoked
-            # In practice, you'd need to track all token_ids per user
-            # For now, we insert a special marker token
             await cur.execute(
                 f"""
-                INSERT INTO {self.table_name} (token_id, user_id, expires_at)
-                VALUES (%s, %s, TO_TIMESTAMP(%s))
+                INSERT INTO {self.table_name} (token_id, user_id, revoked_at, expires_at)
+                VALUES (%s, %s, TO_TIMESTAMP(%s), TO_TIMESTAMP(%s))
                 ON CONFLICT (token_id) DO UPDATE
-                SET expires_at = EXCLUDED.expires_at
+                SET revoked_at = EXCLUDED.revoked_at, expires_at = EXCLUDED.expires_at
                 """,
-                (f"__all__{user_id}", user_id, expiry_time),
+                (self._cutoff_token_id(user_id), user_id, now, expiry_time),
             )
+            await conn.commit()
+            logger.info("Revoked all tokens for user %s", user_id)
 
-            # Count existing tokens
+    async def revoked_before(self, user_id: str) -> float | None:
+        """Return when all of a user's tokens were last revoked, if still active."""
+        await self._ensure_initialized()
+
+        async with self.pool.connection() as conn, conn.cursor() as cur:
             await cur.execute(
                 f"""
-                SELECT COUNT(*) FROM {self.table_name}
-                WHERE user_id = %s AND expires_at > NOW()
+                SELECT EXTRACT(EPOCH FROM revoked_at)::float8 FROM {self.table_name}
+                WHERE token_id = %s AND expires_at > NOW()
                 """,
-                (user_id,),
+                (self._cutoff_token_id(user_id),),
             )
-            count_result = await cur.fetchone()
-            count = count_result[0] if count_result else 0
-
-            await conn.commit()
-            logger.info("Revoked %s tokens for user %s", count, user_id)
+            result = await cur.fetchone()
+            return result[0] if result else None
 
     async def cleanup_expired(self) -> int:
         """Clean up expired revocations."""
@@ -372,8 +411,13 @@ class TokenRevocationService:
     async def is_token_revoked(self, token_payload: dict[str, Any]) -> bool:
         """Check if a token is revoked.
 
+        A token is revoked when its ``jti`` was revoked, or when its user's tokens
+        were all revoked (``revoke_all_user_tokens``) after it was issued. Once a
+        user's tokens were all revoked, a token of that user without a numeric
+        ``iat`` claim is revoked too: its age can't be told.
+
         Args:
-            token_payload: Decoded JWT payload (must contain 'jti')
+            token_payload: Decoded JWT payload ('jti', 'sub' and 'iat' are read)
 
         Returns:
             True if token is revoked
@@ -382,17 +426,32 @@ class TokenRevocationService:
             return False
 
         token_id = token_payload.get("jti")
-        if not token_id:
-            # No JTI, can't check revocation
+        if token_id and await self.store.is_revoked(token_id):
+            return True
+
+        user_id = token_payload.get("sub")
+        revoked_before = getattr(self.store, "revoked_before", None)
+        if not user_id or revoked_before is None:
             return False
 
-        return await self.store.is_revoked(token_id)
+        cutoff = await revoked_before(str(user_id))
+        if cutoff is None:
+            return False
+
+        issued_at = token_payload.get("iat")
+        if isinstance(issued_at, bool) or not isinstance(issued_at, (int, float)):
+            return True
+        # iat has whole seconds: a token from the cutoff's own second is revoked
+        return issued_at < cutoff
 
     async def revoke_all_user_tokens(self, user_id: str) -> None:
-        """Revoke all tokens for a user.
+        """Revoke all tokens for a user: every token issued before now.
+
+        Tokens are matched by their ``sub`` claim and dated by ``iat``. The
+        revocation lasts 24 hours, like a single token's.
 
         Args:
-            user_id: User identifier
+            user_id: User identifier (the tokens' ``sub`` claim)
         """
         if not self.config.enabled:
             return

@@ -6,13 +6,14 @@ This example demonstrates how to:
 3. Make intelligent caching decisions
 """
 
-import asyncio
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from graphql import GraphQLSchema
 
 import fraiseql
+from fraiseql import fraise_type
 from fraiseql.fastapi import create_fraiseql_app
 from fraiseql.fastapi.turbo import TurboQuery
 from fraiseql.fastapi.turbo_enhanced import (
@@ -148,9 +149,11 @@ def create_enhanced_app() -> FastAPI:
     turbo_router = EnhancedTurboRouter(enhanced_registry)
 
     # Create the app
+    # The registry analyses queries on its own; the app serves the same queries
     app = create_fraiseql_app(
-        schema=schema,
-        path="/graphql",
+        database_url=os.getenv("DATABASE_URL", "postgresql://localhost/fraiseql_example"),
+        types=[Author, Comment, Post, User],
+        queries=[get_user, get_user_with_posts, get_all_users_deep],
     )
 
     # Add monitoring endpoint
@@ -180,9 +183,9 @@ def create_enhanced_app() -> FastAPI:
             ),
         }
 
-    # Simulate registering some queries
-    @app.on_event("startup")
-    async def register_common_queries():
+    # Pre-register common queries. (A FastAPI startup event wouldn't run: the
+    # app has a lifespan.)
+    def register_common_queries() -> None:
         """Pre-register common queries for turbo execution."""
         # Simple query - will be cached
         simple_query = """
@@ -261,6 +264,7 @@ def create_enhanced_app() -> FastAPI:
         else:
             print("✗ Complex query rejected by complexity analysis")
 
+    register_common_queries()
     return app
 
 

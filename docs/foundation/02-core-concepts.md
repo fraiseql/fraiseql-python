@@ -180,7 +180,7 @@ from fraiseql.types import ID
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 
 @fraiseql.query
 async def users(info) -> list[User]:
@@ -249,9 +249,10 @@ async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | Creat
 In traditional GraphQL servers, resolvers are *custom code* you write by hand for every field:
 
 ```python
-# Traditional GraphQL - hand-written resolver
+# Traditional GraphQL - hand-written resolver (here over an asyncpg pool)
 async def user_resolver(parent, info, id):
-    return await db.fetchrow("SELECT * FROM users WHERE id = $1", id)
+    pool = info.context["pool"]
+    return await pool.fetchrow("SELECT * FROM users WHERE id = $1", id)
 ```
 
 In FraiseQL, you write resolvers for **operations** (`@fraiseql.query` / `@fraiseql.mutation`), and FraiseQL generates the per-field resolvers automatically at runtime when the schema is built. Field resolvers read straight from the view's `data` JSONB, so you do not write glue code per field:
@@ -602,7 +603,7 @@ SELECT
         'id', id,
         'name', name,
         'email', email,
-        'createdAt', created_at
+        'created_at', created_at
     ) AS data
 FROM tb_user
 WHERE deleted_at IS NULL;  -- Soft deletes

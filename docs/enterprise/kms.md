@@ -21,11 +21,10 @@ FraiseQL's Key Management Service provides unified encryption/decryption across 
 
 - **Multiple Providers**: HashiCorp Vault, AWS KMS, GCP Cloud KMS, Local (dev)
 - **Two Usage Patterns**: Startup-time initialization (fast) or per-request (secure)
-- **Envelope Encryption**: Local AES-256-GCM with encrypted master key
-- **Automatic Provider Selection**: Transparently detect and use appropriate provider
-- **Key Rotation**: Automated key rotation with backward compatibility
-- **Field Encryption**: Convenient methods for encrypting individual fields
-- **Compliance-Ready**: Works with security policies and audit logging
+- **Envelope Encryption**: Local AES-256-GCM with a data key wrapped by the KMS master key
+- **Provider Tracking**: `decrypt()` uses the provider recorded in the `EncryptedData`
+- **Key Rotation**: Replace the cached data key, or rotate the master key in the provider
+- **Field Encryption**: Convenient methods for encrypting individual string or bytes fields
 
 ---
 
@@ -34,6 +33,8 @@ FraiseQL's Key Management Service provides unified encryption/decryption across 
 ### Vault Setup (Recommended)
 
 ```python
+import os
+
 from fraiseql.security.kms import KeyManager, VaultKMSProvider, VaultConfig
 
 # Configure Vault provider
@@ -41,7 +42,7 @@ vault_config = VaultConfig(
     vault_addr="https://vault.example.com:8200",
     token=os.getenv("VAULT_TOKEN"),
     mount_path="transit",  # Default: transit
-    namespace="your-namespace"  # Optional
+    namespace="your-namespace"  # Optional (Vault Enterprise)
 )
 
 # Create KMS with Vault
@@ -60,11 +61,11 @@ await key_manager.initialize()
 ```python
 from fraiseql.security.kms import KeyManager, AWSKMSProvider, AWSKMSConfig
 
-# Configure AWS KMS
+# Configure AWS KMS: credentials come from the boto3 default chain
+# (IAM role, environment variables, ~/.aws), or from a named profile
 aws_config = AWSKMSConfig(
-    region="us-east-1",
-    access_key=os.getenv("AWS_ACCESS_KEY_ID"),
-    secret_key=os.getenv("AWS_SECRET_ACCESS_KEY")
+    region_name="us-east-1",
+    profile_name=None,  # e.g. "dev" for a local AWS profile
 )
 
 key_manager = KeyManager(
@@ -81,18 +82,18 @@ await key_manager.initialize()
 ```python
 from fraiseql.security.kms import KeyManager, GCPKMSProvider, GCPKMSConfig
 
-# Configure GCP KMS
+# Configure GCP KMS: credentials come from Application Default Credentials
+# (GOOGLE_APPLICATION_CREDENTIALS, gcloud, or the workload's service account)
 gcp_config = GCPKMSConfig(
     project_id="my-project",
     location="global",
     key_ring="my-keyring",
-    credentials_file="/path/to/service-account.json"
 )
 
 key_manager = KeyManager(
     providers={"gcp": GCPKMSProvider(gcp_config)},
     default_provider="gcp",
-    default_key_id="projects/my-project/locations/global/keyRings/my-keyring/cryptoKeys/my-key"
+    default_key_id="my-key"  # the crypto key name inside key_ring
 )
 
 await key_manager.initialize()
@@ -100,28 +101,40 @@ await key_manager.initialize()
 
 ### Using KMS in GraphQL
 
+Initialize the key manager in the app's lifespan and put it in the GraphQL context
+with `context_getter`; fraiseql merges what it returns into its default context
+(`db`, `user`, ...):
+
 ```python
-# Add to GraphQL context
-async def get_context() -> dict:
-    return {
-        "key_manager": key_manager,
-        # ... other context
-    }
+from contextlib import asynccontextmanager
 
-@strawberry.mutation
-async def create_user(
-    info: strawberry.types.Info,
-    email: str,
-    password: str
-) -> User:
-    # Encrypt sensitive field
-    encrypted_password = await info.context["key_manager"].encrypt_field(
-        password,
-        key_id="app-encryption-key"
-    )
+from fastapi import FastAPI, Request
 
-    return create_user_record(email, encrypted_password)
+from fraiseql.fastapi import create_fraiseql_app
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await key_manager.initialize()  # one KMS call at startup
+    yield
+
+
+async def get_context(request: Request) -> dict:
+    return {"key_manager": key_manager}
+
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[Customer, ApiKeyCreated],
+    queries=[customer],
+    mutations=[create_customer, generate_api_key],
+    context_getter=get_context,
+    lifespan=lifespan,
+)
 ```
+
+Resolvers then read `info.context["key_manager"]`; see
+[Integration with GraphQL](#integration-with-graphql) for the mutations.
 
 ---
 
@@ -133,7 +146,7 @@ FraiseQL KMS supports two distinct patterns depending on your security needs:
 
 #### Pattern 1: Startup-Time Initialization (Recommended)
 
-**Best for**: High-throughput applications, response data encryption
+**Best for**: High-throughput applications, short-lived encrypted data
 
 ```python
 # At startup: Contact KMS once to get data key
@@ -143,8 +156,8 @@ await key_manager.initialize()
 encrypted = key_manager.local_encrypt(data)  # Microseconds
 decrypted = key_manager.local_decrypt(encrypted)  # Microseconds
 
-# Periodically: Rotate the data key
-scheduler.add_job(key_manager.rotate_data_key, trigger="interval", hours=1)
+# Periodically: replace the cached data key
+await key_manager.rotate_data_key()
 ```
 
 **Performance**:
@@ -152,15 +165,22 @@ scheduler.add_job(key_manager.rotate_data_key, trigger="interval", hours=1)
 - `initialize()`: 50-200ms (one-time at startup)
 - `local_encrypt()`: < 1 microsecond
 - `local_decrypt()`: < 1 microsecond
-- `rotate_data_key()`: 50-200ms (background task)
+- `rotate_data_key()`: 50-200ms
 
 **Envelope Encryption**:
 
 ```text
 KMS stores: Master key (never leaves KMS)
-Application stores: Data key (AES-256) encrypted by master key
-Application RAM: Decrypted data key (for current hour)
+KMS returns: A new AES-256 data key, plus that key wrapped by the master key
+Application RAM: The plaintext data key, until the next initialize()/rotate_data_key()
 ```
+
+The cached data key lives only in memory: `rotate_data_key()` (and a process
+restart) replaces it, and `local_decrypt()` can no longer decrypt what the previous
+key encrypted. Use `local_encrypt()` for data that doesn't outlive the key; for data
+you persist, use `encrypt()` / `encrypt_field()` (Pattern 2), whose `EncryptedData`
+records the KMS key, or keep a `DataKeyPair`'s wrapped key with the data
+([Generate Data Key Pair](#generate-data-key-pair)).
 
 #### Pattern 2: Per-Request KMS (High Security)
 
@@ -169,7 +189,7 @@ Application RAM: Decrypted data key (for current hour)
 ```python
 # Every request: Contact KMS for encryption
 encrypted = await key_manager.encrypt(
-    plaintext,
+    plaintext,  # bytes
     key_id="high-security-key",
     context={"purpose": "api_key_encryption"}
 )
@@ -186,8 +206,8 @@ plaintext = await key_manager.decrypt(encrypted, context={"purpose": "api_key_en
 **Use Cases**:
 
 - API key encryption (rare, high-security)
-- Master password hashing (rare)
 - Credential storage (infrequent)
+- Persisted sensitive fields
 - Not suitable for response data (too slow)
 
 ### Local Encryption Algorithm
@@ -199,13 +219,13 @@ Plaintext
     ↓
 Generate random 96-bit nonce
     ↓
-Encrypt with AES-256-GCM (16KB buffer)
+Encrypt with AES-256-GCM (cached data key)
     ↓
-Compute authentication tag (128-bit)
+Ciphertext with 128-bit authentication tag appended
     ↓
 Serialize: nonce + ciphertext + auth_tag
     ↓
-Encrypted data
+Encrypted bytes
 ```
 
 **Security Properties**:
@@ -231,8 +251,8 @@ config = VaultConfig(
     token=os.getenv("VAULT_TOKEN"),
     mount_path="transit",           # Custom: default is "transit"
     namespace="my-namespace",       # Optional
-    tls_verify=True,               # TLS verification (recommended)
-    tls_ca_cert="/path/to/ca.pem"  # Optional CA cert
+    verify_tls=True,                # TLS verification (default: True)
+    timeout=30.0,                   # HTTP timeout in seconds (default: 30.0)
 )
 
 provider = VaultKMSProvider(config)
@@ -247,7 +267,7 @@ vault secrets enable transit
 # Create encryption key
 vault write -f transit/keys/app-encryption-key
 
-# Create policy for application
+# Create policy for application (fraiseql POSTs to these endpoints)
 vault policy write app - <<EOF
 path "transit/encrypt/app-encryption-key" {
   capabilities = ["update"]
@@ -256,7 +276,7 @@ path "transit/decrypt/app-encryption-key" {
   capabilities = ["update"]
 }
 path "transit/datakey/plaintext/app-encryption-key" {
-  capabilities = ["read"]
+  capabilities = ["update"]
 }
 EOF
 
@@ -265,11 +285,9 @@ vault auth enable approle
 vault write auth/approle/role/app policies="app"
 ```
 
-**Authentication Methods**:
-
-- Token (shown above)
-- Kubernetes auth (in K8s cluster)
-- AppRole auth (recommended for CI/CD)
+**Authentication**: `VaultKMSProvider` sends `VaultConfig.token` with each request.
+Obtain the token however your deployment logs in to Vault (Kubernetes auth, AppRole,
+...), and pass it in.
 
 ### AWS KMS
 
@@ -279,13 +297,11 @@ vault write auth/approle/role/app policies="app"
 from fraiseql.security.kms import AWSKMSConfig, AWSKMSProvider
 
 config = AWSKMSConfig(
-    region="us-east-1",
-    access_key=os.getenv("AWS_ACCESS_KEY_ID"),
-    secret_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    # OR use IAM role (no explicit credentials needed)
+    region_name="us-east-1",  # Default: "us-east-1"
+    profile_name=None,        # Optional named profile; else the boto3 default chain
 )
 
-provider = AWSKMSProvider(config)
+provider = AWSKMSProvider(config)  # requires boto3
 ```
 
 **Key ID Formats**:
@@ -327,14 +343,13 @@ config = GCPKMSConfig(
     project_id="my-project",
     location="global",  # or "us", "eu", etc.
     key_ring="my-keyring",
-    credentials_file="/path/to/service-account.json"
-    # OR use application default credentials (no file needed)
 )
 
-provider = GCPKMSProvider(config)
+provider = GCPKMSProvider(config)  # requires google-cloud-kms: pip install "fraiseql[kms-gcp]"
 ```
 
-**Key ID Format**:
+**Key ID Format**: pass the crypto key's name (`my-key`); the provider builds the
+resource path from the config:
 
 ```text
 projects/my-project/locations/global/keyRings/my-keyring/cryptoKeys/my-key
@@ -348,13 +363,13 @@ projects/my-project/locations/global/keyRings/my-keyring/cryptoKeys/my-key
 from fraiseql.security.kms import LocalKMSConfig, LocalKMSProvider
 
 config = LocalKMSConfig(
-    master_key=b"development-master-key-32-bytes!"  # 32-byte key
+    master_key=b"development-master-key-32-bytes!"  # 32 bytes; default: random per process
 )
 
 provider = LocalKMSProvider(config)
 ```
 
-**Warning**: Local KMS stores everything in-memory and is NOT suitable for production!
+**Warning**: Local KMS keeps its master key in memory and is NOT suitable for production!
 
 ---
 
@@ -367,10 +382,10 @@ Immutable reference to a key:
 ```python
 @dataclass(frozen=True)
 class KeyReference:
-    provider: str              # "vault", "aws", "gcp"
+    provider: str              # "vault", "aws", "gcp", "local"
     key_id: str                # Provider-specific key ID
     key_alias: str | None      # Human-readable alias
-    purpose: KeyPurpose        # ENCRYPT_DECRYPT or SIGN_VERIFY
+    purpose: KeyPurpose        # ENCRYPT_DECRYPT, SIGN_VERIFY or MAC
     created_at: datetime       # When key was created
 
     @property
@@ -385,7 +400,7 @@ Immutable encrypted data with metadata:
 ```python
 @dataclass(frozen=True)
 class EncryptedData:
-    ciphertext: bytes           # Encrypted data (nonce + ciphertext + tag)
+    ciphertext: bytes           # Encrypted data (provider format)
     key_reference: KeyReference # Which key was used
     algorithm: str              # Provider-specific algorithm
     encrypted_at: datetime      # When encrypted
@@ -395,15 +410,15 @@ class EncryptedData:
         """Serialize for storage (ciphertext as hex)"""
         return {
             "ciphertext": self.ciphertext.hex(),
-            "key_reference": {
-                "provider": self.key_reference.provider,
-                "key_id": self.key_reference.key_id,
-            },
+            "key_id": self.key_reference.qualified_id,  # "provider:key_id"
             "algorithm": self.algorithm,
             "encrypted_at": self.encrypted_at.isoformat(),
             "context": self.context
         }
 ```
+
+There is no `from_dict`; [Reading Stored Ciphertext](#reading-stored-ciphertext)
+shows how to rebuild an `EncryptedData` from what `to_dict()` stored.
 
 ### DataKeyPair
 
@@ -419,7 +434,7 @@ class DataKeyPair:
 
 ### RotationPolicy
 
-Key rotation configuration:
+Key rotation configuration, returned by a provider's `get_rotation_policy()`:
 
 ```python
 @dataclass(frozen=True)
@@ -441,7 +456,7 @@ class RotationPolicy:
 await key_manager.initialize()
 
 # Check if initialized
-if key_manager.is_initialized:
+if key_manager.has_cached_data_key():
     print("Ready to encrypt/decrypt")
 ```
 
@@ -455,12 +470,14 @@ encrypted_bytes = key_manager.local_encrypt(plaintext_bytes)
 plaintext_bytes = key_manager.local_decrypt(encrypted_bytes)
 ```
 
+Both raise `RuntimeError` until `initialize()` has run.
+
 ### Per-Request Encryption (With KMS)
 
 ```python
 # Encrypt via KMS
 encrypted_data = await key_manager.encrypt(
-    plaintext=secret_string.encode(),
+    secret_string.encode(),
     key_id="api-key-encryption-key",
     provider="vault",  # Optional: explicit provider
     context={          # Optional: authenticated data
@@ -469,65 +486,58 @@ encrypted_data = await key_manager.encrypt(
     }
 )
 
-# Store encrypted_data in database
-db.save(encrypted_data.to_dict())
+# Store encrypted_data.to_dict() in a JSONB column (see Integration with GraphQL)
+stored = encrypted_data.to_dict()
 
-# Decrypt via KMS (reads key_reference from encrypted_data)
+# Decrypt via KMS (uses the provider in encrypted_data.key_reference)
 plaintext = await key_manager.decrypt(encrypted_data)
 ```
 
 ### Field Encryption
 
 ```python
-# Encrypt a field
-encrypted_password = await key_manager.encrypt_field(
-    value="my-password",
+# Encrypt a field (str or bytes)
+encrypted_value = await key_manager.encrypt_field(
+    "123-45-6789",
     key_id="default-key",
-    field_type="text"  # text, bytes, json
 )
 
-# Decrypt a field
-password = await key_manager.decrypt_field(
-    encrypted_password,
-    field_type="text"
-)
+# Decrypt a field: returns str if a str was encrypted, bytes otherwise
+value = await key_manager.decrypt_field(encrypted_value)
 ```
 
 ### Key Rotation
 
 ```python
-# Rotate the cached data key (background task)
+# Replace the cached data key (local_decrypt can't read data the old key encrypted)
 await key_manager.rotate_data_key()
 
-# Schedule rotation
-scheduler.add_job(
-    key_manager.rotate_data_key,
-    trigger="interval",
-    hours=1  # Rotate hourly
-)
-
-# Get rotation status
-policy = key_manager.get_rotation_policy()
-print(f"Next rotation: {policy.next_rotation}")
+# Rotate the master key in the provider, and read its rotation policy
+provider = key_manager.get_provider("vault")
+await provider.rotate_key("app-encryption-key")
+policy = await provider.get_rotation_policy("app-encryption-key")
+print(f"Rotation enabled: {policy.enabled}, next: {policy.next_rotation}")
 ```
 
 ### Generate Data Key Pair
 
 ```python
+import secrets
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
 # For envelope encryption
-key_pair = await key_manager.generate_data_key(
-    key_id="master-key",
-    key_spec="AES_256"  # Size of data key
-)
+key_pair = await key_manager.generate_data_key(key_id="master-key")
 
-# Use plaintext_key for encryption
-encrypted = key_pair.encrypt(data)
+# Use plaintext_key for encryption, then drop it
+nonce = secrets.token_bytes(12)
+ciphertext = AESGCM(key_pair.plaintext_key).encrypt(nonce, data, None)
 
-# Store encrypted_key with data
-db.save(encrypted_key=key_pair.encrypted_key)
+# Store key_pair.encrypted_key.to_dict() with nonce and ciphertext
 
-# Later: Decrypt to get plaintext_key again
-decrypted_key = await key_manager.decrypt(key_pair.encrypted_key)
+# Later: Decrypt the wrapped key to get plaintext_key again
+plaintext_key = await key_manager.decrypt(key_pair.encrypted_key)
+data = AESGCM(plaintext_key).decrypt(nonce, ciphertext, None)
 ```
 
 ---
@@ -539,9 +549,11 @@ decrypted_key = await key_manager.decrypt(key_pair.encrypted_key)
 | Vault | `aes256-gcm96` | AES-256-GCM (96-bit IV) | Transit engine default |
 | AWS KMS | `SYMMETRIC_DEFAULT` | AES-256-GCM | AWS managed |
 | GCP KMS | `GOOGLE_SYMMETRIC_ENCRYPTION` | AES-256-GCM | GCP managed |
-| Local | `aes256-gcm96` | AES-256-GCM (local) | Development only |
+| Local | `AES-256-GCM` | AES-256-GCM (local) | Development only |
 
-**Note**: Algorithm strings are provider-scoped. Don't compare `aes256-gcm96` from different providers - they're different implementations.
+A wrapped data key (`DataKeyPair.encrypted_key`) has the algorithm `data-key`.
+
+**Note**: Algorithm strings are provider-scoped. Don't compare algorithm strings from different providers - they're different implementations.
 
 ---
 
@@ -552,12 +564,12 @@ decrypted_key = await key_manager.decrypt(key_pair.encrypted_key)
 Vault is the recommended provider for production:
 
 ```python
-# GOOD - Vault with secure token rotation
+# GOOD - Vault with TLS verification
 vault_provider = VaultKMSProvider(
     VaultConfig(
         vault_addr="https://vault.secure.example.com",
         token=os.getenv("VAULT_TOKEN"),
-        tls_verify=True
+        verify_tls=True
     )
 )
 
@@ -567,28 +579,20 @@ local_provider = LocalKMSProvider(...)  # Development only!
 
 ### 2. Rotate Keys Regularly
 
-Set up automated key rotation:
-
-```python
-# GOOD - Hourly rotation
-scheduler.add_job(
-    key_manager.rotate_data_key,
-    trigger="interval",
-    hours=1
-)
-
-# BAD - Manual or no rotation
-# (forgotten rotations = outdated keys)
-```
+Rotate master keys in the provider (Vault, AWS and GCP keep old key versions, so
+existing ciphertext still decrypts), on the provider's schedule or with
+`provider.rotate_key(key_id)`. Replace the cached data key with
+`rotate_data_key()` only as often as the data `local_encrypt()` produced can be
+discarded.
 
 ### 3. Use Encryption Context
 
-Add additional authenticated data (AAD):
+Add additional authenticated data (AAD); the same context is needed to decrypt:
 
 ```python
-# GOOD - Context for key derivation
+# GOOD - Context binds the ciphertext to its use
 encrypted = await key_manager.encrypt(
-    secret,
+    secret,  # bytes
     context={
         "purpose": "jwt_signing_key",
         "environment": "production",
@@ -606,19 +610,21 @@ Use different keys for different purposes:
 
 ```python
 # GOOD - Key per purpose
-api_key_encryption = await key_manager.encrypt(
+api_key_encryption = await key_manager.encrypt_field(
     api_key,
     key_id="api-key-encryption-key"
 )
-password_hashing = await key_manager.encrypt(
-    password,
-    key_id="password-hashing-key"
+tax_id_encryption = await key_manager.encrypt_field(
+    tax_id,
+    key_id="customer-pii-key"
 )
 
 # BAD - Single key for everything
-secret = await key_manager.encrypt(api_key, key_id="universal-key")
-password = await key_manager.encrypt(password, key_id="universal-key")
+secret = await key_manager.encrypt_field(api_key, key_id="universal-key")
+pii = await key_manager.encrypt_field(tax_id, key_id="universal-key")
 ```
+
+Store password hashes (bcrypt, argon2), not encrypted passwords.
 
 ### 5. Never Log Plaintext Keys
 
@@ -637,20 +643,21 @@ logger.debug(f"Decrypted key: {decrypted_key}")  # SECURITY RISK!
 
 ### 6. Verify TLS Certificates
 
-Enable TLS verification for KMS:
+Keep TLS verification on for Vault (the default):
 
 ```python
 # GOOD - TLS verification enabled
 vault_config = VaultConfig(
     vault_addr="https://vault.example.com",
-    tls_verify=True,
-    tls_ca_cert="/etc/ssl/certs/ca-bundle.crt"
+    token=os.getenv("VAULT_TOKEN"),
+    verify_tls=True
 )
 
 # BAD - TLS verification disabled
 vault_config = VaultConfig(
     vault_addr="https://vault.example.com",
-    tls_verify=False  # Security risk!
+    token=os.getenv("VAULT_TOKEN"),
+    verify_tls=False  # Security risk!
 )
 ```
 
@@ -658,42 +665,103 @@ vault_config = VaultConfig(
 
 ## Integration with GraphQL
 
-### User Password Encryption
+These mutations store ciphertext through PostgreSQL functions, with the app from
+[Using KMS in GraphQL](#using-kms-in-graphql) putting `key_manager` in the context.
+
+```sql
+CREATE TABLE tb_customer (
+    pk_customer BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    email TEXT NOT NULL,
+    tax_id JSONB NOT NULL  -- EncryptedData.to_dict(), never the plaintext
+);
+
+CREATE FUNCTION fn_create_customer(input JSONB, OUT id UUID) AS $$
+BEGIN
+    INSERT INTO tb_customer (email, tax_id)
+    VALUES (input->>'email', input->'tax_id')
+    RETURNING tb_customer.id INTO id;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE VIEW v_customer AS
+SELECT id, jsonb_build_object('id', id, 'email', email) AS data
+FROM tb_customer;
+
+CREATE TABLE tb_api_key (
+    pk_api_key BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    encrypted_key JSONB NOT NULL  -- EncryptedData.to_dict()
+);
+
+CREATE FUNCTION fn_create_api_key(input JSONB, OUT id UUID) AS $$
+BEGIN
+    INSERT INTO tb_api_key (user_id, name, encrypted_key)
+    VALUES ((input->>'user_id')::uuid, input->>'name', input->'encrypted_key')
+    RETURNING tb_api_key.id INTO id;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### Sensitive Field Encryption
 
 ```python
-@strawberry.mutation
-async def register_user(
-    info: strawberry.types.Info,
-    email: str,
-    password: str
-) -> User:
+import fraiseql
+from fraiseql.types import ID
+
+
+@fraiseql.type(sql_source="v_customer", jsonb_column="data")
+class Customer:
+    id: ID
+    email: str
+
+
+@fraiseql.query
+async def customer(info, id: ID) -> Customer | None:
+    db = info.context["db"]
+    return await db.find_one("v_customer", mandatory_filters={"id": id})
+
+
+@fraiseql.mutation
+async def create_customer(info, email: str, tax_id: str) -> Customer:
     key_manager = info.context["key_manager"]
+    db = info.context["db"]
 
-    # Encrypt password with KMS
-    encrypted_password = await key_manager.encrypt_field(
-        password,
-        key_id="password-encryption-key"
+    # Encrypt with KMS; the ciphertext is stored, never the plaintext
+    encrypted_tax_id = await key_manager.encrypt_field(
+        tax_id,
+        key_id="customer-pii-key",
+        context={"purpose": "tax_id"},
     )
 
-    # Store encrypted password
-    user = User(
-        email=email,
-        encrypted_password=encrypted_password.to_dict()
+    # fn_create_customer(input jsonb, OUT id uuid) inserts into tb_customer
+    result = await db.execute_function(
+        "fn_create_customer",
+        {"email": email, "tax_id": encrypted_tax_id.to_dict()},
     )
-    await db.save(user)
-
-    return user
+    return await db.find_one(
+        "v_customer", "createCustomer", info, mandatory_filters={"id": result["id"]}
+    )
 ```
 
 ### API Key Encryption
 
 ```python
-@strawberry.mutation
-async def generate_api_key(
-    info: strawberry.types.Info,
-    user_id: UUID  # UUID v4 for GraphQL ID
-) -> ApiKeyResponse:
+import secrets
+
+
+@fraiseql.type
+class ApiKeyCreated:
+    id: ID
+    api_key: str  # returned once, at creation
+
+
+@fraiseql.mutation
+async def generate_api_key(info, user_id: ID, name: str) -> ApiKeyCreated:
     key_manager = info.context["key_manager"]
+    db = info.context["db"]
 
     # Generate random API key
     api_key = secrets.token_urlsafe(32)
@@ -702,26 +770,58 @@ async def generate_api_key(
     encrypted_key = await key_manager.encrypt_field(
         api_key,
         key_id="api-key-encryption-key",
-        context={"user_id": user_id}
+        context={"user_id": str(user_id)},
     )
 
-    # Store encrypted key (never store plaintext!)
-    db_key = ApiKey(
-        user_id=user_id,
-        encrypted_key=encrypted_key.to_dict(),
-        name=f"API Key ({api_key[:8]}...)"
+    # Store the encrypted key (never the plaintext)
+    result = await db.execute_function(
+        "fn_create_api_key",
+        {"user_id": str(user_id), "name": name, "encrypted_key": encrypted_key.to_dict()},
     )
-    await db.save(db_key)
 
-    # Return plaintext key ONLY at creation time
-    return ApiKeyResponse(api_key=api_key)
+    # Return the plaintext key ONLY at creation time
+    return ApiKeyCreated(id=result["id"], api_key=api_key)
+```
+
+### Reading Stored Ciphertext
+
+`to_dict()` keeps everything `decrypt()` needs; rebuild the `EncryptedData` from the
+stored JSONB:
+
+```python
+from datetime import datetime
+
+from fraiseql.security.kms import EncryptedData, KeyPurpose, KeyReference
+
+
+def encrypted_data_from_dict(data: dict) -> EncryptedData:
+    """Rebuild the EncryptedData that to_dict() serialized."""
+    provider, key_id = data["key_id"].split(":", 1)  # qualified id "provider:key_id"
+    encrypted_at = datetime.fromisoformat(data["encrypted_at"])
+    return EncryptedData(
+        ciphertext=bytes.fromhex(data["ciphertext"]),
+        key_reference=KeyReference(
+            provider=provider,
+            key_id=key_id,
+            key_alias=None,
+            purpose=KeyPurpose.ENCRYPT_DECRYPT,
+            created_at=encrypted_at,
+        ),
+        algorithm=data["algorithm"],
+        encrypted_at=encrypted_at,
+        context=data["context"],
+    )
+
+
+# e.g. with the tax_id column of a tb_customer row
+tax_id = await key_manager.decrypt_field(encrypted_data_from_dict(row["tax_id"]))
 ```
 
 ---
 
 ## Exception Handling
 
-FraiseQL KMS defines specific exceptions:
+FraiseQL KMS defines specific exceptions, all subclasses of `KMSError`:
 
 ```python
 from fraiseql.security.kms import (
@@ -732,18 +832,31 @@ from fraiseql.security.kms import (
     KeyRotationError,
     ProviderConnectionError
 )
+```
 
+The provider operations surface one exception each, with the specific cause
+(`KeyNotFoundError`, `ProviderConnectionError`, a client library error) chained as
+`__cause__`:
+
+| Operation | Raises |
+|-----------|--------|
+| `encrypt()`, `encrypt_field()`, `generate_data_key()`, `initialize()`, `rotate_data_key()` | `EncryptionError` |
+| `decrypt()`, `decrypt_field()` | `DecryptionError` |
+| `provider.rotate_key()` | `KeyRotationError` |
+| `local_encrypt()` / `local_decrypt()` before `initialize()` | `RuntimeError` |
+| `local_decrypt()` of tampered data or data from another data key | `cryptography.exceptions.InvalidTag` |
+| unknown `provider=` name | `ValueError` |
+
+```python
 try:
     encrypted = await key_manager.encrypt(data)
-except KeyNotFoundError:
-    # Key doesn't exist
-    logger.error("Key not found in KMS")
-except ProviderConnectionError:
-    # Can't reach KMS provider
-    logger.error("KMS provider unreachable")
 except EncryptionError as e:
-    # General encryption failure
-    logger.error(f"Encryption failed: {e}")
+    if isinstance(e.__cause__, KeyNotFoundError):
+        logger.error("Key not found in KMS")
+    elif isinstance(e.__cause__, ProviderConnectionError):
+        logger.error("KMS provider unreachable")
+    else:
+        logger.error(f"Encryption failed: {e}")
 ```
 
 ---
@@ -757,27 +870,26 @@ except EncryptionError as e:
 try:
     await key_manager.initialize()
     print("Vault connected")
-except ProviderConnectionError:
-    print("Cannot reach Vault")
+except EncryptionError as e:
+    print(f"Cannot get a data key from Vault: {e.__cause__!r}")
     # Check:
     # 1. Vault URL is correct
     # 2. Vault is running
     # 3. Network/firewall allows connection
     # 4. TLS certificate is valid
+    # 5. The token's policy allows transit/datakey/plaintext/<key>
 ```
 
-### Key Rotation Failures
+### Key Rotation Status
 
 ```python
-# Monitor rotation status
-policy = key_manager.get_rotation_policy()
+# Ask the provider for the master key's rotation policy
+policy = await key_manager.get_provider("vault").get_rotation_policy("app-encryption-key")
 
-if policy.last_rotation is None:
-    print("Never rotated - initialize first")
-
-time_since_rotation = datetime.now() - policy.last_rotation
-if time_since_rotation > timedelta(hours=2):
-    print("Rotation may be delayed")
+if not policy.enabled:
+    print("Automatic rotation is off for this key")
+elif policy.last_rotation is None:
+    print("Never rotated")
 ```
 
 ### Decryption Errors
@@ -802,44 +914,29 @@ except DecryptionError:
 
 ## Performance Tuning
 
-### Initialization Timeout
+### Request Timeout
 
-If `initialize()` times out:
+If `initialize()` or `encrypt()` times out against Vault, raise the HTTP timeout:
 
 ```python
-# Increase timeout
-key_manager = KeyManager(
-    providers=providers,
-    initialization_timeout=10  # 10 seconds
+vault_config = VaultConfig(
+    vault_addr="https://vault.example.com:8200",
+    token=os.getenv("VAULT_TOKEN"),
+    timeout=10.0,  # seconds (default: 30.0)
 )
 ```
 
 ### Rotation Frequency
 
-Balance between security and performance:
-
-```python
-# More frequent (more secure, slight overhead)
-scheduler.add_job(key_manager.rotate_data_key, trigger="interval", hours=1)
-
-# Less frequent (slight overhead reduction, older keys)
-scheduler.add_job(key_manager.rotate_data_key, trigger="interval", hours=12)
-
-# Recommended: 1-4 hours for most applications
-```
+A shorter cached-data-key lifetime limits how much data one key protects, but each
+`rotate_data_key()` is a KMS call and makes earlier `local_encrypt()` output
+unreadable: pick the interval from how long that data must stay readable.
 
 ### Caching Strategy
 
-```python
-# Cache encrypted API keys (reduces KMS calls)
-@cache.lru(maxsize=1000)
-async def get_api_key_decrypted(api_key_id):
-    encrypted = db.get_api_key(api_key_id)
-    return await key_manager.decrypt(encrypted)
-
-# Don't cache plaintext secrets (security risk)
-# Always decrypt on demand for passwords/tokens
-```
+Decrypted secrets that are reused (for example a third-party API key the app calls
+with) can be cached in memory to save KMS calls; don't cache decrypted passwords or
+per-user tokens, decrypt them on demand.
 
 ---
 
@@ -862,9 +959,9 @@ FraiseQL KMS provides:
 
 ✅ **Multiple providers** - Vault, AWS, GCP, Local
 ✅ **Two patterns** - Fast (local) and secure (per-request)
-✅ **Envelope encryption** - Local AES-256-GCM with encrypted master key
-✅ **Automatic provider selection** - Transparent multi-provider support
-✅ **Key rotation** - Automated with backward compatibility
+✅ **Envelope encryption** - Local AES-256-GCM with a KMS-wrapped data key
+✅ **Provider tracking** - `EncryptedData` records the provider and key that encrypted it
+✅ **Key rotation** - Cached data key replacement and provider master-key rotation
 ✅ **Field encryption** - Convenient API for common use cases
 ✅ **Compliance-ready** - NIST, PCI-DSS, HIPAA, ISO 27001
 ✅ **Production-grade** - Microsecond latency (cached), 50-200ms (per-request)

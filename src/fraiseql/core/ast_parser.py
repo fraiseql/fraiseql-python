@@ -15,10 +15,20 @@ from fraiseql.core.fragment_resolver import resolve_all_fields
 
 
 class FieldPath(NamedTuple):
-    """Represents a flattened JSON path and alias extracted from a GraphQL selection set."""
+    """Represents a flattened JSON path and alias extracted from a GraphQL selection set.
+
+    ``path`` holds the JSON key of each field from the root to the leaf, and
+    ``alias`` the leaf's response key. ``extract_flat_paths`` also gives, for each
+    segment of ``path``, the field's name in the query (``names``) and its response
+    key (``response_keys``: the alias, or the name). ``{ d: device { n: name } }``
+    is ``FieldPath(alias="n", path=["device", "name"], names=("device", "name"),
+    response_keys=("d", "n"))``. Both are None in a FieldPath built without them.
+    """
 
     alias: str
     path: list[str]
+    names: tuple[str, ...] | None = None
+    response_keys: tuple[str, ...] | None = None
 
 
 def parse_query_ast(
@@ -47,6 +57,8 @@ def extract_flat_paths(
     fragments: dict[str, FragmentDefinitionNode],
     path: list[str] | None = None,
     transform_path: Callable[[str], str] | None = None,
+    _names: tuple[str, ...] = (),
+    _response_keys: tuple[str, ...] = (),
 ) -> list[FieldPath]:
     """Recursively extract flattened JSONB paths from the selection set.
 
@@ -58,7 +70,8 @@ def extract_flat_paths(
             (e.g. camelCase → snake_case).
 
     Returns:
-        A flat list of FieldPath with alias and transformed path list.
+        A flat list of FieldPath with alias and transformed path list, and the
+        name and response key of each segment.
     """
     if path is None:
         path = []
@@ -71,6 +84,8 @@ def extract_flat_paths(
         transformed = transform_path(name) if transform_path else name
         alias = field.alias.value if field.alias else name
         current_path = [*path, transformed]
+        names = (*_names, name)
+        response_keys = (*_response_keys, alias)
 
         if field.selection_set:
             result.extend(
@@ -79,10 +94,14 @@ def extract_flat_paths(
                     fragments,
                     current_path,
                     transform_path,
+                    names,
+                    response_keys,
                 ),
             )
         else:
-            result.append(FieldPath(alias=alias, path=current_path))
+            result.append(
+                FieldPath(alias=alias, path=current_path, names=names, response_keys=response_keys)
+            )
 
     return result
 

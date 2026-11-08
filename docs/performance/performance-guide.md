@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-FraiseQL is a Python runtime GraphQL framework for PostgreSQL. It delivers fast response times for typical GraphQL queries by pushing data shaping into PostgreSQL (views return a `data` JSONB column) and serving that JSON over FastAPI. An optional Rust extension (`fraiseql_rs`) accelerates JSON transformation on the hot path — field selection, camelCase conversion, and `__typename` injection — so most queries avoid heavy Python string work.
+FraiseQL is a Python runtime GraphQL framework for PostgreSQL. It delivers fast response times for typical GraphQL queries by pushing data shaping into PostgreSQL (views return a `data` JSONB column) and serving that JSON over FastAPI. An optional Rust extension (`fraiseql_rs`) accelerates JSON transformation on the hot path — field selection, camelCase conversion, and `__typename` where selected — so most queries avoid heavy Python string work.
 
 This guide provides realistic performance expectations, methodology details, and guidance on when performance optimizations matter.
 
@@ -111,7 +111,7 @@ This guide provides realistic performance expectations, methodology details, and
 - **`tv_` lookup**: 0.05-0.5ms (single indexed row read of pre-composed JSONB)
 - **Traditional JOIN**: 5-50ms (depends on data size)
 - **Speedup**: 10-100x faster for complex nested queries
-- **JSON transformation**: camelCase conversion and `__typename` injection handled on the hot path (accelerated by `fraiseql_rs`)
+- **JSON transformation**: camelCase conversion and `__typename` (where selected) handled on the hot path (accelerated by `fraiseql_rs`)
 
 **When this applies**:
 
@@ -158,7 +158,6 @@ config = FraiseQLConfig(
     apq_storage_backend="postgresql",    # share APQ across instances
     complexity_enabled=True,
     complexity_max_score=1000,
-    cache_ttl=300,                       # result-cache TTL (seconds)
 )
 ```
 
@@ -189,7 +188,6 @@ config = FraiseQLConfig(
     apq_storage_backend="postgresql",
     complexity_enabled=True,
     complexity_max_score=500,            # reject expensive queries earlier
-    cache_ttl=600,
 )
 ```
 
@@ -206,7 +204,7 @@ config = FraiseQLConfig(
 
 ### Complexity Scoring
 
-FraiseQL calculates query complexity to reject expensive operations before they hit PostgreSQL. The scorer combines field count, nesting depth, list sizes, and per-field multipliers; it is controlled by `complexity_*` settings on `FraiseQLConfig`:
+With `complexity_enabled` (or a `complexity_max_score` / `complexity_max_depth` set), FraiseQL scores each query from the schema and rejects one over the limit with a `QUERY_TOO_COMPLEX` GraphQL error before it hits PostgreSQL. A scalar costs 1, an object field 1 plus its selections, and a list field 1 plus its selections times its `limit` / `first` argument (else `complexity_default_list_size`); `complexity_field_multipliers` sets a field's cost by field name or `"Type.field"`. Introspection is not counted:
 
 ```python
 from fraiseql.fastapi import FraiseQLConfig
@@ -217,9 +215,8 @@ config = FraiseQLConfig(
     complexity_max_depth=10,
     complexity_default_list_size=10,
     complexity_field_multipliers={
-        "search": 5,      # text search operations
-        "aggregate": 10,  # COUNT, SUM, AVG operations
-        "sort": 2,        # ORDER BY clauses
+        "search": 5,               # any field named search costs 5
+        "Query.salesReport": 10,   # one root field
     },
 )
 ```
@@ -319,7 +316,7 @@ FraiseQL's performance comes from where the work happens, not from a runtime tra
 - **Composition in the database.** A read view (`v_`) builds the response shape with `jsonb_build_object(...)`, so the GraphQL response is essentially a single `data` JSONB column. No ORM hydration, no N+1 join walking in Python.
 - **Projection tables for heavy reads.** A `tv_` table holds pre-composed JSONB, refreshed by functions/triggers. Expensive nested reads collapse to one indexed row lookup.
 - **JSONB + GIN.** Filtering inside the JSONB payload is backed by PostgreSQL's native JSONB operators and GIN indexes (see Indexing below).
-- **Minimal Python on the hot path.** Field selection, camelCase conversion, and `__typename` injection are applied to the JSONB before it goes out; `fraiseql_rs` accelerates this transformation when the extension is installed, with a pure-Python fallback otherwise.
+- **Minimal Python on the hot path.** Field selection, camelCase conversion, and `__typename` (where selected) are applied to the JSONB before it goes out; `fraiseql_rs` accelerates this transformation when the extension is installed, with a pure-Python fallback otherwise.
 - **Caching layers.** APQ avoids re-parsing persisted queries, and the `fraiseql.caching` result cache returns prior results without touching PostgreSQL.
 
 There is no compile step and no separate query engine — the schema is assembled in memory at app startup and served by FastAPI.

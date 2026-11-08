@@ -1,6 +1,6 @@
 # High Memory Usage Runbook
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-10-25
 **Severity**: HIGH
 **MTTR Target**: 20 minutes
 
@@ -24,50 +24,47 @@ This runbook guides you through diagnosing and resolving high memory usage in Fr
 
 ### Prometheus Metrics to Monitor
 
+FraiseQL exports no memory metric, and its `/metrics` endpoint (`setup_metrics(app)`)
+serves its own registry, without the `process_*` and `python_gc_*` metrics that
+`prometheus_client` puts in its default one. Register those collectors on it:
+
+```python
+from prometheus_client import GCCollector, PlatformCollector, ProcessCollector
+
+from fraiseql.monitoring import setup_metrics
+
+metrics = setup_metrics(app)
+ProcessCollector(registry=metrics.registry)   # process_resident_memory_bytes, process_cpu_seconds_total, ...
+GCCollector(registry=metrics.registry)        # python_gc_collections_total, python_gc_objects_*
+PlatformCollector(registry=metrics.registry)  # python_info
+```
+
+Then (each worker process has its own registry and series):
+
 ```promql
-# Memory usage percentage
-(process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100 > 80
+# Resident memory over 1.5 GiB
+process_resident_memory_bytes > 1.5 * 1024 * 1024 * 1024
 
-# Memory growth rate
-rate(process_resident_memory_bytes[5m]) > 10485760  # 10MB/5min
+# Memory growth: more than 10 MiB over 5 minutes
+delta(process_resident_memory_bytes[5m]) > 10 * 1024 * 1024
 
-# Python garbage collection frequency
-rate(python_gc_collections_total[5m]) > 10
+# Garbage collections per second, by generation
+rate(python_gc_collections_total[5m])
 ```
 
-### Structured Logs Examples
+On Kubernetes, the container's own metrics (cAdvisor, kube-state-metrics) compare
+memory with the limit, with nothing to add to the app:
 
-```json
-{
-  "timestamp": "2025-12-29T11:15:42.789Z",
-  "level": "WARNING",
-  "event": "system.high_memory",
-  "message": "Application memory usage exceeds threshold",
-  "context": {
-    "memory_used_bytes": 1610612736,
-    "memory_limit_bytes": 2147483648,
-    "memory_usage_percent": 75.0,
-    "threshold_percent": 70.0
-  },
-  "trace_id": "trace_mem123"
-}
+```promql
+sum by (pod) (container_memory_working_set_bytes{container="fraiseql"})
+  / sum by (pod) (kube_pod_container_resource_limits{container="fraiseql", resource="memory"}) > 0.8
 ```
 
-```json
-{
-  "timestamp": "2025-12-29T11:20:15.456Z",
-  "level": "ERROR",
-  "event": "system.memory_critical",
-  "message": "Critical memory usage - OOM risk",
-  "context": {
-    "memory_used_bytes": 2013265920,
-    "memory_limit_bytes": 2147483648,
-    "memory_usage_percent": 93.75,
-    "swap_used_bytes": 524288000
-  },
-  "trace_id": "trace_mem456"
-}
-```
+### Log Entries
+
+FraiseQL logs nothing about memory. An OOM kill shows in the platform's events
+(`kubectl describe pod`, `docker inspect --format '{{.State.OOMKilled}}'`, the
+kernel log), not in the app's logs.
 
 ---
 
@@ -75,14 +72,11 @@ rate(python_gc_collections_total[5m]) > 10
 
 ### Step 1: Check Current Memory Usage
 
-**Via Prometheus**:
+**Via Prometheus** (with `ProcessCollector` registered as above):
 
 ```promql
 # Current memory usage
 process_resident_memory_bytes
-
-# Memory usage percentage
-(process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100
 
 # Virtual memory size
 process_virtual_memory_bytes
@@ -103,35 +97,17 @@ free -h
 
 **Via Application Endpoint**:
 
-```bash
-# Health check endpoint includes memory stats
-curl http://localhost:8000/health/detailed
+fraiseql's `/health` only reports that the process is up, and `/ready` that the
+database answers; neither reports memory. Read memory from the system commands
+above, or from `process_resident_memory_bytes` on `/metrics` when the app exposes
+Prometheus metrics with a `ProcessCollector`.
 
-# Expected response
-{
-  "status": "healthy",
-  "memory": {
-    "used_bytes": 1610612736,
-    "limit_bytes": 2147483648,
-    "usage_percent": 75.0
-  }
-}
+```bash
+curl http://localhost:8000/health
+# {"status": "healthy", "service": "fraiseql"}
 ```
 
 ### Step 2: Identify Memory Consumers
-
-**Via Prometheus - Component Breakdown**:
-
-```promql
-# Database connection pool memory
-fraiseql_db_connections_total * 10485760  # ~10MB per connection estimate
-
-# Cache memory (if using in-memory cache)
-fraiseql_cache_size_bytes
-
-# Active GraphQL operations
-fraiseql_graphql_queries_total - fraiseql_graphql_queries_success - fraiseql_graphql_queries_errors
-```
 
 **Via Python Memory Profiler** (development only):
 
@@ -152,40 +128,25 @@ for stat in top_stats[:10]:
     print(stat)
 ```
 
-**Via Structured Logs**:
+**Common consumers in a FraiseQL app**:
 
-```bash
-# Find memory-related events
-jq -r 'select(.event | startswith("system.memory")) |
-  "\(.timestamp) \(.event) \(.context.memory_usage_percent)%"' \
-  /var/log/fraiseql/app.log | tail -50
-
-# Find large request payloads
-jq -r 'select(.context.request_size_bytes > 1048576) |
-  "\(.timestamp) \(.context.request_size_bytes) bytes"' \
-  /var/log/fraiseql/app.log | tail -20
-```
+- Large list queries: a `find()` without `limit` builds the whole result in memory
+  (check the resolvers, and the `limit` arguments clients send).
+- The in-memory APQ store (`apq_storage_backend="memory"`, the default) keeps every
+  persisted query, and with `apq_cache_responses=True` every cached response, for
+  the life of the process.
+- The in-memory rate limit counters, one entry per client key.
 
 ### Step 3: Check for Memory Leaks
 
-**Python Garbage Collection Stats**:
+**Python Garbage Collection Stats** (with `GCCollector` registered):
 
 ```promql
-# GC collection frequency (high = potential leak)
+# GC collection frequency, by generation
 rate(python_gc_collections_total[5m])
 
 # Uncollectable objects (memory leak indicator)
 python_gc_objects_uncollectable_total
-```
-
-**Check Object Count Growth**:
-
-```promql
-# Total Python objects
-python_gc_objects_collected_total
-
-# Object growth rate
-rate(python_gc_objects_collected_total[10m])
 ```
 
 **Via Application Code**:
@@ -209,17 +170,13 @@ for obj_type, count in sorted(type_counts.items(), key=lambda x: -x[1])[:10]:
 
 ### Step 4: Check Database Connection Pool
 
-**Via Prometheus**:
+**Via Prometheus** (only if the app feeds the pool gauges with
+`update_db_connections`, see [Metrics](./README.md#metrics-quick-reference)):
 
 ```promql
-# Active connections (each uses ~10MB)
 fraiseql_db_connections_active
-
-# Total pool size
-fraiseql_db_connections_total
-
-# Idle connections (still use memory)
 fraiseql_db_connections_idle
+fraiseql_db_connections_total
 ```
 
 **Via PostgreSQL**:
@@ -238,25 +195,14 @@ GROUP BY application_name;
 
 ### Step 5: Check Request Processing
 
-**Large Requests/Responses**:
+FraiseQL has no request or response size metric; sizes show in your proxy's access
+log. Slow requests, which hold their results in memory longer, show in the duration
+histogram:
 
 ```promql
-# HTTP request size histogram
 histogram_quantile(0.95,
-  rate(fraiseql_http_request_size_bytes_bucket[5m])
+  sum by (le, endpoint) (rate(fraiseql_http_request_duration_seconds_bucket[5m]))
 )
-
-# Response size histogram
-histogram_quantile(0.95,
-  rate(fraiseql_http_response_size_bytes_bucket[5m])
-)
-```
-
-**Active Operations**:
-
-```bash
-# Count in-flight GraphQL operations
-curl http://localhost:8000/metrics | grep fraiseql_graphql | grep -v "#"
 ```
 
 ---
@@ -282,32 +228,35 @@ systemctl restart fraiseql
 
 #### 2. Force Garbage Collection
 
-```python
-# Via admin endpoint (if implemented)
-curl -X POST http://localhost:8000/admin/gc
+fraiseql has no endpoint for this; run it in a Python REPL attached to the process
+(e.g. with `py-spy` or a debugger), or restart the pod:
 
-# Or via Python REPL in container
+```python
 import gc
 gc.collect()
 ```
 
 #### 3. Reduce Connection Pool Size (Temporary)
 
-```python
-# Update configuration
-from fraiseql import FraiseQL
+The pool opens at most `database_pool_size + database_max_overflow` connections:
 
-app = FraiseQL(
-    db_pool_size=5,  # Reduce from default (10-20)
-    db_max_overflow=2,  # Reduce from default (5-10)
+```python
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
+
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_size=5,  # Default: 20 (create_fraiseql_app uses 10 in development)
+    database_max_overflow=2,  # Default: 10
 )
+app = create_fraiseql_app(config=config, types=[User], queries=[users])
 ```
 
-**Environment Variable**:
+**Environment Variable** (read when the app is built from a `FraiseQLConfig`, as above;
+`create_fraiseql_app(database_url=...)` without `config` sets the pool size itself):
 
 ```bash
-export FRAISEQL_DB_POOL_SIZE=5
-export FRAISEQL_DB_MAX_OVERFLOW=2
+export FRAISEQL_DATABASE_POOL_SIZE=5
+export FRAISEQL_DATABASE_MAX_OVERFLOW=2
 ```
 
 ### Short-Term Fixes (15-30 minutes)
@@ -357,10 +306,11 @@ objgraph.show_growth()
 concurrent_requests = 100 * 0.1  # = 10
 pool_size = concurrent_requests * 1.5  # Safety margin = 15
 
-app = FraiseQL(
-    db_pool_size=15,
-    db_max_overflow=5,
-    db_pool_timeout=30,
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_size=15,
+    database_max_overflow=5,
+    database_pool_timeout=30,  # Seconds a request waits for a free connection
 )
 ```
 
@@ -375,11 +325,11 @@ pool_size=10 → ~100MB
 #### 3. Implement Connection Recycling
 
 ```python
-from fraiseql import FraiseQL
+from fraiseql.fastapi import FraiseQLConfig
 
-app = FraiseQL(
-    db_pool_recycle=3600,  # Recycle connections after 1 hour
-    db_pool_pre_ping=True,  # Verify connections before use
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_recycle=3600,  # Close and replace connections after 1 hour (default)
 )
 ```
 
@@ -387,32 +337,23 @@ app = FraiseQL(
 
 - Prevents connection memory bloat
 - Releases idle connection memory
-- Detects stale connections
 
-#### 4. Limit Cache Size (If Using In-Memory Cache)
+#### 4. Move In-Process Caches Out of the Process
 
-```python
-from fraiseql import FraiseQL
-from fraiseql.caching import LRUCache
-
-# Limit cache to 1000 entries (~10MB)
-cache = LRUCache(max_size=1000)
-
-app = FraiseQL(cache=cache)
-```
-
-**Switch to External Cache**:
+fraiseql's result cache (`fraiseql.caching.PostgresCache`, see
+[Caching](../../performance/caching.md)) lives in a PostgreSQL UNLOGGED table, not
+in application memory. What does live in the process is the automatic persisted
+queries (APQ) store, which defaults to memory and grows with each distinct query
+(and each cached response, with `apq_cache_responses=True`). Keep it in PostgreSQL
+instead:
 
 ```python
-from fraiseql.caching import RedisCache
+from fraiseql.fastapi import FraiseQLConfig
 
-# Use Redis instead of in-memory cache
-cache = RedisCache(
-    url="redis://localhost:6379",
-    max_memory="256mb",  # Redis memory limit
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="postgresql",  # Default: "memory"
 )
-
-app = FraiseQL(cache=cache)
 ```
 
 ### Long-Term Solutions (1+ days)
@@ -452,70 +393,52 @@ echo -1000 > /proc/<pid>/oom_score_adj
 
 #### 2. Implement Request Size Limits
 
-```python
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware import Middleware
-from starlette.middleware.base import BaseHTTPMiddleware
+Cap request bodies before they reach the app, at the reverse proxy or ingress:
 
-class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, max_size: int = 10485760):  # 10MB default
-        super().__init__(app)
-        self.max_size = max_size
-
-    async def dispatch(self, request: Request, call_next):
-        content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > self.max_size:
-            raise HTTPException(
-                status_code=413,
-                detail="Request payload too large"
-            )
-        return await call_next(request)
-
-app = FastAPI(
-    middleware=[
-        Middleware(RequestSizeLimitMiddleware, max_size=10485760)
-    ]
-)
+```nginx
+# nginx: answer 413 to bodies over 10MB
+client_max_body_size 10m;
 ```
 
-#### 3. Implement Query Result Streaming
+```yaml
+# ingress-nginx
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+```
+
+#### 3. Cap Result Set Sizes
 
 ```python
-from fraiseql import FraiseQL
+import fraiseql
 
-app = FraiseQL()
 
-@app.query.field("users")
-async def resolve_users(info, limit: int = 100):
+@fraiseql.query
+async def users(info, limit: int = 100) -> list[User]:
     # Limit result set size
     if limit > 1000:
         raise ValueError("Limit cannot exceed 1000")
 
-    query = "SELECT * FROM users LIMIT $1"
-    return await db.fetch(query, limit)
+    db = info.context["db"]
+    return await db.find("v_user", limit=limit)
 ```
 
 **Pagination for Large Results**:
 
 ```python
-@app.query.field("orders")
-async def resolve_orders(
-    info,
-    page: int = 1,
-    page_size: int = 100
-):
-    offset = (page - 1) * page_size
-
+@fraiseql.query
+async def orders(info, page: int = 1, page_size: int = 100) -> list[Order]:
     # Validate page_size
     if page_size > 500:
         raise ValueError("Page size cannot exceed 500")
 
-    query = """
-        SELECT * FROM orders
-        ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2
-    """
-    return await db.fetch(query, page_size, offset)
+    db = info.context["db"]
+    return await db.find(
+        "v_order",
+        order_by=[{"created_at": "DESC"}],
+        limit=page_size,
+        offset=(page - 1) * page_size,
+    )
 ```
 
 #### 4. Horizontal Scaling
@@ -549,6 +472,9 @@ spec:
 
 ### Prometheus Alert Rules
 
+These need the `ProcessCollector` and `GCCollector` registered on FraiseQL's
+registry (see Symptoms); the first two use Kubernetes container metrics instead.
+
 ```yaml
 # alerts/memory.yml
 groups:
@@ -557,37 +483,39 @@ groups:
     rules:
       - alert: HighMemoryUsage
         expr: |
-          (process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100 > 80
+          sum by (pod) (container_memory_working_set_bytes{container="fraiseql"})
+          / sum by (pod) (kube_pod_container_resource_limits{container="fraiseql", resource="memory"}) > 0.8
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High memory usage (> 80%)"
+          summary: "High memory usage (> 80% of the limit)"
           description: "Memory usage: {{ $value | humanizePercentage }}"
 
       - alert: CriticalMemoryUsage
         expr: |
-          (process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100 > 90
+          sum by (pod) (container_memory_working_set_bytes{container="fraiseql"})
+          / sum by (pod) (kube_pod_container_resource_limits{container="fraiseql", resource="memory"}) > 0.9
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "Critical memory usage (> 90%)"
+          summary: "Critical memory usage (> 90% of the limit)"
           description: "Memory usage: {{ $value | humanizePercentage }} - OOM risk!"
 
       - alert: MemoryLeak
         expr: |
-          rate(process_resident_memory_bytes[30m]) > 10485760  # 10MB growth per 30min
+          delta(process_resident_memory_bytes[30m]) > 10 * 1024 * 1024  # 10 MiB growth per 30min
         for: 1h
         labels:
           severity: warning
         annotations:
           summary: "Potential memory leak detected"
-          description: "Memory growing at {{ $value | humanize }}bytes/sec"
+          description: "Memory grew {{ $value | humanize1024 }}B in 30 minutes"
 
       - alert: ExcessiveGarbageCollection
         expr: |
-          rate(python_gc_collections_total[5m]) > 10
+          sum by (instance) (rate(python_gc_collections_total[5m])) > 10
         for: 10m
         labels:
           severity: warning
@@ -605,16 +533,17 @@ process_resident_memory_bytes
 process_virtual_memory_bytes
 ```
 
-**2. Memory Usage Percentage**:
+**2. Memory Usage Against the Limit** (Kubernetes):
 
 ```promql
-(process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100
+sum by (pod) (container_memory_working_set_bytes{container="fraiseql"})
+  / sum by (pod) (kube_pod_container_resource_limits{container="fraiseql", resource="memory"})
 ```
 
 **3. Memory Growth Rate**:
 
 ```promql
-rate(process_resident_memory_bytes[10m])
+deriv(process_resident_memory_bytes[10m])
 ```
 
 **4. Garbage Collection Activity**:
@@ -633,11 +562,8 @@ After applying fixes, verify memory usage is stable:
 ### 1. Check Metrics
 
 ```promql
-# Memory usage should be < 80%
-(process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100
-
-# Memory should not be growing
-rate(process_resident_memory_bytes[10m]) < 1048576  # < 1MB per 10min
+# Memory should not be growing: < 1 MiB over 10 minutes
+delta(process_resident_memory_bytes[10m]) < 1024 * 1024
 ```
 
 ### 2. Load Test
@@ -652,13 +578,13 @@ watch -n 5 'curl -s http://localhost:8000/metrics | grep process_resident_memory
 # Memory should stabilize, not grow continuously
 ```
 
-### 3. Check Logs
+### 3. Check the Platform
 
 ```bash
-# Verify no memory warnings
-jq -r 'select(.event | startswith("system.memory"))' /var/log/fraiseql/app.log | tail -10
+# No new OOM kills (Kubernetes)
+kubectl get pods -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.containerStatuses[0].lastState.terminated.reason}{"\n"}{end}'
 
-# Should see no recent warnings
+# Should show no recent "OOMKilled"
 ```
 
 ---
@@ -693,8 +619,8 @@ After resolving the incident:
 
 ## 📚 Related Resources
 
-- [Container Memory Limits](../deployment.md#resource-limits)
-- [Connection Pool Configuration](./database-performance-degradation.md#connection-pool)
+- [Container Memory Limits](../deployment.md)
+- [Connection Pool Configuration](./database-performance-degradation.md#step-2-check-connection-pool-status)
 - [Caching Best Practices](../../performance/caching.md)
 - [Python Memory Management](https://docs.python.org/3/library/gc.html)
 

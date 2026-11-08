@@ -11,13 +11,14 @@ from functools import lru_cache
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from fraiseql import fraise_input
+from fraiseql.sql.graphql_where_generator import VectorDistanceInput
 from fraiseql.sql.order_by_generator import (
     VECTOR_DISTANCE_OPERATORS,
     OrderBy,
     OrderBySet,
     OrderDirection,
 )
-from fraiseql.types.scalars.vector import HalfVectorField, QuantizedVectorField, SparseVectorField
+from fraiseql.types.scalars.vector import is_float_vector_type
 
 # Type variable for generic types
 T = TypeVar("T")
@@ -39,26 +40,28 @@ class VectorOrderBy:
     pgvector operators. Distance values are returned raw from PostgreSQL.
 
     Fields:
-        cosine_distance: Order by cosine distance (accepts dense or sparse vectors)
-        l2_distance: Order by L2/Euclidean distance (accepts dense or sparse vectors)
-        l1_distance: Order by L1/Manhattan distance (accepts dense or sparse vectors)
-        inner_product: Order by negative inner product (accepts dense or sparse vectors)
+        cosine_distance: Order by cosine distance
+        l2_distance: Order by L2/Euclidean distance
+        l1_distance: Order by L1/Manhattan distance
+        inner_product: Order by negative inner product
         hamming_distance: Order by Hamming distance for bit vectors
         jaccard_distance: Order by Jaccard distance for bit vectors
 
     Example:
-        orderBy: { embedding: { l1_distance: [0.1, 0.2, 0.3] } }
-        orderBy: {
-            sparse_embedding: { cosine_distance: { indices: [1,3,5], values: [0.1,0.2,0.3] } }
-        }
-        orderBy: { fingerprint: { hamming_distance: "101010" } }
+        orderBy: { embedding: { l1Distance: { dense: [0.1, 0.2, 0.3] } } }
+        orderBy: { binaryEmbedding: { hammingDistance: "101010" } }
         # Orders by distance to the given vector (ASC = most similar first)
+
+    The float operators take a ``VectorDistanceInput``, the operand a vector
+    ``where`` takes. Only ``dense`` sorts: a ``sparse`` operand raises, as
+    the sparsevec literal would need the column's dimension. In Python they
+    also take the bare list.
     """
 
-    cosine_distance: list[float] | dict[str, Any] | None = None
-    l2_distance: list[float] | dict[str, Any] | None = None
-    l1_distance: list[float] | dict[str, Any] | None = None
-    inner_product: list[float] | dict[str, Any] | None = None
+    cosine_distance: VectorDistanceInput | None = None
+    l2_distance: VectorDistanceInput | None = None
+    l1_distance: VectorDistanceInput | None = None
+    inner_product: VectorDistanceInput | None = None
     hamming_distance: str | None = None  # bit string like "101010"
     jaccard_distance: str | None = None  # bit string like "111000"
 
@@ -111,14 +114,52 @@ def _is_fraiseql_type(field_type: type) -> bool:
 
 
 def _normalize_order_direction(direction: Any) -> OrderDirection:
-    """Convert various direction inputs to OrderDirection enum."""
+    """Convert a direction (``OrderDirection``, enum-like, or string) to ``OrderDirection``.
+
+    ``"asc"`` / ``"desc"`` in any case, or an enum whose value is one of them.
+    Anything else raises: it used to read as DESC (any string but "ASC", any
+    enum value but "asc") or ASC (anything else), which sorted the rows the
+    wrong way without a word.
+
+    Raises:
+        ValueError: The direction is not ASC or DESC.
+    """
     if isinstance(direction, OrderDirection):
         return direction
-    if hasattr(direction, "value"):  # Enum-like
-        return OrderDirection.ASC if direction.value == "asc" else OrderDirection.DESC
-    if isinstance(direction, str):
-        return OrderDirection.ASC if direction.upper() == "ASC" else OrderDirection.DESC
-    return OrderDirection.ASC  # Default
+    raw = direction.value if hasattr(direction, "value") else direction  # Enum-like
+    if isinstance(raw, str):
+        if raw.upper() == "ASC":
+            return OrderDirection.ASC
+        if raw.upper() == "DESC":
+            return OrderDirection.DESC
+    msg = f"order_by: cannot read a sort direction from {direction!r}; use 'ASC' or 'DESC'"
+    raise ValueError(msg)
+
+
+def _order_by_item_from_sequence(item: tuple | str) -> OrderBy:
+    """Read a ``(field, direction)`` / ``(field,)`` tuple or a bare field name.
+
+    The field is a snake_case or camelCase name, dotted for a nested field,
+    resolved as a dict key would be; a missing direction is ASC.
+
+    Raises:
+        TypeError: The tuple is not one or two items with a string field first.
+    """
+    from fraiseql.utils.casing import to_snake_case
+
+    if isinstance(item, str):
+        field, direction = item, OrderDirection.ASC
+    elif len(item) in (1, 2) and isinstance(item[0], str) and item[0]:
+        field = item[0]
+        direction = _normalize_order_direction(item[1]) if len(item) == 2 else OrderDirection.ASC
+    else:
+        msg = (
+            f"order_by: cannot read {item!r}; a tuple item is (field, direction) "
+            "or (field,), e.g. ('created_at', 'DESC')"
+        )
+        raise TypeError(msg)
+    path = ".".join(to_snake_case(part) for part in field.split("."))
+    return OrderBy(field=path, direction=direction)
 
 
 def _unwrap_annotation(annotation: Any, *, into_list: bool) -> Any:
@@ -285,6 +326,33 @@ def _append_vector_order_by(value: Any, field_path: str, instructions: list[Orde
             return
 
 
+_BIT_DISTANCE_OPERATORS = ("hamming_distance", "jaccard_distance")
+
+
+def _is_vector_operand(operator: str, value: Any) -> bool:
+    """Whether ``{operator: value}`` in a dict ``order_by`` asks for a distance sort.
+
+    A list or tuple is a vector, and so is a ``VectorDistanceInput`` dict
+    (``{"dense": [...]}``, as GraphQL sends it) or a sparse
+    ``{"indices", "values"}`` dict; for the bit-vector operators, so is a string
+    of 0s and 1s. Any other value (``"desc"``) is a direction on a field that
+    happens to share the operator's name.
+    """
+    if operator not in VECTOR_DISTANCE_OPERATORS:
+        return False
+    if isinstance(value, (list, tuple)):
+        return True
+    if isinstance(value, dict):
+        keys = set(value)
+        return bool(keys) and (keys <= {"dense", "sparse"} or keys == {"indices", "values"})
+    return (
+        operator in _BIT_DISTANCE_OPERATORS
+        and isinstance(value, str)
+        and bool(value)
+        and set(value) <= {"0", "1"}
+    )
+
+
 def _collect_dict_order_by(
     obj_dict: dict[str, Any],
     instructions: list[OrderBy],
@@ -312,8 +380,17 @@ def _collect_dict_order_by(
         snake_field_name = to_snake_case(field_name)
         field_path = f"{prefix}.{snake_field_name}" if prefix else snake_field_name
 
+        # {"embedding": {"cosine_distance": [...]}}: the dict form of VectorOrderBy
+        if prefix and _is_vector_operand(snake_field_name, value):
+            instructions.append(
+                OrderBy(
+                    field=field_path,
+                    direction=OrderDirection.ASC,  # ASC = nearest first
+                    value=value,
+                )
+            )
         # Nested object: recurse so the leaf carries the full dotted path.
-        if isinstance(value, dict):
+        elif isinstance(value, dict):
             _collect_dict_order_by(value, instructions, field_path, global_collation, source_type)
         # A VectorOrderBy names the distance operator it wants.
         elif _is_vector_order_by(value):
@@ -418,6 +495,23 @@ def _convert_order_by_input_to_sql(
             # _apply_collation_default.
             elif isinstance(item, dict):
                 _collect_dict_order_by(item, instructions, "", global_collation, source_type)
+            # ("created_at", "DESC"), ("created_at",) or "created_at". These
+            # were skipped, so the list resolved to nothing and the rows came
+            # back unordered.
+            elif isinstance(item, (tuple, str)):
+                instr = _order_by_item_from_sequence(item)
+                collation = _apply_collation_default(
+                    None, global_collation, False, _is_text_field(source_type, instr.field)
+                )
+                instructions.append(
+                    OrderBy(field=instr.field, direction=instr.direction, collation=collation)
+                )
+            elif item is not None:
+                msg = (
+                    f"order_by: cannot read list item {item!r}; use {{'field': 'ASC'}}, "
+                    "('field', 'DESC') or 'field'"
+                )
+                raise TypeError(msg)
         return OrderBySet(instructions=instructions) if instructions else None
 
     # Handle object with field-specific order directions
@@ -559,17 +653,15 @@ def create_graphql_order_by_input(cls: type, name: str | None = None) -> type:
                 "image_embedding",
                 "imageembedding",
             ]
-            if any(pattern in field_lower for pattern in vector_patterns):
-                # Check if it's actually a list type or vector field types
-                origin = get_origin(field_type)
-                if origin is list or field_type in (
-                    HalfVectorField,
-                    SparseVectorField,
-                    QuantizedVectorField,
-                ):
-                    field_definitions.append((field_name, Optional[VectorOrderBy], None))
-                    field_defaults[field_name] = None
-                    continue
+            # A list type with a vector-ish name, or a VectorField / HalfVectorField
+            leaf_type = _unwrap_annotation(field_type, into_list=False)
+            if is_float_vector_type(leaf_type) or (
+                get_origin(leaf_type) is list
+                and any(pattern in field_lower for pattern in vector_patterns)
+            ):
+                field_definitions.append((field_name, Optional[VectorOrderBy], None))
+                field_defaults[field_name] = None
+                continue
 
             # Check if this is a nested FraiseQL type
             if _is_fraiseql_type(field_type):

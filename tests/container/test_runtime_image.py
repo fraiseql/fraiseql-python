@@ -126,9 +126,7 @@ class TestHealthcheck:
         assert "curl" not in command
         assert "python" in command
 
-    def test_healthcheck_reports_healthy_against_a_running_server(
-        self, runtime_image: str
-    ) -> None:
+    def test_healthcheck_reports_healthy_against_a_running_server(self, runtime_image: str) -> None:
         """The only functional change in this phase: prove it against a live container.
 
         A HEALTHCHECK that cannot run is indistinguishable from one that always
@@ -137,7 +135,14 @@ class TestHealthcheck:
         name = f"fraiseql-health-{uuid.uuid4().hex[:8]}"
         started = subprocess.run(
             [
-                "docker", "run", "-d", "--name", name, "--entrypoint", "python", runtime_image,
+                "docker",
+                "run",
+                "-d",
+                "--name",
+                name,
+                "--entrypoint",
+                "python",
+                runtime_image,
                 "-c",
                 "from http.server import BaseHTTPRequestHandler, HTTPServer\n"
                 "class H(BaseHTTPRequestHandler):\n"

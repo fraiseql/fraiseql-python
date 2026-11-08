@@ -59,8 +59,8 @@ flowchart TB
 
 **See Also**:
 
-- [CQRS Implementation](../../examples/complete_cqrs_blog/) - Complete CQRS blog example
-- [Enterprise Patterns](../../examples/blog_api/) - Production CQRS with audit trails
+- [CQRS Implementation](../../examples/blog_simple/) - Blog with tb_ tables, JSONB views and mutation functions
+- [Multi-tenant Patterns](../../examples/saas-starter/) - Tenant scoping on every query and mutation
 - Independent scaling of reads and writes
 
 ### JSONB View Pattern
@@ -347,19 +347,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Mutation explicitly calls sync (CRITICAL!)
-CREATE FUNCTION fn_create_user(p_name TEXT, p_email TEXT)
-RETURNS JSONB AS $$
+-- Mutation explicitly calls sync (CRITICAL!). A class mutation calls it with the
+-- input as one jsonb; mutation_response and mutation_created() come from
+-- migrations/trinity/005_add_mutation_response.sql
+CREATE FUNCTION create_user(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE v_user_id UUID;
 BEGIN
     INSERT INTO tb_user (name, email)
-    VALUES (p_name, p_email)
+    VALUES (input->>'name', input->>'email')
     RETURNING id INTO v_user_id;
 
     -- Explicitly sync to projection table
     PERFORM fn_sync_tv_user(v_user_id);
 
-    RETURN (SELECT data FROM tv_user WHERE id = v_user_id);
+    RETURN mutation_created(
+        'User created', (SELECT data FROM tv_user WHERE id = v_user_id), 'User'
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -370,22 +374,32 @@ Projection tables do **NOT** auto-update. Every mutation must call sync function
 
 ```sql
 -- ✅ CORRECT
-CREATE FUNCTION fn_update_user(...) RETURNS JSONB AS $$
+CREATE FUNCTION update_user(input jsonb) RETURNS mutation_response AS $$
 BEGIN
-    UPDATE tb_user SET name = p_name WHERE id = p_id;
-    PERFORM fn_sync_tv_user(p_id);  -- Must call!
-    RETURN (SELECT data FROM tv_user WHERE id = p_id);
+    UPDATE tb_user SET name = input->>'name' WHERE id = (input->>'id')::uuid;
+    PERFORM fn_sync_tv_user((input->>'id')::uuid);  -- Must call!
+    RETURN mutation_updated(
+        'User updated',
+        (SELECT data FROM tv_user WHERE id = (input->>'id')::uuid),
+        ARRAY['name'],
+        'User'
+    );
 END;
-$$;
+$$ LANGUAGE plpgsql;
 
 -- ❌ WRONG - Missing sync!
-CREATE FUNCTION fn_update_user_broken(...) RETURNS JSONB AS $$
+CREATE FUNCTION update_user_broken(input jsonb) RETURNS mutation_response AS $$
 BEGIN
-    UPDATE tb_user SET name = p_name WHERE id = p_id;
+    UPDATE tb_user SET name = input->>'name' WHERE id = (input->>'id')::uuid;
     -- tv_user will have stale data!
-    RETURN (SELECT data FROM tv_user WHERE id = p_id);
+    RETURN mutation_updated(
+        'User updated',
+        (SELECT data FROM tv_user WHERE id = (input->>'id')::uuid),
+        ARRAY['name'],
+        'User'
+    );
 END;
-$$;
+$$ LANGUAGE plpgsql;
 ```
 
 **Benefits:**
@@ -437,7 +451,7 @@ CREATE TABLE tb_user (
 );
 ```
 
-See [Projection Tables Example](../../examples/hybrid_tables/)
+See [rag-system](../../examples/rag-system/) for a projection table (`tv_document_embedding`) kept in sync by SQL functions.
 
 ## GraphQL Concepts
 
@@ -573,66 +587,44 @@ async def create_user(info, input: CreateUserInput) -> User:
         "name": input.name,
         "email": input.email
     })
-    return await db.find_one("v_user", id=result["id"])
+    return await db.find_one("v_user", mandatory_filters={"id": result["id"]})
 ```
 
-**Class-based pattern (with success/failure):**
+**Class-based pattern (with success/error):**
 
 ```python
-import fraiseql
 import fraiseql
 
 @fraiseql.mutation
 class CreateUser:
-    """Create a new user with explicit success/failure handling."""
+    """Create a new user with explicit success/error handling."""
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: ValidationError
-
-    async def resolve(self, info):
-        db = info.context["db"]
-        # Call PostgreSQL function - all business logic in database
-        result = await db.execute_function("fn_create_user", {
-            "name": self.input.name,
-            "email": self.input.email
-        })
-
-        # PostgreSQL function returns success/error indicator with user ID
-        if result["success"]:
-            user = await db.find_one("v_user", id=result["user_id"])
-            return CreateUserSuccess(
-                user=user,
-                message=result.get("message", "User created")
-            )
-        return ValidationError(
-            message=result["error"],
-            code=result.get("code", "VALIDATION_ERROR")
-        )
+    error: ValidationError
 ```
+
+The class declares types only: fraiseql calls the PostgreSQL function
+`create_user` (the class name in snake_case) with the input as one `jsonb`, and
+turns the `mutation_response` it returns into `CreateUserSuccess` or
+`ValidationError`.
 
 **Corresponding PostgreSQL function:**
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_create_user(
-    p_name TEXT,
-    p_email TEXT
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION create_user(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
     v_user_id UUID;
 BEGIN
     -- Validation: Check email format using regex
     -- Pattern: local-part@domain.tld (basic RFC 5322 compliance)
-    IF p_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$' THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'Invalid email format',
-            'code', 'INVALID_EMAIL'
-        );
+    IF input->>'email' !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+        RETURN mutation_validation_error('Invalid email format', 'email');
     END IF;
 
     -- Insert user
     INSERT INTO tb_user (name, email)
-    VALUES (p_name, p_email)
+    VALUES (input->>'name', input->>'email')
     RETURNING id INTO v_user_id;
 
     -- Audit log
@@ -640,18 +632,21 @@ BEGIN
     VALUES ('user_created', jsonb_build_object('user_id', v_user_id));
 
     -- Return success with user data
-    RETURN jsonb_build_object(
-        'success', true,
-        'user', jsonb_build_object(
+    RETURN mutation_created(
+        'User created successfully',
+        jsonb_build_object(
             'id', v_user_id,
-            'name', p_name,
-            'email', p_email
+            'name', input->>'name',
+            'email', input->>'email'
         ),
-        'message', 'User created successfully'
+        'User'
     );
 END;
 $$ LANGUAGE plpgsql;
 ```
+
+`mutation_response` and the `mutation_*` helpers are defined in
+`migrations/trinity/005_add_mutation_response.sql`.
 
 ### Where Input Types
 
@@ -700,22 +695,27 @@ query {
 
 **1. Coordinates (Geographic Filtering)**
 
+A `Coordinate` field gets a `CoordinateFilter`: `eq`, `neq`, `in`, `nin` (values
+are `"latitude,longitude"` strings), `isnull`, and `distanceWithin`, the
+coordinates at most `radius` meters from `center` (`[latitude, longitude]`):
+
 ```graphql
 query {
   stores(where: {
-    location: {
-      distance_within: {
-        center: [37.7749, -122.4194]  # San Francisco
-        radius: 5000  # meters
-      }
-    }
+    location: { distanceWithin: { center: [37.7749, -122.4194], radius: 5000 } }
   }) {
     name
-    address
     location
   }
 }
 ```
+
+In Python, `db.find("v_store", where={"location": {"distance_within": ((37.7749,
+-122.4194), 5000)}})`. The view holds the coordinate as a PostgreSQL `point`,
+`(longitude, latitude)`: a `point` column, or its text in the JSONB
+(`jsonb_build_object('location', location)`). `FraiseQLConfig.coordinate_distance_method`
+picks the distance SQL: `"haversine"` (the default, plain SQL), `"earthdistance"`
+(needs the `earthdistance` and `cube` extensions) or `"postgis"` (needs PostGIS).
 
 **2. Network Addresses (IP/CIDR Filtering)**
 
@@ -738,7 +738,7 @@ query {
     ipAddress: {
       inRange: { from: "10.0.0.1", to: "10.0.0.254" }
       isPublic: true
-      NOT: { isLoopback: true }
+      isLoopback: false
     }
   }) {
     hostname
@@ -769,8 +769,8 @@ query {
 query {
   categories(where: {
     path: {
-      ancestor_of: "Electronics.Computers.Laptops"  # All ancestor categories
-      nlevel_gte: 2                                  # At least 2 levels deep
+      ancestorOf: "Electronics.Computers.Laptops"   # All ancestor categories
+      nlevelGte: 2                                  # At least 2 levels deep
     }
   }) {
     name
@@ -781,8 +781,8 @@ query {
 query {
   subcategories(where: {
     path: {
-      descendant_of: "Electronics"       # All subcategories
-      matches_lquery: "Electronics.*"    # Pattern matching
+      descendantOf: "Electronics"        # All subcategories
+      matchesLquery: "Electronics.*"     # Pattern matching
     }
   }) {
     name
@@ -792,11 +792,13 @@ query {
 
 **LTree hierarchical operators:**
 
-- `ancestor_of` - Path is ancestor of target
-- `descendant_of` - Path is descendant of target
-- `matches_lquery` - Pattern match with wildcards
-- `matches_ltxtquery` - Text search (AND/OR/NOT)
-- `nlevel_eq` / `nlevel_gt` / `nlevel_gte` / `nlevel_lt` / `nlevel_lte` - Path depth filtering
+- `ancestorOf` - Path is ancestor of target
+- `descendantOf` - Path is descendant of target
+- `matchesLquery` - Pattern match with wildcards
+- `matchesLtxtquery` - Text search (AND/OR/NOT)
+- `nlevelEq` / `nlevelGt` / `nlevelGte` / `nlevelLt` / `nlevelLte` - Path depth filtering
+
+(In a Python `where` dict the same operators are snake_case: `ancestor_of`, `nlevel_gte`, ...)
 
 **Logical Operators (All WhereInput Types)**
 
@@ -1015,13 +1017,16 @@ CREATE INDEX idx_users_email ON users(email);
 Limiting query depth and breadth:
 
 ```python
-from fraiseql import ComplexityConfig
+from fraiseql.fastapi import FraiseQLConfig
 
-config = ComplexityConfig(
-    max_complexity=1000,
-    max_depth=10
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    max_query_depth=10,          # QUERY_TOO_DEEP past 10 levels
+    complexity_max_score=1000,   # QUERY_TOO_COMPLEX over 1000
 )
 ```
+
+Both are checked before the query runs; no limit is on by default.
 
 ### APQ (Automatic Persisted Queries)
 
@@ -1053,8 +1058,8 @@ Cache GraphQL queries by SHA-256 hash to reduce bandwidth and improve performanc
 from fraiseql import FraiseQLConfig
 
 config = FraiseQLConfig(
-    apq_storage_backend="memory",  # Default - LRU cache
-    apq_cache_size=1000             # Max cached queries
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="memory",  # Default: in-process, unbounded
 )
 ```
 
@@ -1062,19 +1067,20 @@ config = FraiseQLConfig(
 
 ```python
 config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
     apq_storage_backend="postgresql",
-    apq_storage_schema="apq_cache",     # Schema for cache table
-    apq_cache_ttl=3600                   # TTL in seconds (optional)
+    apq_backend_config={"table_prefix": "apq_"},  # Tables apq_queries, apq_responses
 )
-
-# Creates table:
-# CREATE TABLE apq_cache.persisted_queries (
-#     query_hash TEXT PRIMARY KEY,
-#     query_text TEXT NOT NULL,
-#     created_at TIMESTAMPTZ DEFAULT NOW(),
-#     last_used TIMESTAMPTZ DEFAULT NOW()
-# );
 ```
+
+There is no TTL or size limit setting: stored queries stay until you delete them.
+
+> **Note:** the `postgresql` backend opens its own small connection pool to
+> `database_url` (or `apq_backend_config["database_url"]`) on the first APQ request,
+> and creates its tables if they don't exist (`auto_create_tables`, default on).
+> Persisted queries survive a restart and are shared by every instance using that
+> database. Its lookups are synchronous: each holds the event loop for one indexed
+> query (a persisted query's text is kept in process once read).
 
 **Client usage (Apollo Client):**
 
@@ -1127,14 +1133,14 @@ const { data } = await client.query({
 **Monitoring:**
 
 ```python
-from fraiseql.monitoring import apq_metrics
+from fraiseql.monitoring import get_global_metrics
 
-# Check APQ cache statistics
-stats = await apq_metrics.get_stats()
-print(f"Cache hits: {stats.hits}")
-print(f"Cache misses: {stats.misses}")
-print(f"Hit rate: {stats.hit_rate:.2%}")
-print(f"Cached queries: {stats.total_queries}")
+# APQ statistics of this process
+stats = get_global_metrics().get_snapshot()
+print(f"Cache hits: {stats.query_cache_hits}")
+print(f"Cache misses: {stats.query_cache_misses}")
+print(f"Hit rate: {stats.query_cache_hit_rate:.2%}")
+print(f"Requests: {stats.total_requests}")
 ```
 
 **See also:**
@@ -1256,26 +1262,40 @@ Control access at the field level:
 
 ```python
 import fraiseql
-from fraiseql import field, authorized
+from fraiseql.security import authorize_field
 
-@field
-@authorized(roles=["admin"])
-def sensitive_field(user: User, info) -> str:
-    """Only admins can access this field."""
-    return user.sensitive_data
+@fraiseql.type
+class User:
+    id: int
+    name: str
+
+    @fraiseql.field
+    @authorize_field(lambda info: "admin" in info.context.get("roles", []))
+    async def sensitive_data(self, info) -> str | None:
+        """Only admins can read this field."""
+        return "..."
 ```
+
+A denied check returns a GraphQL error for that field, and `null` in its place; the
+rest of the response is still returned (a non-null field's `null` would null its
+parent instead).
 
 ### Rate Limiting
 
 Prevent abuse:
 
 ```python
-from fraiseql.auth import RateLimitConfig
+from fraiseql.fastapi import FraiseQLConfig
 
-rate_limit = RateLimitConfig(
-    requests_per_minute=100
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    rate_limit_enabled=True,             # off by default
+    rate_limit_requests_per_minute=100,  # per client IP
 )
 ```
+
+See [Rate Limiting](../configuration/rate-limiting.md) for the per-path and
+per-operation limiter (`setup_rate_limiting`).
 
 ### Introspection Control
 
@@ -1283,9 +1303,12 @@ Disable schema introspection in production:
 
 ```python
 config = FraiseQLConfig(
-    introspection_enabled=False
+    database_url="postgresql://localhost/mydb",
+    introspection_policy="disabled",  # or "authenticated"; "public" is the default
 )
 ```
+
+`environment="production"` sets `introspection_policy` to `"disabled"` on its own.
 
 ## Related
 

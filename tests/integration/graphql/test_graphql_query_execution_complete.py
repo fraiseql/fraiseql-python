@@ -16,7 +16,7 @@ from fraiseql import query
 from fraiseql import type as fraiseql_type
 from fraiseql.sql import create_graphql_where_input
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("clear_registry")]
 
 
 @pytest.mark.asyncio

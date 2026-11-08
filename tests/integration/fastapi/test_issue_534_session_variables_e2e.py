@@ -95,6 +95,7 @@ def _rows(result: Any) -> Any:
     return value
 
 
+@pytest.mark.usefixtures("clear_registry_class")
 class TestIssue534SessionVariables:
     """``app.*`` settings reach the views on every read path."""
 
