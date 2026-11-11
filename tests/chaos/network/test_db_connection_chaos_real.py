@@ -328,8 +328,11 @@ async def test_slow_connection_establishment(
     # - Garbage collection / memory pressure
     # - OS-level TCP buffer adjustments
     # - Container networking jitter in sub-millisecond range
-    # Increased threshold to 3.0x to account for observed 2.1x variance with margin
-    assert avg_recovery < avg_baseline * 3.0, (
+    # Increased threshold to 3.0x to account for observed 2.1x variance with margin.
+    # Against a local database the baseline is ~0.1ms, where one slow query makes
+    # 3x of it fail (0.43ms vs 0.13ms), so anything under 10ms counts as recovered:
+    # still far below the 100-2000ms latency injected above.
+    assert avg_recovery < max(avg_baseline * 3.0, 10.0), (
         f"Should recover to near-baseline: {avg_recovery:.2f}ms vs {avg_baseline:.2f}ms"
     )
 

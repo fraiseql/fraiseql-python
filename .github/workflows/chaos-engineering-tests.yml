@@ -46,29 +46,23 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Install maturin
-      run: uv tool install maturin
-
-    - name: Setup environment and install dependencies
-      run: |
-        # Create virtual environment with uv
-        uv venv
-
-        # Install build dependencies first (required for some packages like thrift)
-        uv pip install setuptools wheel
-
-        # Install all dependencies
-        uv pip install ".[dev,all]"
-
-        # Build and install Rust extension with modern maturin+uv integration
-        uv run maturin develop --uv
+    # From uv.lock into .venv, as in ci.yml. `uv sync` builds fraiseql_rs, and the
+    # `uv run --all-extras` calls below then find nothing to change. Installing
+    # with `uv pip install ".[dev,all]"` took the newest psycopg-binary, and the
+    # next plain `uv run` synced psycopg (a base dependency) back to the locked
+    # version while leaving psycopg-binary (only in the extras) alone. Since
+    # psycopg-binary is pulled in by the migrate extra (#549), that left the
+    # locked psycopg's Python code on a newer C module, and every
+    # psycopg.connect() raised "TypeError: connect() takes no keyword arguments".
+    - name: Install dependencies
+      run: uv sync --locked --all-extras
 
     - name: Verify Docker and Environment
       run: |
         echo "=== Environment Verification ==="
-        uv run python --version
+        uv run --all-extras python --version
         uv --version
-        uv run pytest --version
+        uv run --all-extras pytest --version
         docker --version
         echo "✅ All dependencies verified"
 
@@ -89,7 +83,7 @@ jobs:
 
         # Run all chaos tests marked with chaos_real_db
         # These tests use real PostgreSQL via testcontainers (Docker)
-        uv run pytest tests/chaos \
+        uv run --all-extras pytest tests/chaos \
           -m chaos_real_db \
           -v \
           --tb=short \
@@ -105,7 +99,7 @@ jobs:
       if: always()
       run: |
         echo "=== Chaos Test Summary ==="
-        echo "Total tests run: $(uv run pytest tests/chaos -m chaos_real_db --collect-only -q 2>/dev/null | wc -l)"
+        echo "Total tests run: $(uv run --all-extras pytest tests/chaos -m chaos_real_db --collect-only -q 2>/dev/null | wc -l)"
         echo ""
         echo "Test execution completed at: $(date)"
         echo "Workflow: Manual or Scheduled"
