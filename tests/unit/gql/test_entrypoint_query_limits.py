@@ -111,7 +111,7 @@ class _FakeWebSocket:
     def __init__(self) -> None:
         self.sent: list[dict[str, Any]] = []
 
-    async def send(self, message: str) -> None:
+    async def send_text(self, message: str) -> None:
         self.sent.append(json.loads(message))
 
 

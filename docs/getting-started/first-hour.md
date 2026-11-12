@@ -422,9 +422,9 @@ You've completed your first hour with FraiseQL! You now know how to:
 
 ### Explore Examples (30 minutes each)
 
-- **E-commerce API (../examples/ecommerce/)** - Shopping cart, products, orders
+- **[E-commerce API](../../examples/ecommerce/)** - Shopping cart, products, orders
 - **[Subscriptions](../architecture/realtime/subscriptions.md)** - Subscriptions and real-time updates
-- **Multi-tenant SaaS (../examples/apq_multi_tenant/)** - Enterprise patterns
+- **[Multi-tenant SaaS](../../examples/apq_multi_tenant/)** - Enterprise patterns
 
 ### Advanced Topics
 
