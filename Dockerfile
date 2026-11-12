@@ -4,40 +4,49 @@
 # Optimized for production with security best practices
 
 # Stage 1: Builder
-FROM python:3.13-slim AS builder
+#
+# Alpine rather than Debian slim: every container-security alert on the slim
+# image was a Debian base package with no upstream fix (libc, krb5, ldap,
+# sqlite, util-linux...), which no rebuild can clear. The Alpine base carries a
+# fraction of the packages, and its libpq needs only musl and OpenSSL.
+FROM python:3.13-alpine AS builder
 
-# Install build dependencies and security updates
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    gcc \
-    g++ \
-    libpq-dev \
-    libssl-dev \
-    pkg-config \
+RUN apk upgrade --no-cache && apk add --no-cache \
+    build-base \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    libffi-dev \
+    openssl-dev \
+    postgresql-dev
 
 # Install Rust (required for fraiseql_rs PyO3 extension)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Set working directory
 WORKDIR /build
 
-# Copy dependency files first for better caching
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY fraiseql_rs ./fraiseql_rs
 
-# Build FraiseQL wheel (includes Rust extension via maturin)
+# Build the FraiseQL wheel (Rust extension via maturin), then a wheelhouse of
+# everything the runtime installs, so the runtime stage needs no compiler for
+# a dependency without a musllinux wheel. psycopg's C implementation is built
+# against Alpine's libpq: the pure-Python one finds libpq through
+# ctypes.util.find_library, which cannot see it on musl.
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
     pip install build maturin && \
-    mkdir -p /build/dist && \
-    python -m build --wheel
+    python -m build --wheel --outdir /build/dist && \
+    pip wheel --wheel-dir /build/wheels \
+        /build/dist/*.whl \
+        "psycopg[c]" \
+        "uvicorn[standard]" \
+        gunicorn \
+        prometheus-client
 
 # Stage 2: Runtime
-FROM python:3.13-slim AS runtime
+FROM python:3.13-alpine AS runtime
 
 LABEL org.opencontainers.image.authors="FraiseQL Team"
 LABEL org.opencontainers.image.version="1.10.1"
@@ -46,30 +55,27 @@ LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/fraiseql/fraiseql-python"
 
 # Install runtime dependencies and security updates
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+# libgcc: the Rust extension links libgcc_s dynamically on musl.
+RUN apk upgrade --no-cache && apk add --no-cache libgcc libpq
 
 # Create non-root user
-RUN groupadd -r fraiseql && useradd -r -g fraiseql fraiseql
+RUN addgroup -S fraiseql && adduser -S -G fraiseql -H fraiseql
 
 WORKDIR /app
 
-# Copy wheel from builder and install
-COPY --from=builder /build/dist/*.whl /tmp/
-# pip and setuptools are build tooling: the wheel is installed here and the
-# entrypoint is gunicorn, so nothing at runtime needs either. They are removed in
-# the *same* layer — a separate RUN would leave the old copies in the image
-# history, where Trivy still finds them. pip's vendored msgpack goes with it,
-# which is the only msgpack in the image.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install \
-    /tmp/*.whl \
-    uvicorn[standard] \
+# Installed from the builder's wheelhouse through a bind mount, so no wheel ever
+# lands in an image layer. pip and setuptools are build tooling: the entrypoint
+# is gunicorn, so nothing at runtime needs either. They are removed in the
+# *same* layer -- a separate RUN would leave the old copies in the image
+# history, where Trivy still finds them, along with pip's vendored packages.
+RUN --mount=type=bind,from=builder,source=/build/wheels,target=/wheels \
+    pip install --no-index --find-links /wheels \
+    fraiseql \
+    "psycopg[c]" \
+    "uvicorn[standard]" \
     gunicorn \
     prometheus-client \
-    && rm -rf /tmp/*.whl \
-    && pip uninstall -y pip setuptools 2>/dev/null || true
+    && (pip uninstall -y pip setuptools 2>/dev/null || true)
 
 # Copy entrypoint script
 COPY deploy/docker/entrypoint.sh /usr/local/bin/

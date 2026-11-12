@@ -21,27 +21,27 @@
 
 ### Current Security Status
 
-**Base Image**: python:3.13-slim
-**Vulnerabilities**:
-
-- CRITICAL: 0 ✅
-- HIGH: 0 ✅
-- MEDIUM: 9 (documented and accepted)
-- LOW: 19 (documented and accepted)
+**Base Image**: python:3.13-alpine (the published image, built from the root `Dockerfile`)
+**Vulnerabilities**: none at any severity in a Trivy scan of the runtime stage, with no
+exceptions in `.trivyignore`.
 
 **Compliance**: NIST 800-53, NIS2, ISO 27001, FedRAMP Moderate
 
-### Why Python 3.13-slim?
+### Why Alpine?
 
-We use `python:3.13-slim` instead of distroless because:
+The image used to be built on `python:3.13-slim`. Every container-security finding on it
+was a Debian base package with no upstream fix (glibc, krb5, OpenLDAP, SQLite,
+util-linux...), so no rebuild could clear them. The Alpine base carries far fewer
+packages, and its `libpq` depends only on musl and OpenSSL, which removes the Kerberos,
+LDAP and SASL libraries that Debian's `libpq5` pulls in.
 
-1. ✅ **Zero CRITICAL/HIGH vulnerabilities**
-2. ✅ **Latest Python security patches** (3.13 fixes CVEs present in 3.11)
-3. ✅ **Faster security updates** from Python maintainers
-4. ✅ **Government compliance** (FedRAMP/NIST/NIS2 requirements)
-5. ✅ **Easier debugging** and troubleshooting
+Two musl-specific details in the `Dockerfile`:
 
-**Note**: Distroless migration is planned when Google releases Python 3.13 distroless images. Currently, distroless uses Python 3.11 which has 5 CRITICAL/HIGH vulnerabilities.
+1. psycopg uses its C implementation (`psycopg[c]`), built against Alpine's `libpq`. The
+   pure-Python implementation locates `libpq` with `ctypes.util.find_library`, which
+   cannot find it on musl.
+2. The runtime installs `libgcc`, because the Rust extension links `libgcc_s` dynamically
+   on musl.
 
 ---
 
@@ -581,7 +581,7 @@ kubectl run -n fraiseql-production test-pod \
 
    ```bash
    # Pull latest base image
-   docker pull python:3.13-slim
+   docker pull python:3.13-alpine
 
    # Rebuild
    docker build -f deploy/docker/Dockerfile.hardened -t fraiseql:1.8.0-hardened .
