@@ -220,7 +220,7 @@ class WebSocketConnection:
             return
 
         try:
-            await self.websocket.send(json.dumps(message.to_dict()))
+            await self.websocket.send_text(json.dumps(message.to_dict()))
         except Exception:
             logger.exception("Failed to send message")
             self.state = ConnectionState.CLOSING

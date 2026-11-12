@@ -30,8 +30,8 @@ class MockWebSocket:
         self.close_reason = None
         self._receive_queue = asyncio.Queue()
 
-    async def send(self, message: str) -> None:
-        """Mock sending a message."""
+    async def send_text(self, message: str) -> None:
+        """Mock sending a text frame, as Starlette's ``WebSocket.send_text``."""
         if self.closed:
             msg = "WebSocket is closed"
             raise RuntimeError(msg)
